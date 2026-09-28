@@ -1,0 +1,8 @@
+minimumReleaseAge: 10080
+minimumReleaseAgeStrict: true
+minimumReleaseAgeExclude:
+  - pnpm
+  - "@astrojs/*"
+  - astro
+allowBuilds:
+  esbuild: true
