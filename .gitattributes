@@ -1,0 +1,44 @@
+# =============================================
+# Normalización de terminaciones de línea
+# =============================================
+# Fuerza LF en todos los archivos de texto, sin importar el sistema operativo.
+* text=auto eol=lf
+
+# =============================================
+# Archivos binarios (no deben ser tratados como texto)
+# =============================================
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.avif binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.eot binary
+*.mp3 binary
+*.wav binary
+*.ogg binary
+*.mp4 binary
+*.webm binary
+*.pdf binary
+
+# =============================================
+# Tipos específicos con tratamiento explícito
+# =============================================
+# SVG: se trata como texto para permitir diffs legibles.
+*.svg text eol=lf
+
+# Lockfile: siempre LF, nunca se normaliza automáticamente.
+pnpm-lock.yaml text eol=lf -diff
+
+# =============================================
+# Excluir del lenguaje detectado por GitHub
+# =============================================
+# Evita que GitHub cuente archivos generados en el desglose de lenguajes.
+dist/** linguist-generated=true
+.astro/** linguist-generated=true
+pnpm-lock.yaml linguist-generated=true
