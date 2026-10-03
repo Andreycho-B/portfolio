@@ -1,25 +1,7 @@
-:root {
-  /* Z-index. Saltos amplios para permitir capas intermedias sin renumerar. */
-  --z-base: 0;
-  --z-elevated: 10;
-  --z-sticky: 100;
-  --z-overlay: 1000;
-  --z-audio: 9000;
-  --z-cursor: 9999;
-
-  /* Contenedor */
-  --container-padding: clamp(1.5rem, 5vw, 4rem);
-  --content-max-width: 65ch;
-
-  /* Foco — WCAG 2.2, criterio 2.4.13. Mínimo 2px, contraste 3:1. */
-  --focus-ring-color: var(--color-brand-blue);
-  --focus-ring-width: 2px;
-  --focus-ring-offset: 2px;
-  --focus-ring-style: solid;
-}
-
-/* :focus-visible en lugar de :focus para no mostrar el anillo en clic de ratón. */
-:focus-visible {
-  outline: var(--focus-ring-width) var(--focus-ring-style) var(--focus-ring-color);
-  outline-offset: var(--focus-ring-offset);
-}
+/* Orden de importación: layout.css referencia --color-brand-blue de colors.css. */
+@import "./colors.css";
+@import "./typography.css";
+@import "./spacing.css";
+@import "./motion.css";
+@import "./layout.css";
+@import "../fonts.css";

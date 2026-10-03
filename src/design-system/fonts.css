@@ -1,0 +1,54 @@
+@import "@fontsource-variable/outfit";
+
+/* Karrik — texto de lectura */
+@font-face {
+  font-family: "Karrik";
+  src: url("/fonts/karrik/Karrik-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Karrik";
+  src: url("/fonts/karrik/Karrik-Italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Kaeru Kaeru — mutación tipográfica */
+@font-face {
+  font-family: "Kaeru Kaeru";
+  src: url("/fonts/kaeru-kaeru/KaeruKaeru-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Pilowlava — mutación tipográfica */
+@font-face {
+  font-family: "Pilowlava";
+  src: url("/fonts/pilowlava/Pilowlava-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Lithops — mutación tipográfica */
+@font-face {
+  font-family: "Lithops";
+  src: url("/fonts/lithops/Lithops-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Flor de Ruina Germen — mutación tipográfica */
+@font-face {
+  font-family: "Flor de Ruina";
+  src: url("/fonts/flor-de-ruina/FlorDeRuina-Germen.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
