@@ -1,17 +1,56 @@
 ---
-
+import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<BaseLayout title="Test de fuentes — Andrey" description="Verificación de carga de fuentes.">
+  <main>
+    <p>Karrik Regular — texto de lectura.</p>
+    <p class="italic">Karrik Italic — texto de lectura en cursiva.</p>
+    <p class="display">Outfit</p>
+    <p class="effect" data-font="kaeru">Kaeru Kaeru</p>
+    <p class="effect" data-font="pilowlava">Pilowlava</p>
+    <p class="effect" data-font="lithops">Lithops</p>
+    <p class="effect" data-font="flor">Flor de Ruina</p>
+  </main>
+</BaseLayout>
+
+<style>
+  main {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+    padding: var(--space-2xl);
+  }
+
+  .italic {
+    font-style: italic;
+  }
+
+  .display {
+    font-family: var(--font-display);
+    font-weight: var(--weight-black);
+    font-size: var(--text-5xl);
+    line-height: var(--lh-tight);
+    letter-spacing: var(--ls-tighter);
+  }
+
+  .effect {
+    font-size: var(--text-3xl);
+  }
+
+  .effect[data-font="kaeru"] {
+    font-family: "Kaeru Kaeru";
+  }
+
+  .effect[data-font="pilowlava"] {
+    font-family: "Pilowlava";
+  }
+
+  .effect[data-font="lithops"] {
+    font-family: "Lithops";
+  }
+
+  .effect[data-font="flor"] {
+    font-family: "Flor de Ruina";
+  }
+</style>
