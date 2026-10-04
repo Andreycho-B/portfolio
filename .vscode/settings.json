@@ -15,9 +15,10 @@
     "editor.defaultFormatter": "biomejs.biome"
   },
   "[astro]": {
-    "editor.defaultFormatter": "biomejs.biome"
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[jsonc]": {
     "editor.defaultFormatter": "biomejs.biome"
-  }
+  },
+  "prettier.prettierPath": "./node_modules/prettier/index.cjs"
 }

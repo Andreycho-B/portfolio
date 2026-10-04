@@ -7,7 +7,16 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!dist", "!.astro", "!node_modules", "!public", "!pnpm-lock.yaml", "!spec"]
+    "includes": [
+      "**",
+      "!dist",
+      "!.astro",
+      "!node_modules",
+      "!public",
+      "!pnpm-lock.yaml",
+      "!spec",
+      "!**/*.astro"
+    ]
   },
   "formatter": {
     "enabled": true,
@@ -74,18 +83,5 @@
     "linter": {
       "enabled": true
     }
-  },
-  "overrides": [
-    {
-      "includes": ["**/*.astro"],
-      "linter": {
-        "rules": {
-          "correctness": {
-            "noUnusedVariables": "off",
-            "noUnusedImports": "off"
-          }
-        }
-      }
-    }
-  ]
+  }
 }
