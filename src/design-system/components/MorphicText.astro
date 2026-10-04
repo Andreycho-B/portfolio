@@ -1,0 +1,129 @@
+---
+interface Props {
+  text: string;
+  duration?: number;
+  blurX?: number;
+  blurY?: number;
+  weight?: number;
+}
+
+const { text, duration = 1.5, blurX = 18, blurY = 20, weight = 900 } = Astro.props;
+
+const instanceId = Math.random().toString(36).slice(2, 10);
+const filterId = `morphic-${instanceId}`;
+const blurNodeId = `${filterId}-blur`;
+---
+
+<span
+  class="morphic-text"
+  data-morphic
+  data-duration={duration}
+  data-blur-node={blurNodeId}
+  style={`filter: url(#${filterId}); font-weight: ${weight};`}
+>
+  {text}
+</span>
+
+<svg aria-hidden="true" class="morphic-svg">
+  <defs>
+    <filter id={filterId} x="-20%" y="-60%" width="140%" height="220%">
+      <feGaussianBlur
+        id={blurNodeId}
+        in="SourceGraphic"
+        stdDeviation={`${blurX} ${blurY}`}
+        result="blur"
+      />
+      <feColorMatrix
+        in="blur"
+        mode="matrix"
+        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9"
+      />
+    </filter>
+  </defs>
+</svg>
+
+<style>
+  .morphic-text {
+    display: inline-block;
+    font-family: var(--font-display);
+    text-rendering: geometricPrecision;
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .morphic-text {
+      animation: morphic-fade-in 0.7s 0.1s ease-out forwards;
+    }
+  }
+
+  @keyframes morphic-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .morphic-svg {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+  }
+</style>
+
+<script>
+  import { gsap } from "gsap";
+
+  const parseNumber = (value: string | undefined, fallback: number): number => {
+    if (value === undefined || value === "") return fallback;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const initMorphicText = () => {
+    document.querySelectorAll<HTMLElement>("[data-morphic]").forEach((el) => {
+      const blurNodeId = el.dataset.blurNode;
+      if (!blurNodeId) return;
+
+      const blurNode = document.getElementById(blurNodeId);
+      if (!blurNode) return;
+
+      if (prefersReducedMotion) {
+        blurNode.setAttribute("stdDeviation", "0 0");
+        el.style.opacity = "1";
+        return;
+      }
+
+      const initial = blurNode.getAttribute("stdDeviation") ?? "6 18";
+      const parts = initial.split(" ").map(Number);
+      const state = {
+        x: Number.isFinite(parts[0]) ? parts[0] : 6,
+        y: Number.isFinite(parts[1]) ? parts[1] : 18,
+      };
+      const duration = parseNumber(el.dataset.duration, 1.1);
+
+      gsap.to(state, {
+        x: 0,
+        y: 0,
+        duration: 1.5,
+        ease: "power3.out",
+        delay: 0.2,
+        onUpdate: () => {
+          blurNode.setAttribute("stdDeviation", `${state.x} ${state.y}`);
+        },
+      });
+    });
+  };
+
+  if (document.readyState !== "loading") {
+    initMorphicText();
+  } else {
+    document.addEventListener("DOMContentLoaded", initMorphicText);
+  }
+
+  document.addEventListener("astro:page-load", initMorphicText);
+</script>

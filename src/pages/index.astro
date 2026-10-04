@@ -1,56 +1,26 @@
 ---
+import MorphicText from "../design-system/components/MorphicText.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
-<BaseLayout title="Test de fuentes — Andrey" description="Verificación de carga de fuentes.">
+<BaseLayout title="Test mórfico — Andrey" description="Verificación del efecto mórfico.">
   <main>
-    <p>Karrik Regular — texto de lectura.</p>
-    <p class="italic">Karrik Italic — texto de lectura en cursiva.</p>
-    <p class="display">Outfit</p>
-    <p class="effect" data-font="kaeru">Kaeru Kaeru</p>
-    <p class="effect" data-font="pilowlava">Pilowlava</p>
-    <p class="effect" data-font="lithops">Lithops</p>
-    <p class="effect" data-font="flor">Flor de Ruina</p>
+    <MorphicText text="Creativo" />
   </main>
 </BaseLayout>
 
 <style>
   main {
     display: flex;
-    flex-direction: column;
-    gap: var(--space-lg);
-    padding: var(--space-2xl);
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: var(--container-padding);
   }
 
-  .italic {
-    font-style: italic;
-  }
-
-  .display {
-    font-family: var(--font-display);
-    font-weight: var(--weight-black);
-    font-size: var(--text-5xl);
+  main :global(.morphic-text) {
+    font-size: var(--text-4xl);
     line-height: var(--lh-tight);
     letter-spacing: var(--ls-tighter);
-  }
-
-  .effect {
-    font-size: var(--text-3xl);
-  }
-
-  .effect[data-font="kaeru"] {
-    font-family: "Kaeru Kaeru";
-  }
-
-  .effect[data-font="pilowlava"] {
-    font-family: "Pilowlava";
-  }
-
-  .effect[data-font="lithops"] {
-    font-family: "Lithops";
-  }
-
-  .effect[data-font="flor"] {
-    font-family: "Flor de Ruina";
   }
 </style>
