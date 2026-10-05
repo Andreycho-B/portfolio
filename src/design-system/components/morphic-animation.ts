@@ -1,9 +1,6 @@
 import { gsap } from "gsap";
 
-const GOOEY_INITIAL_SLOPE = 24;
-const GOOEY_INITIAL_OFFSET = -11;
-const GOOEY_TARGET_SLOPE = 1;
-const GOOEY_TARGET_OFFSET = 0;
+const GOOEY = { initSlope: 24, initOffset: -11, targetSlope: 1, targetOffset: 0 } as const;
 
 interface MorphicNodes {
   readonly element: HTMLElement;
@@ -34,10 +31,10 @@ const parseNum = (val: string | undefined, fallback: number): number => {
 const resetNodesToNeutral = (nodes: MorphicNodes): void => {
   nodes.blurNode.setAttribute("stdDeviation", "0 0");
   nodes.matrixNode.setAttribute("values", "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0");
-  nodes.cyanTopNode?.setAttribute("dx", "0");
-  nodes.cyanTopNode?.setAttribute("dy", "0");
-  nodes.cyanBottomNode?.setAttribute("dx", "0");
-  nodes.cyanBottomNode?.setAttribute("dy", "0");
+  for (const node of [nodes.cyanTopNode, nodes.cyanBottomNode]) {
+    node?.setAttribute("dx", "0");
+    node?.setAttribute("dy", "0");
+  }
   nodes.element.style.filter = "none";
 };
 
@@ -48,12 +45,9 @@ const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
 
   const blurNode = document.getElementById(blurId);
   const matrixNode = document.getElementById(matrixId);
-  if (
-    !(blurNode instanceof SVGFEGaussianBlurElement) ||
-    !(matrixNode instanceof SVGFEColorMatrixElement)
-  ) {
-    return null;
-  }
+  const isValid =
+    blurNode instanceof SVGFEGaussianBlurElement && matrixNode instanceof SVGFEColorMatrixElement;
+  if (!isValid) return null;
 
   const isChromatic = el.dataset.chromatic === "true";
   const getOffset = (id?: string): SVGFEOffsetElement | null => {
@@ -80,10 +74,10 @@ const playMorphicReveal = (nodes: MorphicNodes): void => {
   const { element, blurNode, matrixNode, cyanTopNode, cyanBottomNode } = nodes;
   const { isChromatic, shiftX, shiftY, delay, duration } = nodes;
 
-  const prefersReduced =
-    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  if (prefersReduced) {
+  if (
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ) {
     resetNodesToNeutral(nodes);
     element.style.opacity = "1";
     return;
@@ -91,19 +85,21 @@ const playMorphicReveal = (nodes: MorphicNodes): void => {
 
   const [rawX, rawY] = (blurNode.getAttribute("stdDeviation") ?? "20 20").split(" ").map(Number);
   const state: AnimationState = {
-    x: typeof rawX === "number" && Number.isFinite(rawX) ? rawX : 20,
-    y: typeof rawY === "number" && Number.isFinite(rawY) ? rawY : 20,
-    slope: GOOEY_INITIAL_SLOPE,
-    offset: GOOEY_INITIAL_OFFSET,
+    x: Number.isFinite(rawX) ? (rawX as number) : 20,
+    y: Number.isFinite(rawY) ? (rawY as number) : 20,
+    slope: GOOEY.initSlope,
+    offset: GOOEY.initOffset,
     chromaticProgress: 1.0,
   };
+
+  let prevBlur = "";
+  let prevMatrix = "";
 
   const timeline = gsap.timeline({
     delay: 0.1 + delay,
     onComplete: () => resetNodesToNeutral(nodes),
   });
 
-  // 1. Desvanecimiento de desenfoque anisotrópico
   timeline.to(
     state,
     {
@@ -114,13 +110,16 @@ const playMorphicReveal = (nodes: MorphicNodes): void => {
       onUpdate: () => {
         const bx = state.x < 0.35 ? 0 : state.x;
         const by = state.y < 0.35 ? 0 : state.y;
-        blurNode.setAttribute("stdDeviation", `${bx.toFixed(1)} ${by.toFixed(1)}`);
+        const val = `${bx.toFixed(1)} ${by.toFixed(1)}`;
+        if (val !== prevBlur) {
+          prevBlur = val;
+          blurNode.setAttribute("stdDeviation", val);
+        }
       },
     },
     0,
   );
 
-  // 2. Colapso de dispersión cian (borde superior e inferior)
   if (isChromatic && (cyanTopNode || cyanBottomNode)) {
     timeline.to(
       state,
@@ -141,19 +140,22 @@ const playMorphicReveal = (nodes: MorphicNodes): void => {
     );
   }
 
-  // 3. Relajación de tensión líquida a matriz identidad
   timeline.to(
     state,
     {
-      slope: GOOEY_TARGET_SLOPE,
-      offset: GOOEY_TARGET_OFFSET,
+      slope: GOOEY.targetSlope,
+      offset: GOOEY.targetOffset,
       duration: duration * 0.45,
       ease: "power2.inOut",
       onUpdate: () => {
         const isIdentity = state.slope <= 1.05 && state.offset >= -0.05;
         const s = isIdentity ? "1" : state.slope.toFixed(2);
         const o = isIdentity ? "0" : state.offset.toFixed(2);
-        matrixNode.setAttribute("values", `1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 ${s} ${o}`);
+        const val = `${s} ${o}`;
+        if (val !== prevMatrix) {
+          prevMatrix = val;
+          matrixNode.setAttribute("values", `1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 ${s} ${o}`);
+        }
       },
     },
     duration * 0.55,
@@ -162,7 +164,6 @@ const playMorphicReveal = (nodes: MorphicNodes): void => {
 
 export const initMorphicText = (): void => {
   if (typeof window === "undefined") return;
-
   const elements = document.querySelectorAll<HTMLElement>(
     "[data-morphic]:not([data-morphic-mounted])",
   );
