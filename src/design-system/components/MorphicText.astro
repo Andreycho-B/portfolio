@@ -5,28 +5,59 @@ interface Props {
   blurX?: number;
   blurY?: number;
   weight?: number;
+  chromatic?: boolean;
+  shiftX?: number;
+  shiftY?: number;
+  delay?: number;
+  as?: "span" | "h1" | "h2" | "p";
 }
 
-const { text, duration = 1.5, blurX = 18, blurY = 20, weight = 900 } = Astro.props;
+const {
+  text,
+  duration = 1.6,
+  blurX = 18,
+  blurY = 20,
+  weight = 900,
+  chromatic = true,
+  shiftX = 3.5,
+  shiftY = 1.5,
+  delay = 0,
+  as: Tag = "span",
+} = Astro.props;
 
-const instanceId = Math.random().toString(36).slice(2, 10);
+const instanceId = crypto.randomUUID().slice(0, 8);
 const filterId = `morphic-${instanceId}`;
 const blurNodeId = `${filterId}-blur`;
+const matrixNodeId = `${filterId}-matrix`;
+const cyanOffsetId = `${filterId}-cyan`;
 ---
 
-<span
+<Tag
   class="morphic-text"
   data-morphic
+  data-chromatic={chromatic ? "true" : "false"}
   data-duration={duration}
+  data-delay={delay}
   data-blur-node={blurNodeId}
+  data-matrix-node={matrixNodeId}
+  data-cyan-offset={chromatic ? cyanOffsetId : undefined}
+  data-shift-x={shiftX}
+  data-shift-y={shiftY}
   style={`filter: url(#${filterId}); font-weight: ${weight};`}
 >
   {text}
-</span>
+</Tag>
 
 <svg aria-hidden="true" class="morphic-svg">
   <defs>
-    <filter id={filterId} x="-20%" y="-60%" width="140%" height="220%">
+    <filter
+      id={filterId}
+      x="-30%"
+      y="-40%"
+      width="160%"
+      height="180%"
+      color-interpolation-filters="sRGB"
+    >
       <feGaussianBlur
         id={blurNodeId}
         in="SourceGraphic"
@@ -34,10 +65,39 @@ const blurNodeId = `${filterId}-blur`;
         result="blur"
       />
       <feColorMatrix
+        id={matrixNodeId}
         in="blur"
         mode="matrix"
-        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9"
+        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11"
+        result="morphicCore"
       />
+      {chromatic && (
+        <>
+          <feOffset
+            id={cyanOffsetId}
+            in="morphicCore"
+            dx={-shiftX}
+            dy={-shiftY}
+            result="cyanShift"
+          />
+          <feColorMatrix
+            in="cyanShift"
+            mode="matrix"
+            values="0 0 0 0 0   0 0 0 0 0.8   0 0 0 0 1   0 0 0 0.95 0"
+            result="cyanLayer"
+          />
+          <feColorMatrix
+            in="morphicCore"
+            mode="matrix"
+            values="0 0 0 0 0.08   0 0 0 0 0.08   0 0 0 0 0.08   0 0 0 1 0"
+            result="blackCore"
+          />
+          <feMerge>
+            <feMergeNode in="cyanLayer" />
+            <feMergeNode in="blackCore" />
+          </feMerge>
+        </>
+      )}
     </filter>
   </defs>
 </svg>
@@ -47,12 +107,23 @@ const blurNodeId = `${filterId}-blur`;
     display: inline-block;
     font-family: var(--font-display);
     text-rendering: geometricPrecision;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    will-change: filter, opacity;
     opacity: 0;
   }
 
   @media (prefers-reduced-motion: no-preference) {
     .morphic-text {
       animation: morphic-fade-in 0.7s 0.1s ease-out forwards;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .morphic-text {
+      opacity: 1 !important;
+      filter: none !important;
+      will-change: auto !important;
     }
   }
 
@@ -70,54 +141,12 @@ const blurNodeId = `${filterId}-blur`;
     width: 0;
     height: 0;
     overflow: hidden;
+    pointer-events: none;
   }
 </style>
 
 <script>
-  import { gsap } from "gsap";
-
-  const parseNumber = (value: string | undefined, fallback: number): number => {
-    if (value === undefined || value === "") return fallback;
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : fallback;
-  };
-
-  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  const initMorphicText = () => {
-    document.querySelectorAll<HTMLElement>("[data-morphic]").forEach((el) => {
-      const blurNodeId = el.dataset.blurNode;
-      if (!blurNodeId) return;
-
-      const blurNode = document.getElementById(blurNodeId);
-      if (!blurNode) return;
-
-      if (prefersReducedMotion) {
-        blurNode.setAttribute("stdDeviation", "0 0");
-        el.style.opacity = "1";
-        return;
-      }
-
-      const initial = blurNode.getAttribute("stdDeviation") ?? "6 18";
-      const parts = initial.split(" ").map(Number);
-      const state = {
-        x: Number.isFinite(parts[0]) ? parts[0] : 6,
-        y: Number.isFinite(parts[1]) ? parts[1] : 18,
-      };
-      const duration = parseNumber(el.dataset.duration, 1.1);
-
-      gsap.to(state, {
-        x: 0,
-        y: 0,
-        duration: 1.5,
-        ease: "power3.out",
-        delay: 0.2,
-        onUpdate: () => {
-          blurNode.setAttribute("stdDeviation", `${state.x} ${state.y}`);
-        },
-      });
-    });
-  };
+  import { initMorphicText } from "./morphic-animation";
 
   if (document.readyState !== "loading") {
     initMorphicText();
