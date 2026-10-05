@@ -10,6 +10,9 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
+    "check": "astro check",
+    "lint": "biome check .",
+    "format": "biome format --write . && prettier --write \"**/*.astro\"",
     "prepare": "husky"
   },
   "dependencies": {
