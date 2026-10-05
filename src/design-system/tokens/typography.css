@@ -1,9 +1,8 @@
 :root {
   /* Familias */
-  --font-display: "Outfit", system-ui, -apple-system, sans-serif;
+  --font-display: "Author", system-ui, -apple-system, sans-serif;
   --font-text: "Karrik", system-ui, -apple-system, sans-serif;
 
-  /* Escala — fija en lectura, fluida en display */
   --text-xs: 12px;
   --text-sm: 14px;
   --text-base: 16px;
@@ -14,7 +13,6 @@
   --text-4xl: clamp(3rem, 8vw, 7rem);
   --text-5xl: clamp(4rem, 12vw, 12rem);
 
-  /* Pesos. Solo Outfit: Karrik no tiene Bold ni Light. */
   --weight-regular: 400;
   --weight-semibold: 600;
   --weight-bold: 700;

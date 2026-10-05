@@ -1,4 +1,13 @@
-@import "@fontsource-variable/outfit";
+/* Author — display (variable) */
+@font-face {
+  font-family: "Author";
+  src:
+    url("/fonts/author/Author-Variable.woff2") format("woff2-variations"),
+    url("/fonts/author/Author-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
 
 /* Karrik — texto de lectura */
 @font-face {
