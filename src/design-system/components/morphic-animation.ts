@@ -116,7 +116,7 @@ export const playMorphicSequence = (nodes: MorphicNodes): void => {
     const tl = createRevealTimeline(nodes, () => {
       resetNodesToNeutral(nodes);
       if (shouldExit) {
-        const delay = nodes.exitDelay ?? 1.5;
+        const delay = nodes.exitDelay ?? 0.8;
         setTimeout(runExit, delay * 1000);
       } else {
         nodes.element.dispatchEvent(new CustomEvent("morphic:complete", { bubbles: true }));
@@ -133,7 +133,7 @@ export const playMorphicSequence = (nodes: MorphicNodes): void => {
       nodes.element.style.opacity = "0";
 
       phraseIndex = (phraseIndex + 1) % nodes.phrases.length;
-      setTimeout(runIntro, 600);
+      setTimeout(runIntro, 180);
     });
   };
 

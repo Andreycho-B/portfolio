@@ -9,6 +9,7 @@ export const createExitTimeline = (
 ): gsap.core.Timeline => {
   const { element, blurNode, matrixNode, cyanTopNode, cyanBottomNode } = nodes;
   const { isChromatic, shiftX, shiftY, duration } = nodes;
+  const exitDuration = Math.min(1.1, duration * 0.65);
 
   const state = {
     x: 0,
@@ -28,7 +29,7 @@ export const createExitTimeline = (
     {
       slope: GOOEY.initSlope,
       offset: GOOEY.initOffset,
-      duration: duration * 0.45,
+      duration: exitDuration * 0.45,
       ease: "power2.inOut",
       onUpdate: () => {
         const s = state.slope.toFixed(2);
@@ -49,7 +50,7 @@ export const createExitTimeline = (
       state,
       {
         chromaticProgress: 1.0,
-        duration: duration * 0.7,
+        duration: exitDuration * 0.7,
         ease: "power3.in",
         onUpdate: () => {
           const sx = shiftX * state.chromaticProgress;
@@ -60,7 +61,7 @@ export const createExitTimeline = (
           cyanBottomNode?.setAttribute("dy", (sy * 0.7).toFixed(2));
         },
       },
-      duration * 0.15,
+      exitDuration * 0.15,
     );
   }
 
@@ -70,7 +71,7 @@ export const createExitTimeline = (
     {
       x: 18,
       y: 18,
-      duration: duration * 0.75,
+      duration: exitDuration * 0.75,
       ease: "power3.in",
       onUpdate: () => {
         const val = `${state.x.toFixed(1)} ${state.y.toFixed(1)}`;
@@ -80,15 +81,15 @@ export const createExitTimeline = (
         }
       },
     },
-    duration * 0.15,
+    exitDuration * 0.15,
   );
 
-  // 4. Contracción y reducción de la masa líquida hasta el fondo
+  // 4. Contracción y reducción ágil de la masa líquida hasta el fondo
   timeline.to(
     state,
     {
       offset: -22,
-      duration: duration * 0.5,
+      duration: exitDuration * 0.5,
       ease: "power2.in",
       onUpdate: () => {
         const s = state.slope.toFixed(2);
@@ -100,14 +101,14 @@ export const createExitTimeline = (
         }
       },
     },
-    duration * 0.5,
+    exitDuration * 0.5,
   );
 
   // 5. Desvanecimiento hacia fondo limpio
   timeline.to(
     element,
-    { opacity: 0, duration: duration * 0.25, ease: "power1.in" },
-    duration * 0.75,
+    { opacity: 0, duration: exitDuration * 0.25, ease: "power1.in" },
+    exitDuration * 0.75,
   );
 
   return timeline;
