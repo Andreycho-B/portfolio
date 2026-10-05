@@ -1,8 +1,7 @@
-import { gsap } from "gsap";
+import { createExitTimeline } from "./morphic-exit";
+import { createRevealTimeline } from "./morphic-reveal";
 
-const GOOEY = { initSlope: 24, initOffset: -11, targetSlope: 1, targetOffset: 0 } as const;
-
-interface MorphicNodes {
+export interface MorphicNodes {
   readonly element: HTMLElement;
   readonly blurNode: SVGFEGaussianBlurElement;
   readonly matrixNode: SVGFEColorMatrixElement;
@@ -13,14 +12,9 @@ interface MorphicNodes {
   readonly shiftY: number;
   readonly delay: number;
   readonly duration: number;
-}
-
-interface AnimationState {
-  x: number;
-  y: number;
-  slope: number;
-  offset: number;
-  chromaticProgress: number;
+  readonly exitDelay: number | null;
+  readonly loop: boolean;
+  readonly filterId: string;
 }
 
 const parseNum = (val: string | undefined, fallback: number): number => {
@@ -28,7 +22,7 @@ const parseNum = (val: string | undefined, fallback: number): number => {
   return Number.isFinite(num) && val?.trim() !== "" ? num : fallback;
 };
 
-const resetNodesToNeutral = (nodes: MorphicNodes): void => {
+export const resetNodesToNeutral = (nodes: MorphicNodes): void => {
   nodes.blurNode.setAttribute("stdDeviation", "0 0");
   nodes.matrixNode.setAttribute("values", "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0");
   for (const node of [nodes.cyanTopNode, nodes.cyanBottomNode]) {
@@ -36,6 +30,16 @@ const resetNodesToNeutral = (nodes: MorphicNodes): void => {
     node?.setAttribute("dy", "0");
   }
   nodes.element.style.filter = "none";
+};
+
+export const resetNodesToIntro = (nodes: MorphicNodes): void => {
+  nodes.blurNode.setAttribute("stdDeviation", "20 20");
+  nodes.matrixNode.setAttribute("values", "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11");
+  nodes.cyanTopNode?.setAttribute("dx", `-${nodes.shiftX}`);
+  nodes.cyanTopNode?.setAttribute("dy", `-${nodes.shiftY}`);
+  nodes.cyanBottomNode?.setAttribute("dx", `${(nodes.shiftX * 0.3).toFixed(2)}`);
+  nodes.cyanBottomNode?.setAttribute("dy", `${(nodes.shiftY * 0.7).toFixed(2)}`);
+  nodes.element.style.filter = `url(#${nodes.filterId})`;
 };
 
 const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
@@ -56,6 +60,10 @@ const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
     return node instanceof SVGFEOffsetElement ? node : null;
   };
 
+  const filterId = blurId.replace("-blur", "");
+  const exitDelayRaw = el.dataset.exitDelay;
+  const exitDelay = exitDelayRaw !== undefined ? parseNum(exitDelayRaw, 1.5) : null;
+
   return {
     element: el,
     blurNode,
@@ -67,99 +75,45 @@ const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
     shiftY: parseNum(el.dataset.shiftY, 1.5),
     delay: parseNum(el.dataset.delay, 0),
     duration: parseNum(el.dataset.duration, 1.9),
+    exitDelay,
+    loop: el.dataset.loop === "true",
+    filterId,
   };
 };
 
-const playMorphicReveal = (nodes: MorphicNodes): void => {
-  const { element, blurNode, matrixNode, cyanTopNode, cyanBottomNode } = nodes;
-  const { isChromatic, shiftX, shiftY, delay, duration } = nodes;
-
+export const playMorphicSequence = (nodes: MorphicNodes): void => {
   if (
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches
   ) {
     resetNodesToNeutral(nodes);
-    element.style.opacity = "1";
+    nodes.element.style.opacity = "1";
     return;
   }
 
-  const [rawX, rawY] = (blurNode.getAttribute("stdDeviation") ?? "20 20").split(" ").map(Number);
-  const state: AnimationState = {
-    x: Number.isFinite(rawX) ? (rawX as number) : 20,
-    y: Number.isFinite(rawY) ? (rawY as number) : 20,
-    slope: GOOEY.initSlope,
-    offset: GOOEY.initOffset,
-    chromaticProgress: 1.0,
+  const runIntro = () => {
+    resetNodesToIntro(nodes);
+    const tl = createRevealTimeline(nodes, () => {
+      resetNodesToNeutral(nodes);
+      if (nodes.exitDelay !== null) {
+        setTimeout(runExit, nodes.exitDelay * 1000);
+      }
+    });
+    tl.delay(0.1 + nodes.delay);
   };
 
-  let prevBlur = "";
-  let prevMatrix = "";
+  const runExit = () => {
+    nodes.element.style.filter = `url(#${nodes.filterId})`;
+    createExitTimeline(nodes, () => {
+      resetNodesToNeutral(nodes);
+      nodes.element.style.opacity = "0";
+      if (nodes.loop) {
+        setTimeout(runIntro, 1200);
+      }
+    });
+  };
 
-  const timeline = gsap.timeline({
-    delay: 0.1 + delay,
-    onComplete: () => resetNodesToNeutral(nodes),
-  });
-
-  timeline.to(
-    state,
-    {
-      x: 0,
-      y: 0,
-      duration,
-      ease: "power3.out",
-      onUpdate: () => {
-        const bx = state.x < 0.35 ? 0 : state.x;
-        const by = state.y < 0.35 ? 0 : state.y;
-        const val = `${bx.toFixed(1)} ${by.toFixed(1)}`;
-        if (val !== prevBlur) {
-          prevBlur = val;
-          blurNode.setAttribute("stdDeviation", val);
-        }
-      },
-    },
-    0,
-  );
-
-  if (isChromatic && (cyanTopNode || cyanBottomNode)) {
-    timeline.to(
-      state,
-      {
-        chromaticProgress: 0,
-        duration: duration * 0.85,
-        ease: "power3.out",
-        onUpdate: () => {
-          const sx = shiftX * state.chromaticProgress;
-          const sy = shiftY * state.chromaticProgress;
-          cyanTopNode?.setAttribute("dx", (-sx).toFixed(2));
-          cyanTopNode?.setAttribute("dy", (-sy).toFixed(2));
-          cyanBottomNode?.setAttribute("dx", (sx * 0.3).toFixed(2));
-          cyanBottomNode?.setAttribute("dy", (sy * 0.7).toFixed(2));
-        },
-      },
-      0,
-    );
-  }
-
-  timeline.to(
-    state,
-    {
-      slope: GOOEY.targetSlope,
-      offset: GOOEY.targetOffset,
-      duration: duration * 0.45,
-      ease: "power2.inOut",
-      onUpdate: () => {
-        const isIdentity = state.slope <= 1.05 && state.offset >= -0.05;
-        const s = isIdentity ? "1" : state.slope.toFixed(2);
-        const o = isIdentity ? "0" : state.offset.toFixed(2);
-        const val = `${s} ${o}`;
-        if (val !== prevMatrix) {
-          prevMatrix = val;
-          matrixNode.setAttribute("values", `1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 ${s} ${o}`);
-        }
-      },
-    },
-    duration * 0.55,
-  );
+  runIntro();
 };
 
 export const initMorphicText = (): void => {
@@ -177,7 +131,7 @@ export const initMorphicText = (): void => {
               if (entry.isIntersecting) {
                 obs.unobserve(entry.target);
                 const nodes = resolveNodes(entry.target as HTMLElement);
-                if (nodes) playMorphicReveal(nodes);
+                if (nodes) playMorphicSequence(nodes);
               }
             }
           },
@@ -192,7 +146,7 @@ export const initMorphicText = (): void => {
     if (observer) {
       observer.observe(element);
     } else {
-      playMorphicReveal(nodes);
+      playMorphicSequence(nodes);
     }
   });
 };

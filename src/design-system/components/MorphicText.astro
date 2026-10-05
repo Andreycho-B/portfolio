@@ -9,6 +9,8 @@ interface Props {
   shiftX?: number;
   shiftY?: number;
   delay?: number;
+  exitDelay?: number;
+  loop?: boolean;
   as?: "span" | "h1" | "h2" | "p";
 }
 
@@ -22,6 +24,8 @@ const {
   shiftX = 3.5,
   shiftY = 1.5,
   delay = 0,
+  exitDelay,
+  loop = false,
   as: Tag = "span",
 } = Astro.props;
 
@@ -39,6 +43,8 @@ const cyanBottomId = `${filterId}-cyan-bottom`;
   data-chromatic={chromatic ? "true" : "false"}
   data-duration={duration}
   data-delay={delay}
+  data-exit-delay={exitDelay}
+  data-loop={loop ? "true" : undefined}
   data-blur-node={blurNodeId}
   data-matrix-node={matrixNodeId}
   data-cyan-top={chromatic ? cyanTopId : undefined}
@@ -123,26 +129,11 @@ const cyanBottomId = `${filterId}-cyan-bottom`;
     opacity: 0;
   }
 
-  @media (prefers-reduced-motion: no-preference) {
-    .morphic-text {
-      animation: morphic-fade-in 0.7s 0.1s ease-out forwards;
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
     .morphic-text {
       opacity: 1 !important;
       filter: none !important;
       transform: none !important;
-    }
-  }
-
-  @keyframes morphic-fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
     }
   }
 
