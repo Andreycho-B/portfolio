@@ -66,7 +66,7 @@ const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
     shiftX: parseNum(el.dataset.shiftX, 3.5),
     shiftY: parseNum(el.dataset.shiftY, 1.5),
     delay: parseNum(el.dataset.delay, 0),
-    duration: parseNum(el.dataset.duration, 1.6),
+    duration: parseNum(el.dataset.duration, 1.9),
   };
 };
 
