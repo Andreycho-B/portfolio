@@ -13,6 +13,7 @@ interface Props {
   exitDelay?: number;
   loop?: boolean;
   as?: "span" | "h1" | "h2" | "p";
+  mutateWord?: string;
 }
 
 const {
@@ -29,6 +30,7 @@ const {
   exitDelay,
   loop = false,
   as: Tag = "span",
+  mutateWord,
 } = Astro.props;
 
 const initialText = phrases?.[0] ?? text;
@@ -51,6 +53,7 @@ const cyanBottomId = `${filterId}-cyan-bottom`;
   data-exit-delay={exitDelay}
   data-loop={loop ? "true" : undefined}
   data-phrases={phrases ? JSON.stringify(phrases) : undefined}
+  data-mutate-word={mutateWord}
   data-blur-node={blurNodeId}
   data-matrix-node={matrixNodeId}
   data-cyan-top={chromatic ? cyanTopId : undefined}
@@ -134,6 +137,17 @@ const cyanBottomId = `${filterId}-cyan-bottom`;
     backface-visibility: hidden;
     contain: layout style;
     opacity: 0;
+  }
+
+  :global(.morphic-mutant-word) {
+    display: inline-block;
+    cursor: default;
+  }
+
+  :global(.morphic-char) {
+    display: inline-block;
+    position: relative;
+    will-change: transform, filter;
   }
 
   @media (prefers-reduced-motion: reduce) {

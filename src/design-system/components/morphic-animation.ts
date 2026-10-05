@@ -1,4 +1,5 @@
 import { createExitTimeline } from "./morphic-exit";
+import { startMutationLoop } from "./morphic-mutation";
 import { createRevealTimeline } from "./morphic-reveal";
 
 export interface MorphicNodes {
@@ -16,6 +17,7 @@ export interface MorphicNodes {
   readonly loop: boolean;
   readonly filterId: string;
   readonly phrases: readonly string[];
+  readonly mutateWord?: string;
 }
 
 const parseNum = (val: string | undefined, fallback: number): number => {
@@ -90,6 +92,7 @@ const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
     loop: el.dataset.loop === "true",
     filterId,
     phrases,
+    mutateWord: el.dataset.mutateWord,
   };
 };
 
@@ -120,6 +123,7 @@ export const playMorphicSequence = (nodes: MorphicNodes): void => {
         setTimeout(runExit, delay * 1000);
       } else {
         nodes.element.dispatchEvent(new CustomEvent("morphic:complete", { bubbles: true }));
+        if (nodes.mutateWord) startMutationLoop(nodes);
       }
     });
 
