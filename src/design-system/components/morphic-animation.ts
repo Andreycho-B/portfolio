@@ -36,7 +36,6 @@ const resetNodesToNeutral = (nodes: MorphicNodes): void => {
   nodes.cyanOffsetNode?.setAttribute("dx", "0");
   nodes.cyanOffsetNode?.setAttribute("dy", "0");
   nodes.element.style.filter = "none";
-  nodes.element.style.willChange = "auto";
 };
 
 const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
@@ -92,9 +91,9 @@ const playMorphicReveal = (nodes: MorphicNodes): void => {
     return;
   }
 
-  const [rawX, rawY] = (blurNode.getAttribute("stdDeviation") ?? "15 20").split(" ").map(Number);
+  const [rawX, rawY] = (blurNode.getAttribute("stdDeviation") ?? "20 20").split(" ").map(Number);
   const state: AnimationState = {
-    x: typeof rawX === "number" && Number.isFinite(rawX) ? rawX : 15,
+    x: typeof rawX === "number" && Number.isFinite(rawX) ? rawX : 20,
     y: typeof rawY === "number" && Number.isFinite(rawY) ? rawY : 20,
     slope: GOOEY_INITIAL_SLOPE,
     offset: GOOEY_INITIAL_OFFSET,
@@ -114,8 +113,11 @@ const playMorphicReveal = (nodes: MorphicNodes): void => {
       y: 0,
       duration,
       ease: "power3.out",
-      onUpdate: () =>
-        blurNode.setAttribute("stdDeviation", `${state.x.toFixed(1)} ${state.y.toFixed(1)}`),
+      onUpdate: () => {
+        const bx = state.x < 0.35 ? 0 : state.x;
+        const by = state.y < 0.35 ? 0 : state.y;
+        blurNode.setAttribute("stdDeviation", `${bx.toFixed(1)} ${by.toFixed(1)}`);
+      },
     },
     0,
   );
@@ -148,10 +150,10 @@ const playMorphicReveal = (nodes: MorphicNodes): void => {
       duration: duration * 0.45,
       ease: "power2.inOut",
       onUpdate: () => {
-        matrixNode.setAttribute(
-          "values",
-          `1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 ${state.slope.toFixed(2)} ${state.offset.toFixed(2)}`,
-        );
+        const isIdentity = state.slope <= 1.05 && state.offset >= -0.05;
+        const s = isIdentity ? "1" : state.slope.toFixed(2);
+        const o = isIdentity ? "0" : state.offset.toFixed(2);
+        matrixNode.setAttribute("values", `1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 ${s} ${o}`);
       },
     },
     duration * 0.55,

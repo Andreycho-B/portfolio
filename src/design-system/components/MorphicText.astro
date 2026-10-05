@@ -15,7 +15,7 @@ interface Props {
 const {
   text,
   duration = 1.9,
-  blurX = 18,
+  blurX = 20,
   blurY = 20,
   weight = 900,
   chromatic = true,
@@ -52,10 +52,10 @@ const cyanOffsetId = `${filterId}-cyan`;
   <defs>
     <filter
       id={filterId}
-      x="-30%"
-      y="-40%"
-      width="160%"
-      height="180%"
+      x="-50%"
+      y="-50%"
+      width="200%"
+      height="200%"
       color-interpolation-filters="sRGB"
     >
       <feGaussianBlur
@@ -109,7 +109,9 @@ const cyanOffsetId = `${filterId}-cyan`;
     text-rendering: geometricPrecision;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    will-change: filter, opacity;
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
     opacity: 0;
   }
 
@@ -123,7 +125,7 @@ const cyanOffsetId = `${filterId}-cyan`;
     .morphic-text {
       opacity: 1 !important;
       filter: none !important;
-      will-change: auto !important;
+      transform: none !important;
     }
   }
 
