@@ -20,9 +20,9 @@ export interface MorphicNodes {
   readonly mutateWord?: string;
 }
 
-const parseNum = (val: string | undefined, fallback: number): number => {
-  const num = Number(val);
-  return Number.isFinite(num) && val?.trim() !== "" ? num : fallback;
+const parseNumericAttribute = (rawText: string | undefined, fallback: number): number => {
+  const parsedNum = Number(rawText);
+  return Number.isFinite(parsedNum) && rawText?.trim() !== "" ? parsedNum : fallback;
 };
 
 export const resetNodesToNeutral = (nodes: MorphicNodes): void => {
@@ -65,15 +65,27 @@ const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
 
   const filterId = blurId.replace("-blur", "");
   const exitDelayRaw = el.dataset.exitDelay;
-  const exitDelay = exitDelayRaw !== undefined ? parseNum(exitDelayRaw, 1.5) : null;
+  const exitDelay = exitDelayRaw !== undefined ? parseNumericAttribute(exitDelayRaw, 1.5) : null;
 
   let phrases: string[] = [el.textContent?.trim() ?? ""];
   if (el.dataset.phrases) {
     try {
-      const parsed = JSON.parse(el.dataset.phrases);
-      if (Array.isArray(parsed) && parsed.length > 0) phrases = parsed;
-    } catch {
-      // Fallback a textContent original
+      const parsed: unknown = JSON.parse(el.dataset.phrases);
+      if (
+        Array.isArray(parsed) &&
+        parsed.length > 0 &&
+        parsed.every((item) => typeof item === "string")
+      ) {
+        phrases = parsed;
+      } else {
+        console.warn("[MorphicText] data-phrases must be a non-empty string array.");
+      }
+    } catch (parseError) {
+      if (parseError instanceof SyntaxError) {
+        console.warn("[MorphicText] Syntax error in data-phrases JSON:", parseError.message);
+      } else {
+        throw parseError;
+      }
     }
   }
 
@@ -84,10 +96,10 @@ const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
     cyanTopNode: getOffset(el.dataset.cyanTop),
     cyanBottomNode: getOffset(el.dataset.cyanBottom),
     isChromatic,
-    shiftX: parseNum(el.dataset.shiftX, 3.5),
-    shiftY: parseNum(el.dataset.shiftY, 1.5),
-    delay: parseNum(el.dataset.delay, 0),
-    duration: parseNum(el.dataset.duration, 1.9),
+    shiftX: parseNumericAttribute(el.dataset.shiftX, 3.5),
+    shiftY: parseNumericAttribute(el.dataset.shiftY, 1.5),
+    delay: parseNumericAttribute(el.dataset.delay, 0),
+    duration: parseNumericAttribute(el.dataset.duration, 1.9),
     exitDelay,
     loop: el.dataset.loop === "true",
     filterId,
@@ -108,6 +120,13 @@ export const playMorphicSequence = (nodes: MorphicNodes): void => {
   }
 
   let phraseIndex = 0;
+  let timerId: number | null = null;
+
+  const cancelTimers = () => {
+    if (timerId !== null) window.clearTimeout(timerId);
+    document.removeEventListener("astro:before-swap", cancelTimers);
+  };
+  document.addEventListener("astro:before-swap", cancelTimers, { once: true });
 
   const runIntro = () => {
     nodes.element.textContent = nodes.phrases[phraseIndex] ?? "";
@@ -119,8 +138,8 @@ export const playMorphicSequence = (nodes: MorphicNodes): void => {
     const tl = createRevealTimeline(nodes, () => {
       resetNodesToNeutral(nodes);
       if (shouldExit) {
-        const delay = nodes.exitDelay ?? 0.8;
-        setTimeout(runExit, delay * 1000);
+        const exitDelaySec = nodes.exitDelay ?? 0.8;
+        timerId = window.setTimeout(runExit, exitDelaySec * 1000);
       } else {
         nodes.element.dispatchEvent(new CustomEvent("morphic:complete", { bubbles: true }));
         if (nodes.mutateWord) startMutationLoop(nodes);
@@ -135,9 +154,8 @@ export const playMorphicSequence = (nodes: MorphicNodes): void => {
     createExitTimeline(nodes, () => {
       resetNodesToNeutral(nodes);
       nodes.element.style.opacity = "0";
-
       phraseIndex = (phraseIndex + 1) % nodes.phrases.length;
-      setTimeout(runIntro, 180);
+      timerId = window.setTimeout(runIntro, 180);
     });
   };
 
@@ -156,9 +174,9 @@ export const initMorphicText = (): void => {
       ? new IntersectionObserver(
           (entries, obs) => {
             for (const entry of entries) {
-              if (entry.isIntersecting) {
+              if (entry.isIntersecting && entry.target instanceof HTMLElement) {
                 obs.unobserve(entry.target);
-                const nodes = resolveNodes(entry.target as HTMLElement);
+                const nodes = resolveNodes(entry.target);
                 if (nodes) playMorphicSequence(nodes);
               }
             }

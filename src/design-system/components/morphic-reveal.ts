@@ -10,10 +10,16 @@ export const createRevealTimeline = (
   const { element, blurNode, matrixNode, cyanTopNode, cyanBottomNode } = nodes;
   const { isChromatic, shiftX, shiftY, duration } = nodes;
 
-  const [rawX, rawY] = (blurNode.getAttribute("stdDeviation") ?? "20 20").split(" ").map(Number);
+  const stdAttr = blurNode.getAttribute("stdDeviation")?.trim() ?? "20 20";
+  const stdParts = stdAttr.split(/\s+/).map(Number);
+  const parsedX = stdParts[0];
+  const parsedY = stdParts[1] ?? parsedX;
+  const initialX = typeof parsedX === "number" && Number.isFinite(parsedX) ? parsedX : 20;
+  const initialY = typeof parsedY === "number" && Number.isFinite(parsedY) ? parsedY : initialX;
+
   const state = {
-    x: Number.isFinite(rawX) ? (rawX as number) : 20,
-    y: Number.isFinite(rawY) ? (rawY as number) : 20,
+    x: initialX,
+    y: initialY,
     slope: GOOEY.initSlope,
     offset: GOOEY.initOffset,
     chromaticProgress: 1.0,
@@ -41,10 +47,10 @@ export const createRevealTimeline = (
       onUpdate: () => {
         const bx = state.x < 0.35 ? 0 : state.x;
         const by = state.y < 0.35 ? 0 : state.y;
-        const val = `${bx.toFixed(1)} ${by.toFixed(1)}`;
-        if (val !== prevBlur) {
-          prevBlur = val;
-          blurNode.setAttribute("stdDeviation", val);
+        const nextBlur = `${bx.toFixed(1)} ${by.toFixed(1)}`;
+        if (nextBlur !== prevBlur) {
+          prevBlur = nextBlur;
+          blurNode.setAttribute("stdDeviation", nextBlur);
         }
       },
     },
@@ -82,9 +88,9 @@ export const createRevealTimeline = (
         const isId = state.slope <= 1.05 && state.offset >= -0.05;
         const s = isId ? "1" : state.slope.toFixed(2);
         const o = isId ? "0" : state.offset.toFixed(2);
-        const val = `${s} ${o}`;
-        if (val !== prevMatrix) {
-          prevMatrix = val;
+        const nextMatrix = `${s} ${o}`;
+        if (nextMatrix !== prevMatrix) {
+          prevMatrix = nextMatrix;
           matrixNode.setAttribute("values", `1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 ${s} ${o}`);
         }
       },

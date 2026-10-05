@@ -32,12 +32,15 @@ export const createExitTimeline = (
       duration: exitDuration * 0.45,
       ease: "power2.inOut",
       onUpdate: () => {
-        const s = state.slope.toFixed(2);
-        const o = state.offset.toFixed(2);
-        const val = `${s} ${o}`;
-        if (val !== prevMatrix) {
-          prevMatrix = val;
-          matrixNode.setAttribute("values", `1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 ${s} ${o}`);
+        const formattedSlope = state.slope.toFixed(2);
+        const formattedOffset = state.offset.toFixed(2);
+        const nextMatrix = `${formattedSlope} ${formattedOffset}`;
+        if (nextMatrix !== prevMatrix) {
+          prevMatrix = nextMatrix;
+          matrixNode.setAttribute(
+            "values",
+            `1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 ${formattedSlope} ${formattedOffset}`,
+          );
         }
       },
     },
@@ -74,10 +77,10 @@ export const createExitTimeline = (
       duration: exitDuration * 0.75,
       ease: "power3.in",
       onUpdate: () => {
-        const val = `${state.x.toFixed(1)} ${state.y.toFixed(1)}`;
-        if (val !== prevBlur) {
-          prevBlur = val;
-          blurNode.setAttribute("stdDeviation", val);
+        const nextBlur = `${state.x.toFixed(1)} ${state.y.toFixed(1)}`;
+        if (nextBlur !== prevBlur) {
+          prevBlur = nextBlur;
+          blurNode.setAttribute("stdDeviation", nextBlur);
         }
       },
     },
@@ -92,12 +95,15 @@ export const createExitTimeline = (
       duration: exitDuration * 0.5,
       ease: "power2.in",
       onUpdate: () => {
-        const s = state.slope.toFixed(2);
-        const o = state.offset.toFixed(2);
-        const val = `${s} ${o}`;
-        if (val !== prevMatrix) {
-          prevMatrix = val;
-          matrixNode.setAttribute("values", `1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 ${s} ${o}`);
+        const formattedSlope = state.slope.toFixed(2);
+        const formattedOffset = state.offset.toFixed(2);
+        const nextMatrix = `${formattedSlope} ${formattedOffset}`;
+        if (nextMatrix !== prevMatrix) {
+          prevMatrix = nextMatrix;
+          matrixNode.setAttribute(
+            "values",
+            `1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 ${formattedSlope} ${formattedOffset}`,
+          );
         }
       },
     },
