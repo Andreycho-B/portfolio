@@ -15,6 +15,7 @@ export interface MorphicNodes {
   readonly exitDelay: number | null;
   readonly loop: boolean;
   readonly filterId: string;
+  readonly phrases: readonly string[];
 }
 
 const parseNum = (val: string | undefined, fallback: number): number => {
@@ -64,6 +65,16 @@ const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
   const exitDelayRaw = el.dataset.exitDelay;
   const exitDelay = exitDelayRaw !== undefined ? parseNum(exitDelayRaw, 1.5) : null;
 
+  let phrases: string[] = [el.textContent?.trim() ?? ""];
+  if (el.dataset.phrases) {
+    try {
+      const parsed = JSON.parse(el.dataset.phrases);
+      if (Array.isArray(parsed) && parsed.length > 0) phrases = parsed;
+    } catch {
+      // Fallback a textContent original
+    }
+  }
+
   return {
     element: el,
     blurNode,
@@ -78,28 +89,41 @@ const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
     exitDelay,
     loop: el.dataset.loop === "true",
     filterId,
+    phrases,
   };
 };
 
 export const playMorphicSequence = (nodes: MorphicNodes): void => {
-  if (
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  ) {
+  const prefersReduced =
+    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  if (prefersReduced) {
     resetNodesToNeutral(nodes);
+    nodes.element.textContent = nodes.phrases[nodes.phrases.length - 1] ?? "";
     nodes.element.style.opacity = "1";
     return;
   }
 
+  let phraseIndex = 0;
+
   const runIntro = () => {
+    nodes.element.textContent = nodes.phrases[phraseIndex] ?? "";
     resetNodesToIntro(nodes);
+
+    const isLast = phraseIndex >= nodes.phrases.length - 1;
+    const shouldExit = !isLast || (nodes.loop && nodes.exitDelay !== null);
+
     const tl = createRevealTimeline(nodes, () => {
       resetNodesToNeutral(nodes);
-      if (nodes.exitDelay !== null) {
-        setTimeout(runExit, nodes.exitDelay * 1000);
+      if (shouldExit) {
+        const delay = nodes.exitDelay ?? 1.5;
+        setTimeout(runExit, delay * 1000);
+      } else {
+        nodes.element.dispatchEvent(new CustomEvent("morphic:complete", { bubbles: true }));
       }
     });
-    tl.delay(0.1 + nodes.delay);
+
+    tl.delay(phraseIndex === 0 ? 0.1 + nodes.delay : 0);
   };
 
   const runExit = () => {
@@ -107,9 +131,9 @@ export const playMorphicSequence = (nodes: MorphicNodes): void => {
     createExitTimeline(nodes, () => {
       resetNodesToNeutral(nodes);
       nodes.element.style.opacity = "0";
-      if (nodes.loop) {
-        setTimeout(runIntro, 1200);
-      }
+
+      phraseIndex = (phraseIndex + 1) % nodes.phrases.length;
+      setTimeout(runIntro, 600);
     });
   };
 

@@ -3,9 +3,13 @@ import MorphicText from "../design-system/components/MorphicText.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
-<BaseLayout title="Test mórfico — Andrey" description="Verificación del efecto mórfico.">
+<BaseLayout title="Andrey — Desarrollador Creativo" description="Portafolio personal de Andrey.">
   <main>
-    <MorphicText text="Bienvenido" as="h1" exitDelay={1.8} loop={true} />
+    <MorphicText
+      phrases={["Bienvenido", "Soy Andrey", "Desarrollador Creativo"]}
+      as="h1"
+      exitDelay={1.5}
+    />
   </main>
 </BaseLayout>
 
@@ -16,11 +20,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     justify-content: center;
     min-height: 100vh;
     padding: var(--container-padding);
+    text-align: center;
   }
 
   main :global(.morphic-text) {
     font-size: var(--text-4xl);
-    line-height: var(--lh-tight);
+    line-height: var(--lh-heading);
     letter-spacing: var(--ls-tighter);
   }
 </style>

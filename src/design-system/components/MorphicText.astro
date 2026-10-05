@@ -1,6 +1,7 @@
 ---
 interface Props {
-  text: string;
+  text?: string;
+  phrases?: string[];
   duration?: number;
   blurX?: number;
   blurY?: number;
@@ -15,7 +16,8 @@ interface Props {
 }
 
 const {
-  text,
+  text = "",
+  phrases,
   duration = 1.9,
   blurX = 20,
   blurY = 20,
@@ -28,6 +30,9 @@ const {
   loop = false,
   as: Tag = "span",
 } = Astro.props;
+
+const initialText = phrases?.[0] ?? text;
+const ariaLabel = phrases ? phrases.join(", ") : undefined;
 
 const instanceId = crypto.randomUUID().slice(0, 8);
 const filterId = `morphic-${instanceId}`;
@@ -45,15 +50,17 @@ const cyanBottomId = `${filterId}-cyan-bottom`;
   data-delay={delay}
   data-exit-delay={exitDelay}
   data-loop={loop ? "true" : undefined}
+  data-phrases={phrases ? JSON.stringify(phrases) : undefined}
   data-blur-node={blurNodeId}
   data-matrix-node={matrixNodeId}
   data-cyan-top={chromatic ? cyanTopId : undefined}
   data-cyan-bottom={chromatic ? cyanBottomId : undefined}
   data-shift-x={shiftX}
   data-shift-y={shiftY}
+  aria-label={ariaLabel}
   style={`filter: url(#${filterId}); font-weight: ${weight};`}
 >
-  {text}
+  {initialText}
 </Tag>
 
 <svg aria-hidden="true" class="morphic-svg">
