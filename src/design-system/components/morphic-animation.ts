@@ -92,9 +92,9 @@ const playMorphicReveal = (nodes: MorphicNodes): void => {
     return;
   }
 
-  const [rawX, rawY] = (blurNode.getAttribute("stdDeviation") ?? "18 20").split(" ").map(Number);
+  const [rawX, rawY] = (blurNode.getAttribute("stdDeviation") ?? "15 20").split(" ").map(Number);
   const state: AnimationState = {
-    x: typeof rawX === "number" && Number.isFinite(rawX) ? rawX : 18,
+    x: typeof rawX === "number" && Number.isFinite(rawX) ? rawX : 15,
     y: typeof rawY === "number" && Number.isFinite(rawY) ? rawY : 20,
     slope: GOOEY_INITIAL_SLOPE,
     offset: GOOEY_INITIAL_OFFSET,
