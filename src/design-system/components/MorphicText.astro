@@ -29,7 +29,8 @@ const instanceId = crypto.randomUUID().slice(0, 8);
 const filterId = `morphic-${instanceId}`;
 const blurNodeId = `${filterId}-blur`;
 const matrixNodeId = `${filterId}-matrix`;
-const cyanOffsetId = `${filterId}-cyan`;
+const cyanTopId = `${filterId}-cyan-top`;
+const cyanBottomId = `${filterId}-cyan-bottom`;
 ---
 
 <Tag
@@ -40,7 +41,8 @@ const cyanOffsetId = `${filterId}-cyan`;
   data-delay={delay}
   data-blur-node={blurNodeId}
   data-matrix-node={matrixNodeId}
-  data-cyan-offset={chromatic ? cyanOffsetId : undefined}
+  data-cyan-top={chromatic ? cyanTopId : undefined}
+  data-cyan-bottom={chromatic ? cyanBottomId : undefined}
   data-shift-x={shiftX}
   data-shift-y={shiftY}
   style={`filter: url(#${filterId}); font-weight: ${weight};`}
@@ -73,15 +75,20 @@ const cyanOffsetId = `${filterId}-cyan`;
       />
       {chromatic && (
         <>
+          <feOffset id={cyanTopId} in="morphicCore" dx={-shiftX} dy={-shiftY} result="cyanTop" />
           <feOffset
-            id={cyanOffsetId}
+            id={cyanBottomId}
             in="morphicCore"
-            dx={-shiftX}
-            dy={-shiftY}
-            result="cyanShift"
+            dx={shiftX * 0.3}
+            dy={shiftY * 0.7}
+            result="cyanBottom"
           />
+          <feMerge result="cyanCombined">
+            <feMergeNode in="cyanTop" />
+            <feMergeNode in="cyanBottom" />
+          </feMerge>
           <feColorMatrix
-            in="cyanShift"
+            in="cyanCombined"
             mode="matrix"
             values="0 0 0 0 0   0 0 0 0 0.8   0 0 0 0 1   0 0 0 0.95 0"
             result="cyanLayer"

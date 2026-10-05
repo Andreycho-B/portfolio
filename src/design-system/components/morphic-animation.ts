@@ -9,7 +9,8 @@ interface MorphicNodes {
   readonly element: HTMLElement;
   readonly blurNode: SVGFEGaussianBlurElement;
   readonly matrixNode: SVGFEColorMatrixElement;
-  readonly cyanOffsetNode: SVGFEOffsetElement | null;
+  readonly cyanTopNode: SVGFEOffsetElement | null;
+  readonly cyanBottomNode: SVGFEOffsetElement | null;
   readonly isChromatic: boolean;
   readonly shiftX: number;
   readonly shiftY: number;
@@ -33,8 +34,10 @@ const parseNum = (val: string | undefined, fallback: number): number => {
 const resetNodesToNeutral = (nodes: MorphicNodes): void => {
   nodes.blurNode.setAttribute("stdDeviation", "0 0");
   nodes.matrixNode.setAttribute("values", "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0");
-  nodes.cyanOffsetNode?.setAttribute("dx", "0");
-  nodes.cyanOffsetNode?.setAttribute("dy", "0");
+  nodes.cyanTopNode?.setAttribute("dx", "0");
+  nodes.cyanTopNode?.setAttribute("dy", "0");
+  nodes.cyanBottomNode?.setAttribute("dx", "0");
+  nodes.cyanBottomNode?.setAttribute("dy", "0");
   nodes.element.style.filter = "none";
 };
 
@@ -53,14 +56,18 @@ const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
   }
 
   const isChromatic = el.dataset.chromatic === "true";
-  const cyanId = el.dataset.cyanOffset;
-  const cyanEl = isChromatic && cyanId ? document.getElementById(cyanId) : null;
+  const getOffset = (id?: string): SVGFEOffsetElement | null => {
+    if (!isChromatic || !id) return null;
+    const node = document.getElementById(id);
+    return node instanceof SVGFEOffsetElement ? node : null;
+  };
 
   return {
     element: el,
     blurNode,
     matrixNode,
-    cyanOffsetNode: cyanEl instanceof SVGFEOffsetElement ? cyanEl : null,
+    cyanTopNode: getOffset(el.dataset.cyanTop),
+    cyanBottomNode: getOffset(el.dataset.cyanBottom),
     isChromatic,
     shiftX: parseNum(el.dataset.shiftX, 3.5),
     shiftY: parseNum(el.dataset.shiftY, 1.5),
@@ -70,17 +77,8 @@ const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
 };
 
 const playMorphicReveal = (nodes: MorphicNodes): void => {
-  const {
-    element,
-    blurNode,
-    matrixNode,
-    cyanOffsetNode,
-    isChromatic,
-    shiftX,
-    shiftY,
-    delay,
-    duration,
-  } = nodes;
+  const { element, blurNode, matrixNode, cyanTopNode, cyanBottomNode } = nodes;
+  const { isChromatic, shiftX, shiftY, delay, duration } = nodes;
 
   const prefersReduced =
     typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -122,8 +120,8 @@ const playMorphicReveal = (nodes: MorphicNodes): void => {
     0,
   );
 
-  // 2. Colapso de dispersión cian durante la masa
-  if (isChromatic && cyanOffsetNode) {
+  // 2. Colapso de dispersión cian (borde superior e inferior)
+  if (isChromatic && (cyanTopNode || cyanBottomNode)) {
     timeline.to(
       state,
       {
@@ -131,10 +129,12 @@ const playMorphicReveal = (nodes: MorphicNodes): void => {
         duration: duration * 0.85,
         ease: "power3.out",
         onUpdate: () => {
-          const sx = (shiftX * state.chromaticProgress).toFixed(2);
-          const sy = (shiftY * state.chromaticProgress).toFixed(2);
-          cyanOffsetNode.setAttribute("dx", `-${sx}`);
-          cyanOffsetNode.setAttribute("dy", `-${sy}`);
+          const sx = shiftX * state.chromaticProgress;
+          const sy = shiftY * state.chromaticProgress;
+          cyanTopNode?.setAttribute("dx", (-sx).toFixed(2));
+          cyanTopNode?.setAttribute("dy", (-sy).toFixed(2));
+          cyanBottomNode?.setAttribute("dx", (sx * 0.3).toFixed(2));
+          cyanBottomNode?.setAttribute("dy", (sy * 0.7).toFixed(2));
         },
       },
       0,
@@ -188,7 +188,6 @@ export const initMorphicText = (): void => {
     element.dataset.morphicMounted = "true";
     const nodes = resolveNodes(element);
     if (!nodes) return;
-
     if (observer) {
       observer.observe(element);
     } else {
