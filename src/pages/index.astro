@@ -1,33 +1,24 @@
 ---
-import MorphicText from "../design-system/components/MorphicText.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import ConsentScreen from "../features/consent/ConsentScreen.astro";
+
+// Escena inicial: bienvenida y consentimiento interactivo de audio (Spec §6 y §8)
 ---
 
-<BaseLayout title="Andrey — Desarrollador Creativo" description="Portafolio personal de Andrey.">
-  <main>
-    <MorphicText
-      phrases={["Bienvenido", "Soy Andrey", "Desarrollador Creativo"]}
-      as="h1"
-      duration={1.6}
-      exitDelay={0.8}
-      mutateWord="Creativo"
-    />
+<BaseLayout
+  title="Andrey — Desarrollador Creativo"
+  description="Portafolio personal de Andrey, desarrollador creativo."
+>
+  <main class="page-root">
+    <ConsentScreen />
   </main>
 </BaseLayout>
 
 <style>
-  main {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .page-root {
+    position: relative;
+    width: 100%;
     min-height: 100vh;
-    padding: var(--container-padding);
-    text-align: center;
-  }
-
-  main :global(.morphic-text) {
-    font-size: var(--text-4xl);
-    line-height: var(--lh-heading);
-    letter-spacing: var(--ls-tighter);
+    overflow: hidden;
   }
 </style>

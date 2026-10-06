@@ -1,0 +1,171 @@
+---
+import MorphicText from "../../design-system/components/MorphicText.astro";
+---
+
+<div class="consent-container" data-consent-screen>
+  <div class="consent-content" data-consent-content>
+    <MorphicText
+      phrases={["Bienvenido", "Soy Andrey", "Desarrollador Creativo"]}
+      as="h1"
+      duration={1.6}
+      exitDelay={0.8}
+      mutateWord="Creativo"
+    />
+
+    <div class="consent-prompt" data-consent-prompt aria-hidden="true">
+      <div class="tension-meter" aria-hidden="true">
+        <div class="tension-track">
+          <div class="tension-bar" data-tension-bar></div>
+        </div>
+      </div>
+      <div class="prompt-label">
+        <span class="prompt-text">Desliza para entrar</span>
+        <span class="prompt-key" aria-hidden="true">
+          [Enter]
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="consent-actions" data-consent-actions>
+    <button type="button" class="btn-mute-entry" data-btn-mute>
+      Entra sin sonido
+    </button>
+  </div>
+</div>
+
+<style>
+  .consent-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: var(--container-padding);
+    text-align: center;
+    user-select: none;
+    touch-action: pan-x;
+    overflow: hidden;
+  }
+
+  .consent-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xl);
+    transform-origin: center center;
+    will-change: transform;
+  }
+
+  .consent-content :global(.morphic-text) {
+    font-size: var(--text-4xl);
+    line-height: var(--lh-heading);
+    letter-spacing: var(--ls-tighter);
+  }
+
+  .consent-prompt {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-sm);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dur-slow) var(--ease-slow);
+  }
+
+  .consent-prompt.is-revealed {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .tension-meter {
+    width: 140px;
+    height: 3px;
+    background-color: var(--color-border);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+  }
+
+  .tension-track {
+    width: 100%;
+    height: 100%;
+  }
+
+  .tension-bar {
+    width: 100%;
+    height: 100%;
+    background-color: var(--color-fg);
+    transform: scaleX(0);
+    transform-origin: left center;
+    will-change: transform;
+  }
+
+  .prompt-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2xs);
+    font-family: var(--font-text);
+    font-size: var(--text-xs);
+    color: var(--color-fg-muted);
+    letter-spacing: var(--ls-labels);
+    text-transform: uppercase;
+  }
+
+  .prompt-key {
+    opacity: 0.6;
+    font-size: 10px;
+  }
+
+  .consent-actions {
+    position: absolute;
+    bottom: var(--space-lg);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dur-slow) var(--ease-slow);
+  }
+
+  .consent-actions.is-revealed {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .btn-mute-entry {
+    background: transparent;
+    border: none;
+    font-family: var(--font-text);
+    font-size: var(--text-xs);
+    color: var(--color-fg-muted);
+    letter-spacing: var(--ls-metadata);
+    cursor: pointer;
+    padding: var(--space-2xs) var(--space-xs);
+    border-radius: var(--radius-sm);
+    transition: color var(--dur-fast) var(--ease-fast);
+  }
+
+  .btn-mute-entry:hover,
+  .btn-mute-entry:focus-visible {
+    color: var(--color-fg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .consent-prompt,
+    .consent-actions {
+      opacity: 1 !important;
+      pointer-events: auto !important;
+      transition: none !important;
+    }
+  }
+</style>
+
+<script>
+  import { initConsentScreen } from "./consent-controller";
+
+  if (document.readyState !== "loading") {
+    initConsentScreen();
+  } else {
+    document.addEventListener("DOMContentLoaded", initConsentScreen);
+  }
+  document.addEventListener("astro:page-load", initConsentScreen);
+</script>
