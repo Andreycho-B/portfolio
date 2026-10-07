@@ -1,60 +1,23 @@
+import type { MorphicNodes } from "./morphic.types";
 import { createExitTimeline } from "./morphic-exit";
 import { startMutationLoop } from "./morphic-mutation";
-import { createRevealTimeline } from "./morphic-reveal";
+import { createRevealTimeline, resetNodesToIntro, resetNodesToNeutral } from "./morphic-reveal";
 
-export interface MorphicNodes {
-  readonly element: HTMLElement;
-  readonly blurNode: SVGFEGaussianBlurElement;
-  readonly matrixNode: SVGFEColorMatrixElement;
-  readonly cyanTopNode: SVGFEOffsetElement | null;
-  readonly cyanBottomNode: SVGFEOffsetElement | null;
-  readonly isChromatic: boolean;
-  readonly shiftX: number;
-  readonly shiftY: number;
-  readonly delay: number;
-  readonly duration: number;
-  readonly exitDelay: number | null;
-  readonly loop: boolean;
-  readonly filterId: string;
-  readonly phrases: readonly string[];
-  readonly mutateWord?: string;
-}
+export type { MorphicNodes };
+export { resetNodesToIntro, resetNodesToNeutral };
 
-const parseNumericAttribute = (rawText: string | undefined, fallback: number): number => {
-  const parsedNum = Number(rawText);
-  return Number.isFinite(parsedNum) && rawText?.trim() !== "" ? parsedNum : fallback;
-};
-
-export const resetNodesToNeutral = (nodes: MorphicNodes): void => {
-  nodes.blurNode.setAttribute("stdDeviation", "0 0");
-  nodes.matrixNode.setAttribute("values", "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0");
-  for (const node of [nodes.cyanTopNode, nodes.cyanBottomNode]) {
-    node?.setAttribute("dx", "0");
-    node?.setAttribute("dy", "0");
-  }
-  nodes.element.style.filter = "none";
-};
-
-export const resetNodesToIntro = (nodes: MorphicNodes): void => {
-  nodes.blurNode.setAttribute("stdDeviation", "20 20");
-  nodes.matrixNode.setAttribute("values", "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11");
-  nodes.cyanTopNode?.setAttribute("dx", `-${nodes.shiftX}`);
-  nodes.cyanTopNode?.setAttribute("dy", `-${nodes.shiftY}`);
-  nodes.cyanBottomNode?.setAttribute("dx", `${(nodes.shiftX * 0.3).toFixed(2)}`);
-  nodes.cyanBottomNode?.setAttribute("dy", `${(nodes.shiftY * 0.7).toFixed(2)}`);
-  nodes.element.style.filter = `url(#${nodes.filterId})`;
+const parseNum = (val: string | undefined, def: number): number => {
+  const n = Number(val);
+  return Number.isFinite(n) && val?.trim() !== "" ? n : def;
 };
 
 const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
-  const blurId = el.dataset.blurNode;
-  const matrixId = el.dataset.matrixNode;
-  if (!blurId || !matrixId) return null;
-
-  const blurNode = document.getElementById(blurId);
-  const matrixNode = document.getElementById(matrixId);
-  const isValid =
-    blurNode instanceof SVGFEGaussianBlurElement && matrixNode instanceof SVGFEColorMatrixElement;
-  if (!isValid) return null;
+  const blurNode = document.getElementById(el.dataset.blurNode ?? "");
+  const matrixNode = document.getElementById(el.dataset.matrixNode ?? "");
+  if (
+    !(blurNode instanceof SVGFEGaussianBlurElement && matrixNode instanceof SVGFEColorMatrixElement)
+  )
+    return null;
 
   const isChromatic = el.dataset.chromatic === "true";
   const getOffset = (id?: string): SVGFEOffsetElement | null => {
@@ -63,9 +26,8 @@ const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
     return node instanceof SVGFEOffsetElement ? node : null;
   };
 
-  const filterId = blurId.replace("-blur", "");
-  const exitDelayRaw = el.dataset.exitDelay;
-  const exitDelay = exitDelayRaw !== undefined ? parseNumericAttribute(exitDelayRaw, 1.5) : null;
+  const filterId = (el.dataset.blurNode ?? "").replace("-blur", "");
+  const exitDelay = el.dataset.exitDelay !== undefined ? parseNum(el.dataset.exitDelay, 1.5) : null;
 
   let phrases: string[] = [el.textContent?.trim() ?? ""];
   if (el.dataset.phrases) {
@@ -74,20 +36,17 @@ const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
       if (
         Array.isArray(parsed) &&
         parsed.length > 0 &&
-        parsed.every((item) => typeof item === "string")
+        parsed.every((s) => typeof s === "string")
       ) {
         phrases = parsed;
-      } else {
-        console.warn("[MorphicText] data-phrases must be a non-empty string array.");
       }
-    } catch (parseError) {
-      if (parseError instanceof SyntaxError) {
-        console.warn("[MorphicText] Syntax error in data-phrases JSON:", parseError.message);
-      } else {
-        throw parseError;
-      }
+    } catch {
+      console.warn("[MorphicText] Invalid data-phrases JSON");
     }
   }
+
+  const colorNode = document.getElementById(el.dataset.textColor ?? "");
+  const textColorNode = colorNode instanceof SVGFEColorMatrixElement ? colorNode : null;
 
   return {
     element: el,
@@ -96,15 +55,16 @@ const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
     cyanTopNode: getOffset(el.dataset.cyanTop),
     cyanBottomNode: getOffset(el.dataset.cyanBottom),
     isChromatic,
-    shiftX: parseNumericAttribute(el.dataset.shiftX, 3.5),
-    shiftY: parseNumericAttribute(el.dataset.shiftY, 1.5),
-    delay: parseNumericAttribute(el.dataset.delay, 0),
-    duration: parseNumericAttribute(el.dataset.duration, 1.9),
+    shiftX: parseNum(el.dataset.shiftX, 3.5),
+    shiftY: parseNum(el.dataset.shiftY, 1.5),
+    delay: parseNum(el.dataset.delay, 0),
+    duration: parseNum(el.dataset.duration, 1.9),
     exitDelay,
     loop: el.dataset.loop === "true",
     filterId,
     phrases,
     mutateWord: el.dataset.mutateWord,
+    textColorNode,
   };
 };
 
@@ -116,6 +76,7 @@ export const playMorphicSequence = (nodes: MorphicNodes): void => {
     resetNodesToNeutral(nodes);
     nodes.element.textContent = nodes.phrases[nodes.phrases.length - 1] ?? "";
     nodes.element.style.opacity = "1";
+    nodes.element.dispatchEvent(new CustomEvent("morphic:complete", { bubbles: true }));
     return;
   }
 
@@ -129,17 +90,39 @@ export const playMorphicSequence = (nodes: MorphicNodes): void => {
   document.addEventListener("astro:before-swap", cancelTimers, { once: true });
 
   const runIntro = () => {
-    nodes.element.textContent = nodes.phrases[phraseIndex] ?? "";
+    const currentPhrase = nodes.phrases[phraseIndex] ?? "";
+    const isPhraseWhite = phraseIndex >= 2;
+    nodes.element.textContent = currentPhrase;
+    nodes.textColorNode?.setAttribute(
+      "values",
+      isPhraseWhite
+        ? "0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1 0"
+        : "0 0 0 0 0.08  0 0 0 0 0.08  0 0 0 0 0.08  0 0 0 1 0",
+    );
+    nodes.element.style.color = isPhraseWhite ? "#ffffff" : "var(--color-fg, #1a1714)";
     resetNodesToIntro(nodes);
+
+    nodes.element.dispatchEvent(
+      new CustomEvent("morphic:phrase-start", {
+        bubbles: true,
+        detail: { phraseIndex, phrase: currentPhrase },
+      }),
+    );
 
     const isLast = phraseIndex >= nodes.phrases.length - 1;
     const shouldExit = !isLast || (nodes.loop && nodes.exitDelay !== null);
 
     const tl = createRevealTimeline(nodes, () => {
       resetNodesToNeutral(nodes);
+      nodes.element.dispatchEvent(
+        new CustomEvent("morphic:phrase-revealed", {
+          bubbles: true,
+          detail: { phraseIndex, phrase: currentPhrase },
+        }),
+      );
       if (shouldExit) {
-        const exitDelaySec = nodes.exitDelay ?? 0.8;
-        timerId = window.setTimeout(runExit, exitDelaySec * 1000);
+        const delaySec = nodes.exitDelay ?? 0.8;
+        timerId = window.setTimeout(runExit, delaySec * 1000);
       } else {
         nodes.element.dispatchEvent(new CustomEvent("morphic:complete", { bubbles: true }));
         if (nodes.mutateWord) startMutationLoop(nodes);
@@ -154,8 +137,24 @@ export const playMorphicSequence = (nodes: MorphicNodes): void => {
     createExitTimeline(nodes, () => {
       resetNodesToNeutral(nodes);
       nodes.element.style.opacity = "0";
+      const exitedIndex = phraseIndex;
+      nodes.element.dispatchEvent(
+        new CustomEvent("morphic:phrase-exited", {
+          bubbles: true,
+          detail: { phraseIndex: exitedIndex, phrase: nodes.phrases[exitedIndex] ?? "" },
+        }),
+      );
       phraseIndex = (phraseIndex + 1) % nodes.phrases.length;
-      timerId = window.setTimeout(runIntro, 180);
+      if (phraseIndex === 2) {
+        const onCovered = () => {
+          if (timerId !== null) window.clearTimeout(timerId);
+          runIntro();
+        };
+        document.addEventListener("welcome:backdrop-covered", onCovered, { once: true });
+        timerId = window.setTimeout(onCovered, 4500);
+      } else {
+        timerId = window.setTimeout(runIntro, 180);
+      }
     });
   };
 
@@ -164,35 +163,29 @@ export const playMorphicSequence = (nodes: MorphicNodes): void => {
 
 export const initMorphicText = (): void => {
   if (typeof window === "undefined") return;
-  const elements = document.querySelectorAll<HTMLElement>(
-    "[data-morphic]:not([data-morphic-mounted])",
-  );
-  if (elements.length === 0) return;
+  const els = document.querySelectorAll<HTMLElement>("[data-morphic]:not([data-morphic-mounted])");
+  if (els.length === 0) return;
+
+  const onIntersect = (entries: IntersectionObserverEntry[], obs: IntersectionObserver) => {
+    for (const entry of entries) {
+      if (entry.isIntersecting && entry.target instanceof HTMLElement) {
+        obs.unobserve(entry.target);
+        const nodes = resolveNodes(entry.target);
+        if (nodes) playMorphicSequence(nodes);
+      }
+    }
+  };
 
   const observer =
     "IntersectionObserver" in window
-      ? new IntersectionObserver(
-          (entries, obs) => {
-            for (const entry of entries) {
-              if (entry.isIntersecting && entry.target instanceof HTMLElement) {
-                obs.unobserve(entry.target);
-                const nodes = resolveNodes(entry.target);
-                if (nodes) playMorphicSequence(nodes);
-              }
-            }
-          },
-          { threshold: 0.15 },
-        )
+      ? new IntersectionObserver(onIntersect, { threshold: 0.15 })
       : null;
 
-  elements.forEach((element) => {
-    element.dataset.morphicMounted = "true";
-    const nodes = resolveNodes(element);
+  els.forEach((el) => {
+    el.dataset.morphicMounted = "true";
+    const nodes = resolveNodes(el);
     if (!nodes) return;
-    if (observer) {
-      observer.observe(element);
-    } else {
-      playMorphicSequence(nodes);
-    }
+    if (observer) observer.observe(el);
+    else playMorphicSequence(nodes);
   });
 };

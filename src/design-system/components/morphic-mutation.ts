@@ -21,7 +21,7 @@ interface FilterRef {
 }
 
 const buildFilterSvg = (filterId: string): string =>
-  `<feGaussianBlur id="${filterId}-b" in="SourceGraphic" stdDeviation="0 0" result="blur" /><feColorMatrix id="${filterId}-m" in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0" result="core" /><feOffset id="${filterId}-t" in="core" dx="0" dy="0" result="top" /><feOffset id="${filterId}-bt" in="core" dx="0" dy="0" result="bot" /><feMerge result="c"><feMergeNode in="top" /><feMergeNode in="bot" /></feMerge><feColorMatrix in="c" mode="matrix" values="0 0 0 0 0  0 0 0 0 0.8  0 0 0 0 1  0 0 0 0.95 0" result="cyan" /><feColorMatrix in="core" mode="matrix" values="0 0 0 0 0.08  0 0 0 0 0.08  0 0 0 0 0.08  0 0 0 1 0" result="black" /><feMerge><feMergeNode in="cyan" /><feMergeNode in="black" /></feMerge>`;
+  `<feGaussianBlur id="${filterId}-b" in="SourceGraphic" stdDeviation="0 0" result="blur" /><feColorMatrix id="${filterId}-m" in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0" result="core" /><feOffset id="${filterId}-t" in="core" dx="0" dy="0" result="top" /><feOffset id="${filterId}-bt" in="core" dx="0" dy="0" result="bot" /><feMerge result="c"><feMergeNode in="top" /><feMergeNode in="bot" /></feMerge><feColorMatrix in="c" mode="matrix" values="0 0 0 0 0  0 0 0 0 0.8  0 0 0 0 1  0 0 0 0.95 0" result="cyan" /><feColorMatrix in="core" mode="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1 0" result="white" /><feMerge><feMergeNode in="cyan" /><feMergeNode in="white" /></feMerge>`;
 
 const createFilterRef = (defs: SVGDefsElement, filterId: string): FilterRef | null => {
   if (!document.getElementById(filterId)) {
@@ -35,18 +35,16 @@ const createFilterRef = (defs: SVGDefsElement, filterId: string): FilterRef | nu
     filterEl.innerHTML = buildFilterSvg(filterId);
     defs.appendChild(filterEl);
   }
-  const blurNode = document.getElementById(`${filterId}-b`);
-  const matrixNode = document.getElementById(`${filterId}-m`);
-  const isValid =
-    blurNode instanceof SVGFEGaussianBlurElement && matrixNode instanceof SVGFEColorMatrixElement;
-  if (!isValid) return null;
-
+  const blur = document.getElementById(`${filterId}-b`);
+  const matrix = document.getElementById(`${filterId}-m`);
+  if (!(blur instanceof SVGFEGaussianBlurElement) || !(matrix instanceof SVGFEColorMatrixElement))
+    return null;
   const top = document.getElementById(`${filterId}-t`);
   const bot = document.getElementById(`${filterId}-bt`);
   return {
     id: filterId,
-    blur: blurNode,
-    matrix: matrixNode,
+    blur,
+    matrix,
     top: top instanceof SVGFEOffsetElement ? top : null,
     bot: bot instanceof SVGFEOffsetElement ? bot : null,
   };
@@ -179,7 +177,7 @@ export const startMutationLoop = (nodes: MorphicNodes): void => {
     });
   };
 
-  setTimeout(runWave, 850);
+  const initialTimeoutId = window.setTimeout(runWave, 850);
   const intervalId = window.setInterval(() => {
     if (!document.hidden) runWave();
   }, 4200);
@@ -188,10 +186,11 @@ export const startMutationLoop = (nodes: MorphicNodes): void => {
   mutantWordEl?.addEventListener("mouseenter", runWave);
 
   const cleanup = () => {
+    window.clearTimeout(initialTimeoutId);
     window.clearInterval(intervalId);
     mutantWordEl?.removeEventListener("mouseenter", runWave);
-    document.removeEventListener("astro:before-swap", cleanup);
   };
 
   document.addEventListener("astro:before-swap", cleanup, { once: true });
+  document.addEventListener("consent:completed", cleanup, { once: true });
 };

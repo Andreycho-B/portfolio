@@ -42,6 +42,7 @@ const blurNodeId = `${filterId}-blur`;
 const matrixNodeId = `${filterId}-matrix`;
 const cyanTopId = `${filterId}-cyan-top`;
 const cyanBottomId = `${filterId}-cyan-bottom`;
+const textColorId = `${filterId}-color`;
 ---
 
 <Tag
@@ -56,6 +57,7 @@ const cyanBottomId = `${filterId}-cyan-bottom`;
   data-mutate-word={mutateWord}
   data-blur-node={blurNodeId}
   data-matrix-node={matrixNodeId}
+  data-text-color={textColorId}
   data-cyan-top={chromatic ? cyanTopId : undefined}
   data-cyan-bottom={chromatic ? cyanBottomId : undefined}
   data-shift-x={shiftX}
@@ -120,14 +122,15 @@ const cyanBottomId = `${filterId}-cyan-bottom`;
             result="cyanLayer"
           />
           <feColorMatrix
+            id={textColorId}
             in="morphicCore"
             mode="matrix"
             values="0 0 0 0 0.08   0 0 0 0 0.08   0 0 0 0 0.08   0 0 0 1 0"
-            result="blackCore"
+            result="textCore"
           />
           <feMerge>
             <feMergeNode in="cyanLayer" />
-            <feMergeNode in="blackCore" />
+            <feMergeNode in="textCore" />
           </feMerge>
         </>
       )}

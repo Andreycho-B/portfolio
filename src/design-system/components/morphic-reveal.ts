@@ -1,6 +1,26 @@
 import { gsap } from "gsap";
 import type { MorphicNodes } from "./morphic-animation";
 
+export const resetNodesToNeutral = (nodes: MorphicNodes): void => {
+  nodes.blurNode.setAttribute("stdDeviation", "0 0");
+  nodes.matrixNode.setAttribute("values", "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0");
+  nodes.cyanTopNode?.setAttribute("dx", "0");
+  nodes.cyanTopNode?.setAttribute("dy", "0");
+  nodes.cyanBottomNode?.setAttribute("dx", "0");
+  nodes.cyanBottomNode?.setAttribute("dy", "0");
+  nodes.element.style.filter = "none";
+};
+
+export const resetNodesToIntro = (nodes: MorphicNodes): void => {
+  nodes.blurNode.setAttribute("stdDeviation", "20 20");
+  nodes.matrixNode.setAttribute("values", "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11");
+  nodes.cyanTopNode?.setAttribute("dx", `-${nodes.shiftX}`);
+  nodes.cyanTopNode?.setAttribute("dy", `-${nodes.shiftY}`);
+  nodes.cyanBottomNode?.setAttribute("dx", `${(nodes.shiftX * 0.3).toFixed(2)}`);
+  nodes.cyanBottomNode?.setAttribute("dy", `${(nodes.shiftY * 0.7).toFixed(2)}`);
+  nodes.element.style.filter = `url(#${nodes.filterId})`;
+};
+
 const GOOEY = { initSlope: 24, initOffset: -11, targetSlope: 1, targetOffset: 0 } as const;
 
 export const createRevealTimeline = (

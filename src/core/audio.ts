@@ -1,166 +1,198 @@
-export type AudioMode = "uninitialized" | "muted" | "active";
+import type {
+  AmbientTextureHandle,
+  AudioEngineContract,
+  AudioMode,
+  TactileFeedbackType,
+} from "./audio.types";
+import {
+  startOrganicDrone,
+  synthesizeInharmonicGlass,
+  synthesizeTactileImpulse,
+} from "./audio-synthesis";
 
-export interface AudioSystem {
-  readonly getMode: () => AudioMode;
-  readonly initialize: (enableSound: boolean) => Promise<boolean>;
-  readonly playThresholdClick: () => void;
-  readonly playReleaseSound: () => void;
-  readonly setVolume: (targetVolume: number) => void;
-}
-
-class ProceduralAudioEngine implements AudioSystem {
+export class ProceduralAudioEngine implements AudioEngineContract {
   private mode: AudioMode = "uninitialized";
   private audioContext: AudioContext | null = null;
   private masterGain: GainNode | null = null;
-  private ambientDroneGain: GainNode | null = null;
+  private ambientHandle: AmbientTextureHandle | null = null;
+  private isGraphSetup = false;
+  private lastTactileTime = 0;
+  private userMuted = false;
 
   public getMode(): AudioMode {
     return this.mode;
   }
 
+  public isMuted(): boolean {
+    return this.mode === "muted" || this.userMuted;
+  }
+
   public async initialize(enableSound: boolean): Promise<boolean> {
     if (!enableSound) {
       this.mode = "muted";
+      this.userMuted = true;
+      this.gracefulMute();
       return true;
     }
 
-    try {
-      const AudioCtxClass =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (!AudioCtxClass) {
-        console.warn("[Audio] Web Audio API not supported in this browser.");
-        this.mode = "muted";
-        return false;
-      }
+    this.userMuted = false;
+    if (this.mode === "active" && this.audioContext?.state === "running") return true;
 
+    try {
       if (!this.audioContext) {
+        const AudioCtxClass = window.AudioContext;
+        if (!AudioCtxClass) {
+          console.warn("[Audio] Web Audio API not supported in this browser.");
+          this.mode = "muted";
+          return false;
+        }
         this.audioContext = new AudioCtxClass();
       }
 
-      if (this.audioContext.state === "suspended") {
-        await this.audioContext.resume();
-      }
+      if (this.audioContext.state === "suspended") await this.audioContext.resume();
 
-      this.setupAudioGraph();
-      this.startAmbientTexture();
+      this.ensureGraph();
+      this.startAmbient();
       this.mode = "active";
+      this.bindTeardownAndVisibility();
       return true;
-    } catch (contextError) {
-      if (contextError instanceof Error) {
-        console.warn("[Audio] AudioContext unlock deferred or rejected:", contextError.message);
-      }
-      this.mode = "muted";
+    } catch {
+      this.mode = "pending_gesture";
+      this.attachDeferredUnlock();
       return false;
     }
   }
 
-  private setupAudioGraph(): void {
-    if (!this.audioContext) return;
-    this.masterGain = this.audioContext.createGain();
-    this.masterGain.gain.setValueAtTime(0.7, this.audioContext.currentTime);
-    this.masterGain.connect(this.audioContext.destination);
+  private ensureGraph(): void {
+    if (!this.audioContext || this.isGraphSetup) return;
+    const ctx = this.audioContext;
+    const now = ctx.currentTime;
 
-    this.ambientDroneGain = this.audioContext.createGain();
-    this.ambientDroneGain.gain.setValueAtTime(0, this.audioContext.currentTime);
-    this.ambientDroneGain.connect(this.masterGain);
+    // Filtro Highpass a 22Hz (DC-Blocker): Elimina offset DC que produce el pop al desconectar
+    const dcBlocker = ctx.createBiquadFilter();
+    dcBlocker.type = "highpass";
+    dcBlocker.frequency.setValueAtTime(22, now);
+    dcBlocker.Q.setValueAtTime(Math.SQRT1_2, now);
+
+    // Limitador suave: Previene cualquier distorsión o saturación digital
+    const limiter = ctx.createDynamicsCompressor();
+    limiter.threshold.setValueAtTime(-3, now);
+    limiter.knee.setValueAtTime(6, now);
+    limiter.ratio.setValueAtTime(8, now);
+    limiter.attack.setValueAtTime(0.003, now);
+    limiter.release.setValueAtTime(0.1, now);
+
+    this.masterGain = ctx.createGain();
+    this.masterGain.gain.setValueAtTime(0.7, now);
+    this.masterGain.connect(limiter);
+    limiter.connect(dcBlocker);
+    dcBlocker.connect(ctx.destination);
+    this.isGraphSetup = true;
   }
 
-  private startAmbientTexture(): void {
-    if (!this.audioContext || !this.ambientDroneGain) return;
-    const now = this.audioContext.currentTime;
-
-    // Capa 1: Frecuencia fundamental cálida (55Hz - A1)
-    const baseOsc = this.audioContext.createOscillator();
-    baseOsc.type = "sine";
-    baseOsc.frequency.setValueAtTime(55, now);
-
-    // Filtro pasa bajos suave
-    const filter = this.audioContext.createBiquadFilter();
-    filter.type = "lowpass";
-    filter.frequency.setValueAtTime(280, now);
-
-    // LFO lento para micro-evolución procedural
-    const lfo = this.audioContext.createOscillator();
-    const lfoGain = this.audioContext.createGain();
-    lfo.frequency.setValueAtTime(0.12, now);
-    lfoGain.gain.setValueAtTime(60, now);
-    lfo.connect(lfoGain);
-    lfoGain.connect(filter.frequency);
-
-    baseOsc.connect(filter);
-    filter.connect(this.ambientDroneGain);
-
-    baseOsc.start(now);
-    lfo.start(now);
-
-    // Entrada gradual de 3 segundos
-    this.ambientDroneGain.gain.linearRampToValueAtTime(0.35, now + 3);
+  private startAmbient(): void {
+    if (!this.audioContext || !this.masterGain || this.ambientHandle) return;
+    this.ambientHandle = startOrganicDrone(this.audioContext, this.masterGain);
   }
 
-  public playThresholdClick(): void {
-    if (this.mode !== "active" || !this.audioContext || !this.masterGain) return;
+  private attachDeferredUnlock(): void {
+    const unlock = async () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+      if (this.mode === "pending_gesture" && !this.userMuted) await this.initialize(true);
+    };
+    window.addEventListener("pointerdown", unlock, { once: true, passive: true });
+    window.addEventListener("keydown", unlock, { once: true, passive: true });
+  }
+
+  private bindTeardownAndVisibility(): void {
+    if (typeof window === "undefined") return;
+
+    const zeroRamp = () => this.gracefulMute(0.015);
+    for (const evt of ["pagehide", "beforeunload"] as const) {
+      window.addEventListener(evt, zeroRamp, { capture: true });
+    }
+    document.addEventListener("astro:before-swap", zeroRamp, { once: true });
+
+    document.addEventListener("visibilitychange", () => {
+      if (!this.audioContext || !this.masterGain || this.isMuted()) return;
+      const now = this.audioContext.currentTime;
+      this.masterGain.gain.cancelScheduledValues(now);
+      this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
+      const target = document.hidden ? 0.0001 : 0.7;
+      this.masterGain.gain.linearRampToValueAtTime(target, now + (document.hidden ? 0.25 : 0.35));
+    });
+  }
+
+  private gracefulMute(durationSec = 0.03): void {
+    if (!this.audioContext || !this.masterGain) return;
     const now = this.audioContext.currentTime;
-    const osc = this.audioContext.createOscillator();
-    const clickGain = this.audioContext.createGain();
+    this.masterGain.gain.cancelScheduledValues(now);
+    this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
+    this.masterGain.gain.linearRampToValueAtTime(0, now + durationSec);
 
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(1400, now);
-    osc.frequency.exponentialRampToValueAtTime(320, now + 0.04);
+    const delayMs = Math.floor(durationSec * 1000) + 15;
+    window.setTimeout(() => {
+      if (this.audioContext?.state === "running") {
+        void this.audioContext.suspend().catch(() => {});
+      }
+    }, delayMs);
+  }
 
-    clickGain.gain.setValueAtTime(0.15, now);
-    clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+  public toggleMute(): boolean {
+    this.userMuted = !this.userMuted;
+    if (!this.audioContext || !this.masterGain) return this.userMuted;
 
-    osc.connect(clickGain);
-    clickGain.connect(this.masterGain);
+    const now = this.audioContext.currentTime;
+    this.masterGain.gain.cancelScheduledValues(now);
+    this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
 
-    osc.start(now);
-    osc.stop(now + 0.05);
+    if (this.userMuted) {
+      this.masterGain.gain.linearRampToValueAtTime(0, now + 0.04);
+      this.mode = "muted";
+    } else {
+      if (this.audioContext.state === "suspended") void this.audioContext.resume();
+      this.masterGain.gain.linearRampToValueAtTime(0.7, now + 0.3);
+      this.mode = "active";
+    }
+    return this.userMuted;
+  }
+
+  public setMasterVolume(level: number): void {
+    if (!this.audioContext || !this.masterGain) return;
+    const clamped = Math.max(0, Math.min(1, level));
+    const now = this.audioContext.currentTime;
+    this.masterGain.gain.cancelScheduledValues(now);
+    this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
+    this.masterGain.gain.linearRampToValueAtTime(clamped, now + 0.08);
   }
 
   public playReleaseSound(): void {
-    if (this.mode !== "active" || !this.audioContext || !this.masterGain) return;
-    const now = this.audioContext.currentTime;
-
-    // Resonancia de vidrio / cristal al soltar y entrar
-    const osc1 = this.audioContext.createOscillator();
-    const osc2 = this.audioContext.createOscillator();
-    const releaseGain = this.audioContext.createGain();
-
-    osc1.type = "sine";
-    osc2.type = "triangle";
-    osc1.frequency.setValueAtTime(440, now);
-    osc1.frequency.exponentialRampToValueAtTime(880, now + 0.35);
-
-    osc2.frequency.setValueAtTime(660, now);
-    osc2.frequency.exponentialRampToValueAtTime(1320, now + 0.35);
-
-    releaseGain.gain.setValueAtTime(0.22, now);
-    releaseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-
-    osc1.connect(releaseGain);
-    osc2.connect(releaseGain);
-    releaseGain.connect(this.masterGain);
-
-    osc1.start(now);
-    osc2.start(now);
-    osc1.stop(now + 0.52);
-    osc2.stop(now + 0.52);
+    if (this.isMuted() || !this.audioContext || !this.masterGain) return;
+    synthesizeInharmonicGlass(this.audioContext, this.masterGain, 432);
   }
 
-  public setVolume(targetVolume: number): void {
-    if (!this.audioContext || !this.masterGain) return;
-    const now = this.audioContext.currentTime;
-    const safeVolume = Math.max(0, Math.min(1, targetVolume));
-    this.masterGain.gain.linearRampToValueAtTime(safeVolume, now + 0.1);
+  public playTactileFeedback(type: TactileFeedbackType): void {
+    if (this.isMuted() || !this.audioContext || !this.masterGain) return;
+    const now = performance.now();
+    if (now - this.lastTactileTime < 80) return;
+    this.lastTactileTime = now;
+
+    const isTap = type === "glass_tap" || type === "gravitational_release";
+    synthesizeTactileImpulse(this.audioContext, this.masterGain, isTap);
+  }
+
+  public stop(): void {
+    if (this.ambientHandle) {
+      this.ambientHandle.stop();
+      this.ambientHandle = null;
+    }
+    this.gracefulMute(0.04);
   }
 }
 
-let audioInstance: AudioSystem | null = null;
-
-export const getAudioSystem = (): AudioSystem => {
-  if (!audioInstance) {
-    audioInstance = new ProceduralAudioEngine();
-  }
+let audioInstance: AudioEngineContract | null = null;
+export const getAudioSystem = (): AudioEngineContract => {
+  if (!audioInstance) audioInstance = new ProceduralAudioEngine();
   return audioInstance;
 };

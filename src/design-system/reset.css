@@ -49,3 +49,8 @@ select {
   background-color: var(--color-brand-blue);
   color: var(--color-bg);
 }
+
+html.has-custom-cursor,
+html.has-custom-cursor * {
+  cursor: none;
+}

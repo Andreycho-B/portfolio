@@ -1,5 +1,6 @@
 ---
 import "../design-system/tokens/index.css";
+import InteractiveCursor from "../design-system/components/InteractiveCursor.astro";
 
 interface Props {
   title?: string;
@@ -38,6 +39,7 @@ const {
     <title>{title}</title>
   </head>
   <body>
+    <InteractiveCursor />
     <slot />
   </body>
 </html>

@@ -3,7 +3,14 @@ import MorphicText from "../../design-system/components/MorphicText.astro";
 ---
 
 <div class="consent-container" data-consent-screen>
-  <div class="consent-content" data-consent-content>
+  <div class="top-blur-vignette" aria-hidden="true"></div>
+
+  <div class="welcome-backdrop" data-welcome-backdrop>
+    <div class="welcome-blue-box" data-blue-box style="background-color: #1982e6;"></div>
+    <canvas class="welcome-cloud-canvas" data-cloud-canvas></canvas>
+  </div>
+
+  <div class="consent-content" data-consent-content data-cursor-target>
     <MorphicText
       phrases={["Bienvenido", "Soy\nAndrey", "Desarrollador\nCreativo"]}
       as="h1"
@@ -12,24 +19,23 @@ import MorphicText from "../../design-system/components/MorphicText.astro";
       mutateWord="Creativo"
     />
 
-    <div class="consent-prompt" data-consent-prompt aria-hidden="true">
-      <div class="tension-meter" aria-hidden="true">
-        <div class="tension-track">
-          <div class="tension-bar" data-tension-bar></div>
-        </div>
-      </div>
+    <div class="consent-prompt" data-consent-prompt>
       <div class="prompt-label">
-        <span class="prompt-text">Desliza para entrar</span>
-        <span class="prompt-key" aria-hidden="true">
-          [Enter]
+        <span class="prompt-desktop">
+          Haz clic o pulsa{" "}
+          <span class="prompt-key" aria-hidden="true">
+            [Enter]
+          </span>{" "}
+          para ingresar
         </span>
+        <span class="prompt-mobile">Toca la pantalla para ingresar</span>
       </div>
     </div>
   </div>
 
   <div class="consent-actions" data-consent-actions>
     <button type="button" class="btn-mute-entry" data-btn-mute>
-      Entra sin sonido
+      Ingresar sin sonido
     </button>
   </div>
 </div>
@@ -41,14 +47,78 @@ import MorphicText from "../../design-system/components/MorphicText.astro";
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 100vh;
+    min-height: 100dvh;
     padding: var(--container-padding);
     text-align: center;
     user-select: none;
-    touch-action: pan-x;
+    touch-action: manipulation;
     overflow: hidden;
+    transition: color var(--dur-normal) var(--ease-normal);
   }
-
+  .top-blur-vignette {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: clamp(140px, 18vh, 220px);
+    pointer-events: none;
+    z-index: 10;
+    transform: translateZ(0);
+  }
+  .top-blur-vignette::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    mask-image: linear-gradient(to bottom, #000 0%, #000d 20%, #0008 45%, transparent 80%);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000d 20%, #0008 45%, transparent 80%);
+  }
+  .top-blur-vignette::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    mask-image: linear-gradient(to bottom, #000 0%, #000e 35%, #0006 65%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000e 35%, #0006 65%, transparent 100%);
+  }
+  .welcome-backdrop {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+    contain: strict;
+  }
+  .welcome-blue-box {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    background-color: #1982e6 !important;
+    opacity: 0;
+    transform: translate(-50%, -50%) translateZ(0);
+    transform-origin: 50% 50%;
+    will-change: transform;
+    pointer-events: none;
+  }
+  .welcome-cloud-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .welcome-cloud-canvas.is-revealed {
+    opacity: 1;
+  }
+  .consent-container[data-backdrop-active="true"] {
+    --color-fg: #ffffff;
+    --color-fg-muted: rgba(255, 255, 255, 0.72);
+  }
   .consent-content {
     display: flex;
     flex-direction: column;
@@ -56,52 +126,37 @@ import MorphicText from "../../design-system/components/MorphicText.astro";
     justify-content: center;
     gap: var(--space-xl);
     transform-origin: center center;
-    will-change: transform;
+    will-change: transform, opacity;
   }
-
   .consent-content :global(.morphic-text) {
     font-size: var(--text-4xl);
     line-height: var(--lh-heading);
     letter-spacing: var(--ls-tighter);
+    color: var(--color-fg);
+    transition: color var(--dur-normal) var(--ease-normal);
   }
-
-  .consent-prompt {
+  .consent-prompt,
+  .consent-actions {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-sm);
     opacity: 0;
     pointer-events: none;
     transition: opacity var(--dur-slow) var(--ease-slow);
   }
-
-  .consent-prompt.is-revealed {
+  .consent-prompt {
+    gap: var(--space-sm);
+  }
+  .consent-actions {
+    position: absolute;
+    bottom: clamp(1.25rem, 4vh, 2.25rem);
+    z-index: 2;
+  }
+  .consent-prompt.is-revealed,
+  .consent-actions.is-revealed {
     opacity: 1;
     pointer-events: auto;
   }
-
-  .tension-meter {
-    width: 140px;
-    height: 3px;
-    background-color: var(--color-border);
-    border-radius: var(--radius-pill);
-    overflow: hidden;
-  }
-
-  .tension-track {
-    width: 100%;
-    height: 100%;
-  }
-
-  .tension-bar {
-    width: 100%;
-    height: 100%;
-    background-color: var(--color-fg);
-    transform: scaleX(0);
-    transform-origin: left center;
-    will-change: transform;
-  }
-
   .prompt-label {
     display: flex;
     align-items: center;
@@ -112,25 +167,21 @@ import MorphicText from "../../design-system/components/MorphicText.astro";
     letter-spacing: var(--ls-labels);
     text-transform: uppercase;
   }
-
   .prompt-key {
-    opacity: 0.6;
-    font-size: 10px;
+    font-size: var(--text-xs);
+    color: var(--color-fg-muted);
   }
-
-  .consent-actions {
-    position: absolute;
-    bottom: var(--space-lg);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity var(--dur-slow) var(--ease-slow);
+  .prompt-mobile {
+    display: none;
   }
-
-  .consent-actions.is-revealed {
-    opacity: 1;
-    pointer-events: auto;
+  @media (hover: none) and (pointer: coarse) {
+    .prompt-desktop {
+      display: none;
+    }
+    .prompt-mobile {
+      display: inline;
+    }
   }
-
   .btn-mute-entry {
     background: transparent;
     border: none;
@@ -143,12 +194,13 @@ import MorphicText from "../../design-system/components/MorphicText.astro";
     border-radius: var(--radius-sm);
     transition: color var(--dur-fast) var(--ease-fast);
   }
-
   .btn-mute-entry:hover,
   .btn-mute-entry:focus-visible {
     color: var(--color-fg);
   }
-
+  :global(html.has-custom-cursor) .btn-mute-entry {
+    cursor: none;
+  }
   @media (prefers-reduced-motion: reduce) {
     .consent-prompt,
     .consent-actions {
@@ -158,14 +210,10 @@ import MorphicText from "../../design-system/components/MorphicText.astro";
     }
   }
 </style>
-
 <script>
   import { initConsentScreen } from "./consent-controller";
 
-  if (document.readyState !== "loading") {
-    initConsentScreen();
-  } else {
-    document.addEventListener("DOMContentLoaded", initConsentScreen);
-  }
+  if (document.readyState !== "loading") initConsentScreen();
+  else document.addEventListener("DOMContentLoaded", initConsentScreen);
   document.addEventListener("astro:page-load", initConsentScreen);
 </script>
