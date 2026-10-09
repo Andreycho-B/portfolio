@@ -1,16 +1,13 @@
 :root {
-  /* Base neutra */
   --color-bg: #f5f1ea;
   --color-fg: #1a1714;
   --color-fg-muted: #6b6660;
   --color-border: #d8d2c8;
   --color-surface: #ede8df;
 
-  /* Marca */
   --color-brand-blue: #1982e6;
   --color-brand-red: #e03020;
 
-  /* Grano — SVG feTurbulence estático. No animar: costoso en GPU. */
   --grain-opacity: 0.05;
   --grain-blend: multiply;
 }

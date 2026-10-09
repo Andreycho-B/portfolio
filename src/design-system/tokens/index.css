@@ -1,4 +1,3 @@
-/* Orden de importación: layout.css referencia --color-brand-blue de colors.css. */
 @import "./colors.css";
 @import "./typography.css";
 @import "./spacing.css";

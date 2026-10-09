@@ -18,7 +18,6 @@
   --focus-ring-style: solid;
 }
 
-/* :focus-visible en lugar de :focus para no mostrar el anillo en clic de ratón. */
 :focus-visible {
   outline: var(--focus-ring-width) var(--focus-ring-style) var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
