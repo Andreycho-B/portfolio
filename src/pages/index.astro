@@ -1,8 +1,10 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ConsentScreen from "../features/consent/ConsentScreen.astro";
+import ProjectsScreen from "../features/projects/ProjectsScreen.astro";
 
 // Escena inicial: bienvenida y consentimiento interactivo de audio (Spec §6 y §8)
+// Segunda escena: vista de proyectos en espiral (Spec §9.3)
 ---
 
 <BaseLayout
@@ -11,6 +13,7 @@ import ConsentScreen from "../features/consent/ConsentScreen.astro";
 >
   <main class="page-root">
     <ConsentScreen />
+    <ProjectsScreen />
   </main>
 </BaseLayout>
 
@@ -19,6 +22,6 @@ import ConsentScreen from "../features/consent/ConsentScreen.astro";
     position: relative;
     width: 100%;
     min-height: 100vh;
-    overflow: hidden;
+    overflow-x: clip;
   }
 </style>

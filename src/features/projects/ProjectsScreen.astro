@@ -1,0 +1,115 @@
+---
+---
+
+<section class="projects-root" data-projects-screen hidden>
+  <div class="projects-stage">
+    <canvas class="helix-canvas" data-helix-canvas aria-label="Espiral de proyectos"></canvas>
+  </div>
+</section>
+
+<style>
+  .projects-root {
+    position: relative;
+    height: 100dvh;
+    overflow: hidden;
+    background: var(--color-bg);
+    touch-action: none;
+  }
+  .projects-stage {
+    height: 100%;
+  }
+  .helix-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .helix-canvas.is-revealed {
+    opacity: 1;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .helix-canvas {
+      opacity: 1;
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  import { createHelixScene } from "./helix-scene";
+  import { HELIX_CARD_DATA } from "./helix-cards-data";
+  import type { HelixSceneHandle } from "./helix-cards.types";
+
+  const mountProjectsZone = (): void => {
+    const zone = document.querySelector<HTMLElement>("[data-projects-screen]");
+    const canvas = zone?.querySelector<HTMLCanvasElement>("[data-helix-canvas]");
+    if (!zone || !canvas || zone.dataset.zoneMounted === "true") return;
+    zone.dataset.zoneMounted = "true";
+
+    let helix: HelixSceneHandle | null = null;
+
+    const revealProjectsZone = () => {
+      zone.hidden = false;
+      void createHelixScene(canvas, HELIX_CARD_DATA).then((scene) => {
+        if (!scene) return;
+        helix = scene;
+        const width = zone.clientWidth;
+        const height = zone.clientHeight;
+        scene.resize(width, height);
+        scene.start();
+        canvas.classList.add("is-revealed");
+      });
+    };
+
+    document.addEventListener("consent:completed", revealProjectsZone, { once: true });
+
+    // Scroll nativo y zoom desactivados: los gestos alimentan el flujo helicoidal
+    const onZoneWheel = (event: WheelEvent) => {
+      if (zone.hidden) return;
+      event.preventDefault();
+      helix?.scrollBy(event.deltaY);
+    };
+    window.addEventListener("wheel", onZoneWheel, { passive: false });
+
+    let lastTouchY: number | null = null;
+    const onZoneTouchStart = (event: TouchEvent) => {
+      const touch = event.touches.item(0);
+      if (event.touches.length === 1 && touch) lastTouchY = touch.clientY;
+    };
+    const onZoneTouchMove = (event: TouchEvent) => {
+      if (zone.hidden) return;
+      event.preventDefault();
+      const touch = event.touches.item(0);
+      if (event.touches.length !== 1 || !touch || lastTouchY === null) return;
+      helix?.scrollBy((lastTouchY - touch.clientY) * 1.4);
+      lastTouchY = touch.clientY;
+    };
+    const onZoneTouchEnd = () => {
+      lastTouchY = null;
+    };
+    zone.addEventListener("touchstart", onZoneTouchStart, { passive: false });
+    zone.addEventListener("touchmove", onZoneTouchMove, { passive: false });
+    zone.addEventListener("touchend", onZoneTouchEnd);
+
+    const onZoneResize = () => {
+      if (helix && !zone.hidden) helix.resize(zone.clientWidth, zone.clientHeight);
+    };
+    window.addEventListener("resize", onZoneResize);
+
+    const destroy = () => {
+      window.removeEventListener("wheel", onZoneWheel);
+      zone.removeEventListener("touchstart", onZoneTouchStart);
+      zone.removeEventListener("touchmove", onZoneTouchMove);
+      zone.removeEventListener("touchend", onZoneTouchEnd);
+      window.removeEventListener("resize", onZoneResize);
+      document.removeEventListener("consent:completed", revealProjectsZone);
+      helix?.dispose();
+    };
+    document.addEventListener("astro:before-swap", destroy, { once: true });
+  };
+
+  if (document.readyState !== "loading") mountProjectsZone();
+  else document.addEventListener("DOMContentLoaded", mountProjectsZone);
+  document.addEventListener("astro:page-load", mountProjectsZone);
+</script>
