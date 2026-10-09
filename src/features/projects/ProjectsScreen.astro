@@ -39,7 +39,6 @@
 </style>
 
 <script>
-  import { createHelixScene } from "./helix-scene";
   import { HELIX_CARD_DATA } from "./helix-cards-data";
   import type { HelixSceneHandle } from "./helix-cards.types";
 
@@ -53,15 +52,17 @@
 
     const revealProjectsZone = () => {
       zone.hidden = false;
-      void createHelixScene(canvas, HELIX_CARD_DATA).then((scene) => {
-        if (!scene) return;
-        helix = scene;
-        const width = zone.clientWidth;
-        const height = zone.clientHeight;
-        scene.resize(width, height);
-        scene.start();
-        canvas.classList.add("is-revealed");
-      });
+      void import("./helix-scene")
+        .then(({ createHelixScene }) => createHelixScene(canvas, HELIX_CARD_DATA))
+        .then((scene) => {
+          if (!scene) return;
+          helix = scene;
+          const width = zone.clientWidth;
+          const height = zone.clientHeight;
+          scene.resize(width, height);
+          scene.start();
+          canvas.classList.add("is-revealed");
+        });
     };
 
     document.addEventListener("consent:completed", revealProjectsZone, { once: true });
