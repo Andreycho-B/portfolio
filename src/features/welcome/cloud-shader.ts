@@ -21,6 +21,7 @@ uniform float u_cursorActive;
 uniform vec3 u_blueColor;
 uniform float u_cloudOpacity;
 uniform vec4 u_textClearZone;
+uniform vec4 u_actionZone;
 uniform float u_pixelScale;
 
 // Matriz Bayer 8x8 estandarizada para tramado ordenado
@@ -90,24 +91,16 @@ float snoise(vec3 v) {
   return 42.0 * dot(m * m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
 }
 
-vec2 hash2(vec2 p) {
-  p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
-  return fract(sin(p) * 43758.5453123);
-}
-
-float worley2D(vec2 p) {
-  vec2 n = floor(p);
-  vec2 f = fract(p);
-  float d = 1.0;
-  for (int j = -1; j <= 1; j++) {
-    for (int i = -1; i <= 1; i++) {
-      vec2 g = vec2(float(i), float(j));
-      vec2 o = hash2(n + g);
-      vec2 delta = g + o - f;
-      d = min(d, dot(delta, delta));
-    }
+float fbm(vec3 p) {
+  float v = 0.0;
+  float a = 0.54;
+  vec3 shift = vec3(100.0, 42.0, 17.0);
+  for (int i = 0; i < 3; i++) {
+    v += a * snoise(p);
+    p = p * 2.12 + shift;
+    a *= 0.46;
   }
-  return clamp(1.0 - sqrt(d), 0.0, 1.0);
+  return v;
 }
 
 void main() {
@@ -116,82 +109,85 @@ void main() {
   vec2 p = uv;
   p.x *= aspect;
 
-  float alt = uv.y;
-  float altBlend = smoothstep(0.38, 0.74, alt);
+  // Deriva continua del viento de izquierda a derecha + evolución volumétrica
+  float wind = u_time * 0.035;
+  vec3 cloudPos = vec3(p * 1.35 - vec2(wind, 0.0), u_time * 0.012);
 
-  // Viento y deformación orgánica por altitud
-  float lowWind = u_time * 0.026;
-  float highWind = u_time * 0.054;
-  vec3 warpPos = vec3(p * 1.25 - vec2(lowWind * 0.8, 0.0), u_time * 0.009);
+  // Deformación de dominio para cúmulos algodonados con alta eficiencia a 120 FPS
   vec2 warp = vec2(
-    snoise(warpPos + vec3(0.0, 0.0, 1.2)),
-    snoise(warpPos + vec3(5.2, 1.3, 2.8))
+    snoise(cloudPos + vec3(0.0, 0.0, 1.2)),
+    snoise(cloudPos + vec3(5.2, 1.3, 2.8))
   );
 
-  // Zona baja: Cúmulos algodonados / Cumulonimbus estilo Studio Ghibli
-  vec2 cumulusP = p * 1.35 - vec2(lowWind * 0.65, 0.0) + warp * 0.32;
-  float dome1 = worley2D(cumulusP * 1.55);
-  float dome2 = worley2D(cumulusP * 3.30 + vec2(1.7, 4.3));
-  float dome3 = worley2D(cumulusP * 6.60 + vec2(4.2, 8.1));
-  float billowLobes = max(pow(dome1, 0.9), max(pow(dome2, 0.85) * 0.80, pow(dome3, 0.8) * 0.60));
-  billowLobes = smoothstep(0.12, 0.94, billowLobes);
+  float density = fbm(cloudPos + vec3(warp * 0.42, 0.0));
 
-  float cumulusBody = snoise(vec3(cumulusP * 1.4, u_time * 0.008)) * 0.5 + 0.5;
-  float flatBase = smoothstep(0.18, 0.28, alt + warp.y * 0.035);
-  float cumulus = (billowLobes * 0.74 + cumulusBody * 0.26) * flatBase;
-
-  // Zona alta: Filamentos cirros lisos y estirados por el viento en capas superiores
-  vec2 highP = vec2((p.x - highWind) * 0.24, alt * 3.4);
-  highP.x += snoise(vec3(highP.x * 0.55, alt * 1.4, u_time * 0.008)) * 0.32;
-  float streak1 = snoise(vec3(highP * 1.15, u_time * 0.011));
-  float streak2 = snoise(vec3(highP * 2.30 + vec2(12.7, 0.0), u_time * 0.015)) * 0.35;
-  float highCloud = smoothstep(-0.20, 0.42, streak1 * 0.72 + streak2 * 0.28);
-
-  // Distribución macro de formaciones nubosas sobre el cielo azul
-  vec3 macroPos = vec3(p * 0.80 - vec2(lowWind * 0.75, 0.0), u_time * 0.006);
-  float macroSky = snoise(macroPos) * 0.55 + snoise(macroPos * 1.8 + vec2(3.1, 7.4).xyx) * 0.25;
-
-  float lowDensity = macroSky * 0.48 + cumulus * 0.62 - 0.16;
-  float highDensity = macroSky * 0.40 + highCloud * 0.58 - 0.14;
-  float density = mix(lowDensity, highDensity, altBlend);
-
-  // Interacción suave con el cursor del ratón (despeje elástico)
+  // Interacción suave con el cursor del ratón (despeje de nubes)
   if (u_cursorActive > 0.01) {
     vec2 cur = u_cursor / u_resolution.xy;
     cur.x *= aspect;
     float dist = distance(p, cur);
-    float repulse = smoothstep(0.24, 0.0, dist) * (0.42 * u_cursorActive);
+    float repulse = smoothstep(0.24, 0.0, dist) * 0.38 * u_cursorActive;
     density -= repulse;
   }
 
-  // Despeje orgánico en la zona de textos
+  // Gradiente de cielo para concentración natural de cúmulos en franja media-alta
+  float heightBias = smoothstep(0.12, 0.48, uv.y) * 0.28;
+  float cloudField = smoothstep(-0.08, 0.56, density + heightBias);
+
+  // Desvanecimiento progresivo y suave hacia el texto central ("Desarrollador Creativo")
+  // Sin hueco abrupto: las nubes se disuelven orgánicamente a través del tramado Bayer
   if (u_textClearZone.z > 0.0) {
-    vec2 textOffset = gl_FragCoord.xy - u_textClearZone.xy;
-    vec2 textRadii = max(u_textClearZone.zw, vec2(10.0));
-    float organicEdge = warp.x * 0.10;
-    float textDist = length(textOffset / textRadii) + organicEdge;
-    float textClear = smoothstep(1.35, 0.75, textDist);
-    density -= textClear * 0.95;
+    vec2 textCenter = u_textClearZone.xy / u_resolution.xy;
+    textCenter.x *= aspect;
+    vec2 textRadii = u_textClearZone.zw / u_resolution.xy;
+    textRadii.x *= aspect;
+    vec2 textOffset = (p - textCenter) / max(textRadii, vec2(0.001));
+    float textDist = length(textOffset);
+    float textFade = smoothstep(0.75, 2.6, textDist);
+    // Disolución progresiva debajo de los textos: la nube se desvanece hacia el
+    // borde inferior con un gradiente vertical continuo, sin generar un hueco recortado
+    float zoneBottom = textCenter.y - textRadii.y * 0.33;
+    float belowT = clamp((zoneBottom - p.y) / max(zoneBottom, 0.001), 0.0, 1.0);
+    float belowFade = 1.0 - smoothstep(0.0, 0.9, belowT);
+    cloudField *= textFade * belowFade;
   }
 
-  // Despeje de la barra inferior de acciones ("Ingresar sin sonido")
-  float bottomClear = smoothstep(u_resolution.y * 0.16, 0.0, gl_FragCoord.y);
-  density -= bottomClear * 0.90;
+  // Desvanecimiento progresivo y suave a medida que las nubes se aproximan al texto inferior
+  // No genera un corte o hueco abrupto: modula la masa de nube para disolverla gradualmente
+  if (u_actionZone.z > 0.0) {
+    vec2 actionCenter = u_actionZone.xy / u_resolution.xy;
+    actionCenter.x *= aspect;
+    vec2 actionRadii = u_actionZone.zw / u_resolution.xy;
+    actionRadii.x *= aspect;
+    vec2 actionOffset = (p - actionCenter) / max(actionRadii, vec2(0.001));
+    actionOffset.x *= 0.65;
+    float actionDist = length(actionOffset);
+    float actionFade = smoothstep(0.8, 3.2, actionDist);
+    cloudField *= actionFade;
+  }
 
-  // Gradiente de cielo adaptado a la orientación
-  float heightBias = aspect < 1.0
-    ? smoothstep(1.0, 0.16, uv.y) * 0.20
-    : smoothstep(1.0, 0.28, uv.y) * 0.16;
-  float cloudField = smoothstep(0.00, 0.68, density + heightBias);
-
-  // Muestreo del tramado Bayer escalado según DPR
-  float pixelScale = max(1.8, u_pixelScale);
+  // Muestreo del tramado Bayer con paso de píxel gráfico nítido
+  float pixelScale = u_pixelScale > 0.0 ? u_pixelScale : 2.4;
   ivec2 ditherCoord = ivec2(floor(gl_FragCoord.xy / pixelScale));
   float ditherThreshold = getBayerValue(ditherCoord);
 
-  // 1-bit dither: Nubes condensadas sobre azul cielo puro
-  float isWhite = step(ditherThreshold, cloudField * u_cloudOpacity);
-  vec3 finalColor = mix(u_blueColor, vec3(1.0), isWhite);
+  // Gradiente de cielo diagonal idéntico a la referencia (azul eléctrico a blanco puro)
+  vec2 screenUv = gl_FragCoord.xy / u_resolution.xy;
+  float diag = (1.0 - screenUv.y) * 0.62 + screenUv.x * 0.52;
+
+  vec3 cDeepBlue = vec3(0.0, 0.38, 0.92);
+  vec3 cMidBlue  = vec3(0.12, 0.58, 1.0);
+  vec3 cSoftBlue = vec3(0.68, 0.85, 1.0);
+  vec3 cWhite    = vec3(1.0, 1.0, 1.0);
+
+  vec3 skyColor = mix(cDeepBlue, cMidBlue, smoothstep(0.0, 0.42, diag));
+  skyColor = mix(skyColor, cSoftBlue, smoothstep(0.5, 0.86, diag));
+  skyColor = mix(skyColor, cWhite, smoothstep(0.8, 1.12, diag));
+
+  // 1-bit dither: Las nubes emergen moduladas por u_cloudOpacity sobre el degradado
+  float cloudPresence = cloudField * smoothstep(0.0, 1.0, u_cloudOpacity);
+  float isWhite = step(ditherThreshold, cloudPresence);
+  vec3 finalColor = mix(skyColor, vec3(1.0), isWhite);
 
   fragColor = vec4(finalColor, 1.0);
 }

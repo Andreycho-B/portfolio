@@ -7,6 +7,7 @@ export interface CloudWebGLRenderer {
     opacity: number,
     cursor: CloudCursorState,
     textClearZone: TextClearZone,
+    actionZone: TextClearZone,
     pixelScale: number,
   ) => void;
   resize: (width: number, height: number) => void;
@@ -30,7 +31,7 @@ const compileShader = (
 };
 
 export const createCloudRenderer = (canvas: HTMLCanvasElement): CloudWebGLRenderer | null => {
-  const gl = canvas.getContext("webgl2", { alpha: true, antialias: false });
+  const gl = canvas.getContext("webgl2", { alpha: false, antialias: false });
   if (!gl) return null;
 
   const vertShader = compileShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER_SOURCE);
@@ -66,12 +67,13 @@ export const createCloudRenderer = (canvas: HTMLCanvasElement): CloudWebGLRender
   const uBlueColor = gl.getUniformLocation(program, "u_blueColor");
   const uCloudOpacity = gl.getUniformLocation(program, "u_cloudOpacity");
   const uTextClearZone = gl.getUniformLocation(program, "u_textClearZone");
+  const uActionZone = gl.getUniformLocation(program, "u_actionZone");
   const uPixelScale = gl.getUniformLocation(program, "u_pixelScale");
 
   let canvasWidth = canvas.width;
   let canvasHeight = canvas.height;
 
-  // Azul cielo vivo como en un día despejado (#1982e6 = [0.098, 0.510, 0.902])
+  // Azul cielo despejado (#1982e6 = [0.098, 0.510, 0.902])
   const blueR = 25 / 255;
   const blueG = 130 / 255;
   const blueB = 230 / 255;
@@ -87,6 +89,7 @@ export const createCloudRenderer = (canvas: HTMLCanvasElement): CloudWebGLRender
     opacity: number,
     cursor: CloudCursorState,
     textClearZone: TextClearZone,
+    actionZone: TextClearZone,
     pixelScale: number,
   ) => {
     gl.useProgram(program);
@@ -103,6 +106,7 @@ export const createCloudRenderer = (canvas: HTMLCanvasElement): CloudWebGLRender
       textClearZone[2],
       textClearZone[3],
     );
+    gl.uniform4f(uActionZone, actionZone[0], actionZone[1], actionZone[2], actionZone[3]);
     gl.uniform1f(uPixelScale, pixelScale);
 
     gl.drawArrays(gl.TRIANGLES, 0, 6);

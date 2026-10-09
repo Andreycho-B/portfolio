@@ -21,8 +21,8 @@ export const initWelcomeBackdrop = (rootEl: HTMLElement): WelcomeBackdropHandle 
 
     if (prefersReduced) {
       rootEl.dataset.backdropActive = "true";
+      boxEl.classList.add("is-expanding");
       gsap.set(boxEl, {
-        backgroundColor: "#1982e6",
         opacity: 1,
         width: "130vmax",
         height: "130vmax",
@@ -39,7 +39,6 @@ export const initWelcomeBackdrop = (rootEl: HTMLElement): WelcomeBackdropHandle 
 
     // Inicialización precisa en GPU (sin provocar reflow en cada tick)
     gsap.set(boxEl, {
-      backgroundColor: "#1982e6",
       width: lineLength,
       height: rectHeight,
       xPercent: -50,
@@ -93,6 +92,7 @@ export const initWelcomeBackdrop = (rootEl: HTMLElement): WelcomeBackdropHandle 
       ease: "power3.inOut",
       force3D: true,
       onStart: () => {
+        boxEl.classList.add("is-expanding");
         gsap.delayedCall(0.7, () => {
           rootEl.dataset.backdropActive = "true";
           document.dispatchEvent(new CustomEvent("welcome:backdrop-covered"));

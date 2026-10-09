@@ -7,6 +7,7 @@ export const initCloudCanvas = (canvas: HTMLCanvasElement): CloudControllerHandl
   if (!renderer) return null;
 
   const contentEl = document.querySelector<HTMLElement>("[data-consent-content]");
+  const actionsEl = document.querySelector<HTMLElement>("[data-consent-actions]");
 
   let animationFrameId: number | null = null;
   let isRevealed = false;
@@ -30,7 +31,9 @@ export const initCloudCanvas = (canvas: HTMLCanvasElement): CloudControllerHandl
     canvas.height * 0.24,
   ];
 
-  const updateTextClearZone = () => {
+  let actionZone: TextClearZone = [canvas.width * 0.5, 48, 120, 32];
+
+  const updateZones = () => {
     if (contentEl) {
       const rect = contentEl.getBoundingClientRect();
       const cx = rect.left + rect.width * 0.5;
@@ -38,6 +41,14 @@ export const initCloudCanvas = (canvas: HTMLCanvasElement): CloudControllerHandl
       const rx = rect.width * 0.5 + 64;
       const ry = rect.height * 0.5 + 56;
       textClearZone = [cx, cy, rx, ry];
+    }
+    if (actionsEl) {
+      const rect = actionsEl.getBoundingClientRect();
+      const cx = rect.left + rect.width * 0.5;
+      const cy = canvas.height - (rect.top + rect.height * 0.5);
+      const rx = Math.max(rect.width * 0.5, 60);
+      const ry = Math.max(rect.height * 0.5, 20);
+      actionZone = [cx, cy, rx, ry];
     }
   };
 
@@ -47,17 +58,18 @@ export const initCloudCanvas = (canvas: HTMLCanvasElement): CloudControllerHandl
   const resize = () => {
     const width = canvas.parentElement?.clientWidth ?? window.innerWidth;
     const height = canvas.parentElement?.clientHeight ?? window.innerHeight;
-    canvas.width = Math.floor(width);
-    canvas.height = Math.floor(height);
+    const isMobile = width < 768;
+    const renderScale = isMobile ? 0.75 : 0.85;
+    canvas.width = Math.floor(width * renderScale);
+    canvas.height = Math.floor(height * renderScale);
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
     canvasRect = canvas.getBoundingClientRect();
 
-    const isMobile = width < 768;
-    pixelScale = isMobile ? 2.8 : 2.2;
+    pixelScale = isMobile ? 2.4 : 1.9;
 
     renderer.resize(canvas.width, canvas.height);
-    updateTextClearZone();
+    updateZones();
   };
   resize();
 
@@ -92,7 +104,7 @@ export const initCloudCanvas = (canvas: HTMLCanvasElement): CloudControllerHandl
   window.addEventListener("pointercancel", onPointerEnd, { passive: true });
   window.addEventListener("pointerleave", onPointerEnd, { passive: true });
   window.addEventListener("resize", resize);
-  document.addEventListener("morphic:phrase-start", updateTextClearZone);
+  document.addEventListener("morphic:phrase-start", updateZones);
 
   let cloudProgress = 0;
 
@@ -123,7 +135,7 @@ export const initCloudCanvas = (canvas: HTMLCanvasElement): CloudControllerHandl
     cursor.y = spring.currentY;
     cursor.strength = cursorStrength;
 
-    renderer.render(elapsed, cloudOpacity, cursor, textClearZone, pixelScale);
+    renderer.render(elapsed, cloudOpacity, cursor, textClearZone, actionZone, pixelScale);
     animationFrameId = requestAnimationFrame(loop);
   };
 
@@ -133,7 +145,7 @@ export const initCloudCanvas = (canvas: HTMLCanvasElement): CloudControllerHandl
     if (isRevealed) return;
     isRevealed = true;
     canvas.classList.add("is-revealed");
-    updateTextClearZone();
+    updateZones();
     lastTime = performance.now();
     startTime = performance.now();
     animationFrameId = requestAnimationFrame(loop);
@@ -157,7 +169,7 @@ export const initCloudCanvas = (canvas: HTMLCanvasElement): CloudControllerHandl
     window.removeEventListener("pointerleave", onPointerEnd);
     window.removeEventListener("resize", resize);
     document.removeEventListener("welcome:backdrop-covered", onCovered);
-    document.removeEventListener("morphic:phrase-start", updateTextClearZone);
+    document.removeEventListener("morphic:phrase-start", updateZones);
     renderer.destroy();
   };
 
