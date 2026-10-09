@@ -77,9 +77,14 @@ export const playMorphicSequence = (nodes: MorphicNodes): void => {
 
   let phraseIndex = 0;
   let timerId: number | null = null;
+  let coverSync: (() => void) | null = null;
 
   const cancelTimers = () => {
     if (timerId !== null) window.clearTimeout(timerId);
+    if (coverSync) {
+      document.removeEventListener("welcome:backdrop-covered", coverSync);
+      coverSync = null;
+    }
     document.removeEventListener("astro:before-swap", cancelTimers);
   };
   document.addEventListener("astro:before-swap", cancelTimers, { once: true });
@@ -151,9 +156,14 @@ export const playMorphicSequence = (nodes: MorphicNodes): void => {
       phraseIndex = (phraseIndex + 1) % nodes.phrases.length;
       if (phraseIndex === 2) {
         const onCovered = () => {
+          if (coverSync) {
+            document.removeEventListener("welcome:backdrop-covered", coverSync);
+            coverSync = null;
+          }
           if (timerId !== null) window.clearTimeout(timerId);
           runIntro();
         };
+        coverSync = onCovered;
         document.addEventListener("welcome:backdrop-covered", onCovered, { once: true });
         timerId = window.setTimeout(onCovered, 4500);
       } else {

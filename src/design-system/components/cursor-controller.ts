@@ -115,6 +115,7 @@ export const getCursorController = (): CursorController => {
 
   const enable = () => {
     isEnabled = true;
+    gsap.set(cursorEl, { clearProps: "opacity,scale" });
     document.documentElement.classList.add("has-custom-cursor");
     if (hasPointerPosition) {
       cursorEl.classList.add("is-visible");

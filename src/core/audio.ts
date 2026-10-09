@@ -69,7 +69,8 @@ export class ProceduralAudioEngine implements AudioEngineContract {
       this.mode = "active";
       this.bindTeardownAndVisibility();
       return true;
-    } catch {
+    } catch (error) {
+      console.warn("[Audio] Fallo en initialize:", error);
       this.mode = "pending_gesture";
       this.attachDeferredUnlock();
       return false;
