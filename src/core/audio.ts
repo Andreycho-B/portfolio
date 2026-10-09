@@ -19,6 +19,19 @@ export class ProceduralAudioEngine implements AudioEngineContract {
   private lastTactileTime = 0;
   private userMuted = false;
 
+  constructor() {
+    if (typeof window !== "undefined") {
+      try {
+        const AudioCtxClass = window.AudioContext;
+        if (AudioCtxClass) {
+          this.audioContext = new AudioCtxClass();
+        }
+      } catch {
+        // Ignorar si el navegador restringe AudioContext antes del gesto
+      }
+    }
+  }
+
   public getMode(): AudioMode {
     return this.mode;
   }

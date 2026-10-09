@@ -6,7 +6,7 @@ const INHARMONIC_MODES: readonly GlassHarmonicSpec[] = [
   { ratio: 1.5, gainRatio: 0.2, decayDuration: 1.6 },
 ];
 
-const P1 = [432, 528] as const,
+const P1 = [432, 540] as const,
   P2 = [216, 324] as const,
   P3 = [270, 432] as const;
 const P4 = [324, 528] as const,
@@ -22,7 +22,7 @@ const playGenerativeChime = (ctx: AudioContext, destination: GainNode): void => 
   const chimeGain = ctx.createGain();
   chimeGain.gain.setValueAtTime(0.0001, now);
   // Campanadas aterciopeladas con 250ms de ataque suave y presencia cristalina
-  chimeGain.gain.linearRampToValueAtTime(0.052, now + 0.25);
+  chimeGain.gain.linearRampToValueAtTime(0.04, now + 0.25);
   chimeGain.gain.exponentialRampToValueAtTime(0.0001, now + 4.2);
 
   const osc1 = ctx.createOscillator();
@@ -75,20 +75,22 @@ export const startOrganicDrone = (
   oscFifth.connect(fifthGain);
   oscThird.connect(thirdGain);
 
-  // Filtro Bessel subcrítico (Q=0.5, corte a 260Hz): Cero pico de resonancia nasal/zumbido
+  // Filtro Bessel subcrítico (Q=0.5, corte a 480Hz): el triad completo (216/270/324)
+  // respira sin el trobado opresivo de un corte que gates los parciales superiores
   const filter = ctx.createBiquadFilter();
   filter.type = "lowpass";
-  filter.frequency.setValueAtTime(260, now);
+  filter.frequency.setValueAtTime(480, now);
   filter.Q.setValueAtTime(0.5, now);
 
   // LFO de Coherencia Cardiovascular HRV: respiración pausada y sutil de 0.08Hz
+  // sobre la amplitud (no sobre el timbre): oleaje suave sin latidos opresivos
   const breathLfo = ctx.createOscillator();
   const breathGain = ctx.createGain();
   breathLfo.type = "sine";
   breathLfo.frequency.setValueAtTime(0.08, now);
-  breathGain.gain.setValueAtTime(35, now);
+  breathGain.gain.setValueAtTime(0.014, now);
   breathLfo.connect(breathGain);
-  breathGain.connect(filter.frequency);
+  breathGain.connect(droneGain.gain);
 
   const panner = ctx.createStereoPanner();
   const panLfo = ctx.createOscillator();
@@ -107,15 +109,15 @@ export const startOrganicDrone = (
 
   for (const src of [oscBase, oscFifth, oscThird, breathLfo, panLfo]) src.start(now);
 
-  // Campanadas iniciales inmediatas (1.2s) y rítmicas cada 4.5-7.5s
+  // Campanadas espaciadas: primera a los 2.4s y luego cada 7-12s
   let chimeTimerId: number | undefined;
   const scheduleNext = (delayMs: number) => {
     chimeTimerId = window.setTimeout(() => {
       playGenerativeChime(ctx, destination);
-      scheduleNext(4500 + Math.random() * 3000);
+      scheduleNext(7000 + Math.random() * 5000);
     }, delayMs);
   };
-  scheduleNext(1200);
+  scheduleNext(2400);
 
   const stop = () => {
     if (chimeTimerId !== undefined) window.clearTimeout(chimeTimerId);
@@ -127,6 +129,7 @@ export const startOrganicDrone = (
     window.setTimeout(() => {
       try {
         for (const node of [oscBase, oscFifth, oscThird, breathLfo, panLfo]) node.stop();
+        breathGain.disconnect();
         droneGain.disconnect();
       } catch {
         // Nodos ya cerrados
