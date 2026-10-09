@@ -11,6 +11,8 @@ export const initConsentScreen = (): void => {
   const actionsElement = document.querySelector<HTMLElement>("[data-consent-actions]");
   const muteButton = document.querySelector<HTMLButtonElement>("[data-btn-mute]");
   const cloudCanvas = screenElement?.querySelector<HTMLCanvasElement>("[data-cloud-canvas]");
+  const blueBox = screenElement?.querySelector<HTMLElement>("[data-blue-box]");
+  const vignette = screenElement?.querySelector<HTMLElement>(".top-blur-vignette");
 
   if (!screenElement || !contentElement || !promptElement || !actionsElement) {
     return;
@@ -32,7 +34,7 @@ export const initConsentScreen = (): void => {
       cursor.setMuted(true);
     } else {
       cursor.setMuted(false);
-      cursor.setExpanded(true, "Entrar");
+      cursor.setExpanded(true, "Ingresar");
     }
   };
 
@@ -64,7 +66,7 @@ export const initConsentScreen = (): void => {
   const handleMuteEnter = () => cursor.setMuted(true);
   const handleMuteLeave = () => {
     cursor.setMuted(false);
-    cursor.setExpanded(true, "Entrar");
+    cursor.setExpanded(true, "Ingresar");
   };
   const handleMuteClick = (event: MouseEvent) => {
     event.stopPropagation();
@@ -88,7 +90,9 @@ export const initConsentScreen = (): void => {
     if (isTransitioning) return;
     isTransitioning = true;
     cleanupListeners();
-    cursor.disable();
+    cursor.setMuted(false);
+    cursor.setExpanded(false);
+    cursor.pulse();
 
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
       try {
@@ -106,10 +110,44 @@ export const initConsentScreen = (): void => {
       void audio.initialize(false);
     }
 
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (prefersReduced) {
+      cursor.setInverted(false);
+      const targets = [contentElement, actionsElement, cloudCanvas, blueBox, vignette].filter(
+        (el): el is HTMLElement | HTMLCanvasElement => el !== null,
+      );
+      gsap.to(targets, {
+        opacity: 0,
+        duration: 0.25,
+        onComplete: () => {
+          backdrop?.destroy();
+          cloud?.destroy();
+          screenElement.style.display = "none";
+          screenElement.style.pointerEvents = "none";
+          screenElement.dispatchEvent(
+            new CustomEvent("consent:completed", {
+              bubbles: true,
+              detail: { soundEnabled: enableSound },
+            }),
+          );
+        },
+      });
+      return;
+    }
+
+    const line1 = contentElement.querySelector<HTMLElement>('[data-morphic-line="1"]');
+    const line2 = contentElement.querySelector<HTMLElement>('[data-morphic-line="2"]');
+
     const tl = gsap.timeline({
       onComplete: () => {
         backdrop?.destroy();
         cloud?.destroy();
+        cursor.setInverted(false);
+        screenElement.style.display = "none";
+        screenElement.style.pointerEvents = "none";
         screenElement.dispatchEvent(
           new CustomEvent("consent:completed", {
             bubbles: true,
@@ -119,29 +157,147 @@ export const initConsentScreen = (): void => {
       },
     });
 
-    tl.to(contentElement, {
-      yPercent: -55,
-      scaleX: 1,
-      scaleY: 1,
-      duration: 0.6,
-      ease: "power1.inOut",
-      transformOrigin: "50% 0%",
-      force3D: true,
-    });
+    // 1. Arrastre gravitacional ascendente de controles inferiores
+    tl.to(
+      promptElement,
+      {
+        y: -24,
+        opacity: 0,
+        duration: 0.24,
+        ease: "power2.in",
+        force3D: true,
+      },
+      0,
+    );
 
-    tl.to(contentElement, {
-      yPercent: -125,
-      scaleY: 0.01,
-      scaleX: 2.4,
-      opacity: 0,
-      duration: 0.8,
-      ease: "power2.inOut",
-      transformOrigin: "50% 0%",
-      force3D: true,
-    });
+    tl.to(
+      actionsElement,
+      {
+        y: -16,
+        opacity: 0,
+        duration: 0.24,
+        ease: "power2.in",
+        force3D: true,
+      },
+      0,
+    );
 
-    gsap.to(actionsElement, { opacity: 0, duration: 0.45, ease: "power2.out", force3D: true });
-    if (cloudCanvas) gsap.to(cloudCanvas, { opacity: 0, duration: 0.45, ease: "power2.out" });
+    if (cloudCanvas) {
+      // Degradado ascendente: la máscara vive en el CSS; GSAP solo coreografía
+      // la variable --wipe-edge desde su valor de reposo (100) hasta -wipe-soft
+      const wipeSoftBand = Number.parseFloat(
+        getComputedStyle(cloudCanvas).getPropertyValue("--wipe-soft"),
+      );
+      if (Number.isFinite(wipeSoftBand)) {
+        tl.to(
+          cloudCanvas,
+          {
+            "--wipe-edge": -wipeSoftBand,
+            duration: 1.8,
+            ease: "power2.inOut",
+          },
+          0.2,
+        );
+      } else {
+        console.warn("[ConsentScreen] Variable --wipe-soft no definida; se omite el degradado");
+      }
+    }
+
+    if (vignette) {
+      tl.to(
+        vignette,
+        {
+          y: -80,
+          opacity: 0,
+          duration: 0.35,
+          ease: "power2.in",
+        },
+        0.1,
+      );
+    }
+
+    if (blueBox) {
+      // La caja ya está cubierta por el canvas opaco: ocultarla al inicio evita
+      // que su degradado eléctrico se transparente durante la salida hacia el crema
+      tl.set(blueBox, { opacity: 0 }, 0);
+    }
+
+    tl.call(() => cursor.setInverted(false), undefined, 0.28);
+
+    // 2. Micro-anticipación y compresión elástica previa
+    tl.to(
+      contentElement,
+      {
+        scale: 0.97,
+        y: 8,
+        duration: 0.16,
+        ease: "power1.in",
+        force3D: true,
+      },
+      0,
+    );
+
+    // 3. Succión exponencial hiperbólica con deformación y motion blur
+    if (line1 && line2) {
+      tl.to(
+        line1,
+        {
+          yPercent: -135,
+          scaleX: 1.8,
+          scaleY: 0.04,
+          opacity: 0,
+          filter: "blur(8px)",
+          duration: 0.52,
+          ease: "expo.in",
+          transformOrigin: "50% 0%",
+          force3D: true,
+        },
+        0.16,
+      );
+
+      tl.to(
+        line2,
+        {
+          yPercent: -135,
+          scaleX: 1.9,
+          scaleY: 0.03,
+          opacity: 0,
+          filter: "blur(10px)",
+          duration: 0.52,
+          ease: "expo.in",
+          transformOrigin: "50% 0%",
+          force3D: true,
+        },
+        0.175,
+      );
+    } else {
+      tl.to(
+        contentElement,
+        {
+          yPercent: -135,
+          scaleX: 2.0,
+          scaleY: 0.02,
+          opacity: 0,
+          filter: "blur(10px)",
+          duration: 0.55,
+          ease: "expo.in",
+          transformOrigin: "50% 0%",
+          force3D: true,
+        },
+        0.16,
+      );
+    }
+
+    // Desvanecimiento final de seguridad del contenedor
+    tl.to(
+      contentElement,
+      {
+        opacity: 0,
+        duration: 0.2,
+        ease: "power2.in",
+      },
+      0.55,
+    );
   };
 
   const revealControls = () => {
@@ -149,7 +305,8 @@ export const initConsentScreen = (): void => {
     promptElement.classList.add("is-revealed");
     actionsElement.classList.add("is-revealed");
     cursor.enable();
-    cursor.setExpanded(true, "Entrar");
+    cursor.setInverted(true);
+    cursor.setExpanded(true, "Ingresar");
   };
 
   screenElement.addEventListener("morphic:complete", revealControls, { once: true });

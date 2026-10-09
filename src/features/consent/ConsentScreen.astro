@@ -6,7 +6,7 @@ import MorphicText from "../../design-system/components/MorphicText.astro";
   <div class="top-blur-vignette" aria-hidden="true"></div>
 
   <div class="welcome-backdrop" data-welcome-backdrop>
-    <div class="welcome-blue-box" data-blue-box style="background-color: #1982e6;"></div>
+    <div class="welcome-blue-box" data-blue-box></div>
     <canvas class="welcome-cloud-canvas" data-cloud-canvas></canvas>
   </div>
 
@@ -14,8 +14,8 @@ import MorphicText from "../../design-system/components/MorphicText.astro";
     <MorphicText
       phrases={["Bienvenido", "Soy\nAndrey", "Desarrollador\nCreativo"]}
       as="h1"
-      duration={1.6}
-      exitDelay={0.8}
+      duration={1.5}
+      exitDelay={0.5}
       mutateWord="Creativo"
     />
 
@@ -95,12 +95,34 @@ import MorphicText from "../../design-system/components/MorphicText.astro";
     position: absolute;
     top: 50%;
     left: 50%;
-    background-color: #1982e6 !important;
+    background:
+      radial-gradient(90% 80% at 15% 15%, #0052d0 0%, #006bf0 38%, transparent 75%),
+      linear-gradient(
+        150deg,
+        #0065f0 0%,
+        #1682ff 36%,
+        #60b0ff 58%,
+        #c2e2ff 76%,
+        #ffffff 92%,
+        #ffffff 100%
+      );
+    background-attachment: fixed;
+    background-size: 100vw 100vh;
     opacity: 0;
     transform: translate(-50%, -50%) translateZ(0);
     transform-origin: 50% 50%;
     will-change: transform;
     pointer-events: none;
+  }
+  .welcome-blue-box::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: #1f94ff;
+    transition: opacity 1.35s cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  .welcome-blue-box.is-expanding::after {
+    opacity: 0;
   }
   .welcome-cloud-canvas {
     position: absolute;
@@ -111,6 +133,26 @@ import MorphicText from "../../design-system/components/MorphicText.astro";
     z-index: 1;
     opacity: 0;
     transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    --wipe-edge: 100;
+    --wipe-soft: 45;
+    mask-image: linear-gradient(
+      to bottom,
+      #000 0%,
+      #000 calc(var(--wipe-edge) * 1%),
+      rgba(0, 0, 0, 0.78) calc((var(--wipe-edge) + var(--wipe-soft) * 0.29) * 1%),
+      rgba(0, 0, 0, 0.42) calc((var(--wipe-edge) + var(--wipe-soft) * 0.55) * 1%),
+      rgba(0, 0, 0, 0.12) calc((var(--wipe-edge) + var(--wipe-soft) * 0.8) * 1%),
+      transparent calc((var(--wipe-edge) + var(--wipe-soft)) * 1%)
+    );
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      #000 0%,
+      #000 calc(var(--wipe-edge) * 1%),
+      rgba(0, 0, 0, 0.78) calc((var(--wipe-edge) + var(--wipe-soft) * 0.29) * 1%),
+      rgba(0, 0, 0, 0.42) calc((var(--wipe-edge) + var(--wipe-soft) * 0.55) * 1%),
+      rgba(0, 0, 0, 0.12) calc((var(--wipe-edge) + var(--wipe-soft) * 0.8) * 1%),
+      transparent calc((var(--wipe-edge) + var(--wipe-soft)) * 1%)
+    );
   }
   .welcome-cloud-canvas.is-revealed {
     opacity: 1;
@@ -183,22 +225,62 @@ import MorphicText from "../../design-system/components/MorphicText.astro";
     }
   }
   .btn-mute-entry {
-    background: transparent;
-    border: none;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(26, 23, 20, 0.04);
+    border: 1px solid rgba(26, 23, 20, 0.12);
     font-family: var(--font-text);
-    font-size: var(--text-xs);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
     color: var(--color-fg-muted);
-    letter-spacing: var(--ls-metadata);
+    letter-spacing: var(--ls-labels);
     cursor: pointer;
-    padding: var(--space-2xs) var(--space-xs);
-    border-radius: var(--radius-sm);
-    transition: color var(--dur-fast) var(--ease-fast);
+    padding: 12px 24px;
+    min-height: 44px;
+    border-radius: var(--radius-pill);
+    corner-smoothing: 60%;
+    -webkit-corner-smoothing: 0.6;
+    user-select: none;
+    will-change: transform;
+    transition:
+      color var(--dur-fast) var(--ease-fast),
+      background-color 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.32s cubic-bezier(0.34, 1.45, 0.64, 1);
+  }
+  .btn-mute-entry::before {
+    content: "";
+    position: absolute;
+    inset: -6px -12px;
+    border-radius: var(--radius-pill);
+    pointer-events: auto;
   }
   .btn-mute-entry:hover,
   .btn-mute-entry:focus-visible {
     color: var(--color-fg);
+    background: rgba(26, 23, 20, 0.08);
+    border-color: rgba(26, 23, 20, 0.24);
+    transform: scale(1.03);
   }
-  :global(html.has-custom-cursor) .btn-mute-entry {
+  .btn-mute-entry:active {
+    transform: scale(0.96);
+    transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .consent-container[data-backdrop-active="true"] .btn-mute-entry {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.24);
+    color: rgba(255, 255, 255, 0.85);
+  }
+  .consent-container[data-backdrop-active="true"] .btn-mute-entry:hover,
+  .consent-container[data-backdrop-active="true"] .btn-mute-entry:focus-visible {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.45);
+    color: #ffffff;
+  }
+  :global(html.has-custom-cursor) .btn-mute-entry,
+  :global(html.has-custom-cursor) .btn-mute-entry::before {
     cursor: none;
   }
   @media (prefers-reduced-motion: reduce) {
