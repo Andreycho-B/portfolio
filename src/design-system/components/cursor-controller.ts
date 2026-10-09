@@ -7,9 +7,14 @@ export interface CursorController {
   readonly setExpanded: (expanded: boolean, label?: string) => void;
   readonly setMuted: (muted: boolean) => void;
   readonly setPressed: (pressed: boolean) => void;
+  readonly setInverted: (inverted: boolean) => void;
+  readonly pulse: () => void;
   readonly destroy: () => void;
 }
 
+const NOOP_CONTROLLER: CursorController = new Proxy({} as CursorController, {
+  get: () => () => {},
+});
 let controllerInstance: CursorController | null = null;
 
 export const getCursorController = (): CursorController => {
@@ -22,16 +27,7 @@ export const getCursorController = (): CursorController => {
     window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
   if (!cursorEl || !isFinePointer) {
-    const noop = () => {};
-    controllerInstance = {
-      enable: noop,
-      disable: noop,
-      setExpanded: noop,
-      setMuted: noop,
-      setPressed: noop,
-      destroy: noop,
-    };
-    return controllerInstance;
+    return NOOP_CONTROLLER;
   }
 
   const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -47,7 +43,7 @@ export const getCursorController = (): CursorController => {
   let lastTimestamp = 0;
 
   const updateSpring = (timestamp: number) => {
-    const dt = lastTimestamp === 0 ? 0.016 : Math.min((timestamp - lastTimestamp) / 1000, 0.032);
+    const dt = lastTimestamp === 0 ? 0.008 : Math.min((timestamp - lastTimestamp) / 1000, 0.032);
     lastTimestamp = timestamp;
 
     if (prefersReduced) {
@@ -59,11 +55,9 @@ export const getCursorController = (): CursorController => {
       rafId = null;
       return;
     }
-
     const isResting = spring.step(dt);
     setX(spring.currentX);
     setY(spring.currentY);
-
     if (!isResting) {
       rafId = requestAnimationFrame(updateSpring);
     } else {
@@ -98,17 +92,10 @@ export const getCursorController = (): CursorController => {
   };
 
   const handlePointerDown = () => {
-    if (isEnabled) cursorEl.classList.add("is-pressed");
+    isEnabled && cursorEl.classList.add("is-pressed");
   };
-
-  const handlePointerUp = () => {
-    cursorEl.classList.remove("is-pressed");
-  };
-
-  const handleMouseLeave = () => {
-    cursorEl.classList.remove("is-visible");
-  };
-
+  const handlePointerUp = () => cursorEl.classList.remove("is-pressed");
+  const handleMouseLeave = () => cursorEl.classList.remove("is-visible");
   const handleMouseEnter = () => {
     if (isEnabled && hasPointerPosition) {
       cursorEl.classList.add("is-visible");
@@ -116,11 +103,15 @@ export const getCursorController = (): CursorController => {
     }
   };
 
-  window.addEventListener("pointermove", handlePointerMove, { passive: true });
-  window.addEventListener("pointerdown", handlePointerDown);
-  window.addEventListener("pointerup", handlePointerUp);
-  document.documentElement.addEventListener("mouseleave", handleMouseLeave);
-  document.documentElement.addEventListener("mouseenter", handleMouseEnter);
+  const attachEvents = (add: boolean) => {
+    const method = add ? "addEventListener" : "removeEventListener";
+    window[method]("pointermove", handlePointerMove as EventListener, { passive: true });
+    window[method]("pointerdown", handlePointerDown);
+    window[method]("pointerup", handlePointerUp);
+    document.documentElement[method]("mouseleave", handleMouseLeave);
+    document.documentElement[method]("mouseenter", handleMouseEnter);
+  };
+  attachEvents(true);
 
   const enable = () => {
     isEnabled = true;
@@ -134,7 +125,7 @@ export const getCursorController = (): CursorController => {
   const disable = () => {
     isEnabled = false;
     document.documentElement.classList.remove("has-custom-cursor");
-    cursorEl.classList.remove("is-visible", "is-expanded", "is-pressed", "is-muted");
+    cursorEl.classList.remove("is-visible", "is-expanded", "is-pressed", "is-muted", "is-inverted");
     if (rafId !== null) {
       cancelAnimationFrame(rafId);
       rafId = null;
@@ -143,34 +134,52 @@ export const getCursorController = (): CursorController => {
     gsap.to(cursorEl, { opacity: 0, scale: 0.4, duration: 0.25, ease: "power2.in" });
   };
 
+  let isExpandedState = false;
+  let isMutedState = false;
+  let isPressedState = false;
+  let isInvertedState = false;
+
   const setExpanded = (expanded: boolean, label?: string) => {
     if (!isEnabled) return;
-    if (expanded) {
-      if (label && textEl && textEl.textContent !== label) textEl.textContent = label;
-      cursorEl.classList.add("is-expanded");
-    } else {
-      cursorEl.classList.remove("is-expanded");
+    if (expanded && label && textEl && textEl.textContent !== label) textEl.textContent = label;
+    if (isExpandedState !== expanded) {
+      isExpandedState = expanded;
+      cursorEl.classList.toggle("is-expanded", expanded);
     }
   };
 
   const setMuted = (muted: boolean) => {
-    if (!isEnabled) return;
+    if (!isEnabled || isMutedState === muted) return;
+    isMutedState = muted;
     cursorEl.classList.toggle("is-muted", muted);
-    if (muted) cursorEl.classList.remove("is-expanded");
+    if (muted && isExpandedState) {
+      isExpandedState = false;
+      cursorEl.classList.remove("is-expanded");
+    }
   };
 
   const setPressed = (pressed: boolean) => {
-    if (!isEnabled) return;
+    if (!isEnabled || isPressedState === pressed) return;
+    isPressedState = pressed;
     cursorEl.classList.toggle("is-pressed", pressed);
+  };
+  const setInverted = (inverted: boolean) => {
+    if (!isEnabled || isInvertedState === inverted) return;
+    isInvertedState = inverted;
+    cursorEl.classList.toggle("is-inverted", inverted);
+  };
+
+  const pulse = () => {
+    if (!isEnabled) return;
+    gsap
+      .timeline()
+      .to(cursorEl, { scale: 0.82, duration: 0.16, ease: "power1.in", force3D: true })
+      .to(cursorEl, { scale: 1, duration: 0.38, ease: "back.out(1.5)", force3D: true });
   };
 
   const destroy = () => {
     disable();
-    window.removeEventListener("pointermove", handlePointerMove);
-    window.removeEventListener("pointerdown", handlePointerDown);
-    window.removeEventListener("pointerup", handlePointerUp);
-    document.documentElement.removeEventListener("mouseleave", handleMouseLeave);
-    document.documentElement.removeEventListener("mouseenter", handleMouseEnter);
+    attachEvents(false);
     controllerInstance = null;
   };
 
@@ -180,8 +189,9 @@ export const getCursorController = (): CursorController => {
     setExpanded,
     setMuted,
     setPressed,
+    setInverted,
+    pulse,
     destroy,
   };
-
   return controllerInstance;
 };
