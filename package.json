@@ -18,13 +18,16 @@
   "dependencies": {
     "@astrojs/check": "0.9.10",
     "astro": "7.3.5",
-    "gsap": "3.15.0"
+    "gsap": "3.15.0",
+    "postprocessing": "6.39.5",
+    "three": "0.186.1"
   },
   "allowScripts": {
     "esbuild": true
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
+    "@types/three": "0.186.0",
     "husky": "9.1.7",
     "prettier": "3.9.9",
     "prettier-plugin-astro": "1.1.0",
