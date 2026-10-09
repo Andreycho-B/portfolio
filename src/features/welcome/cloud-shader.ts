@@ -18,7 +18,6 @@ uniform float u_time;
 uniform vec2 u_resolution;
 uniform vec2 u_cursor;
 uniform float u_cursorActive;
-uniform vec3 u_blueColor;
 uniform float u_cloudOpacity;
 uniform vec4 u_textClearZone;
 uniform vec4 u_actionZone;

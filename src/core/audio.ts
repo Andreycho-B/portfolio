@@ -55,7 +55,7 @@ export class ProceduralAudioEngine implements AudioEngineContract {
       if (!this.audioContext) {
         const AudioCtxClass = window.AudioContext;
         if (!AudioCtxClass) {
-          console.warn("[Audio] Web Audio API not supported in this browser.");
+          console.warn("[Audio] Este navegador no soporta la Web Audio API.");
           this.mode = "muted";
           return false;
         }

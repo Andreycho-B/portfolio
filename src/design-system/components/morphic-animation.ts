@@ -38,7 +38,7 @@ const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
         phrases = parsed;
       }
     } catch {
-      console.warn("[MorphicText] Invalid data-phrases JSON");
+      console.warn("[MorphicText] JSON de data-phrases inválido");
     }
   }
 

@@ -1,7 +1,6 @@
 import { gsap } from "gsap";
+import { GOOEY } from "./morphic.types";
 import type { MorphicNodes } from "./morphic-animation";
-
-const GOOEY = { initSlope: 24, initOffset: -11, targetSlope: 1, targetOffset: 0 } as const;
 
 export const createExitTimeline = (
   nodes: MorphicNodes,

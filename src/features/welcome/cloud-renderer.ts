@@ -64,7 +64,6 @@ export const createCloudRenderer = (canvas: HTMLCanvasElement): CloudWebGLRender
   const uRes = gl.getUniformLocation(program, "u_resolution");
   const uCursor = gl.getUniformLocation(program, "u_cursor");
   const uCursorActive = gl.getUniformLocation(program, "u_cursorActive");
-  const uBlueColor = gl.getUniformLocation(program, "u_blueColor");
   const uCloudOpacity = gl.getUniformLocation(program, "u_cloudOpacity");
   const uTextClearZone = gl.getUniformLocation(program, "u_textClearZone");
   const uActionZone = gl.getUniformLocation(program, "u_actionZone");
@@ -72,11 +71,6 @@ export const createCloudRenderer = (canvas: HTMLCanvasElement): CloudWebGLRender
 
   let canvasWidth = canvas.width;
   let canvasHeight = canvas.height;
-
-  // Azul cielo despejado (#1982e6 = [0.098, 0.510, 0.902])
-  const blueR = 25 / 255;
-  const blueG = 130 / 255;
-  const blueB = 230 / 255;
 
   const resize = (width: number, height: number) => {
     canvasWidth = width;
@@ -97,7 +91,6 @@ export const createCloudRenderer = (canvas: HTMLCanvasElement): CloudWebGLRender
     gl.uniform2f(uRes, canvasWidth, canvasHeight);
     gl.uniform2f(uCursor, cursor.x, canvasHeight - cursor.y);
     gl.uniform1f(uCursorActive, cursor.strength);
-    gl.uniform3f(uBlueColor, blueR, blueG, blueB);
     gl.uniform1f(uCloudOpacity, opacity);
     gl.uniform4f(
       uTextClearZone,

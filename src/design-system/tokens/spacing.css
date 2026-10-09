@@ -20,7 +20,4 @@
   --radius-xl: 34px;
   --radius-2xl: 55px;
   --radius-pill: 9999px;
-
-  /* Sin sombras. Jerarquía por composición, espaciado y color. */
-  --shadow-none: none;
 }

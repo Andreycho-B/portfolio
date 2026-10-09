@@ -4,6 +4,8 @@ import { getCursorController } from "../../design-system/components/cursor-contr
 import { initCloudCanvas } from "../welcome/cloud-controller";
 import { initWelcomeBackdrop } from "../welcome/welcome-backdrop";
 
+const CURSOR_LABEL_CONSENT = "Ingresar";
+
 export const initConsentScreen = (): void => {
   const screenElement = document.querySelector<HTMLElement>("[data-consent-screen]");
   const contentElement = document.querySelector<HTMLElement>("[data-consent-content]");
@@ -34,7 +36,7 @@ export const initConsentScreen = (): void => {
       cursor.setMuted(true);
     } else {
       cursor.setMuted(false);
-      cursor.setExpanded(true, "Ingresar");
+      cursor.setExpanded(true, CURSOR_LABEL_CONSENT);
     }
   };
 
@@ -66,7 +68,7 @@ export const initConsentScreen = (): void => {
   const handleMuteEnter = () => cursor.setMuted(true);
   const handleMuteLeave = () => {
     cursor.setMuted(false);
-    cursor.setExpanded(true, "Ingresar");
+    cursor.setExpanded(true, CURSOR_LABEL_CONSENT);
   };
   const handleMuteClick = (event: MouseEvent) => {
     event.stopPropagation();
@@ -306,7 +308,7 @@ export const initConsentScreen = (): void => {
     actionsElement.classList.add("is-revealed");
     cursor.enable();
     cursor.setInverted(true);
-    cursor.setExpanded(true, "Ingresar");
+    cursor.setExpanded(true, CURSOR_LABEL_CONSENT);
   };
 
   screenElement.addEventListener("morphic:complete", revealControls, { once: true });

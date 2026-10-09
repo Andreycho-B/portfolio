@@ -1,10 +1,5 @@
 :root {
   /* Z-index. Saltos amplios para permitir capas intermedias sin renumerar. */
-  --z-base: 0;
-  --z-elevated: 10;
-  --z-sticky: 100;
-  --z-overlay: 1000;
-  --z-audio: 9000;
   --z-cursor: 9999;
 
   /* Contenedor */

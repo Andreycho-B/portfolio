@@ -21,3 +21,5 @@ export interface MorphicNodes {
   readonly textColorNode: SVGFEColorMatrixElement | null;
   readonly cyanLayerNode: SVGFEColorMatrixElement | null;
 }
+
+export const GOOEY = { initSlope: 24, initOffset: -11, targetSlope: 1, targetOffset: 0 } as const;

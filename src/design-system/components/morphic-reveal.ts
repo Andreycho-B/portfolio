@@ -1,4 +1,5 @@
 import { gsap } from "gsap";
+import { GOOEY } from "./morphic.types";
 import type { MorphicNodes } from "./morphic-animation";
 
 export const resetNodesToNeutral = (nodes: MorphicNodes): void => {
@@ -33,8 +34,6 @@ export const resetNodesToIntro = (nodes: MorphicNodes): void => {
   }
   nodes.element.style.filter = `url(#${nodes.filterId})`;
 };
-
-const GOOEY = { initSlope: 24, initOffset: -11, targetSlope: 1, targetOffset: 0 } as const;
 
 export const createRevealTimeline = (
   nodes: MorphicNodes,
