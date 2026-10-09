@@ -1,43 +1,43 @@
-# Astro Starter Kit: Minimal
+# Portafolio Andrey
 
-```sh
-pnpm create astro@latest -- --template minimal
-```
+Portafolio personal de Andrey: pantalla de consentimiento interactivo, vista espiral de proyectos en WebGL y dirección visual en blanco y negro con textura de grano.
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Stack
 
-## 🚀 Project Structure
+- Astro 7 + TypeScript strict
+- GSAP para orquestación de timelines
+- Three.js + postprocessing para la vista espiral de proyectos
+- Web Audio API con síntesis procedural (singleton en `src/core/audio.ts`)
+- Biome + Prettier (solo `.astro`) + Husky
 
-Inside of your Astro project, you'll see the following folders and files:
+## Comandos
+
+| Comando           | Acción                                       |
+| :---------------- | :------------------------------------------- |
+| `pnpm install`    | Instala dependencias                         |
+| `pnpm dev`        | Servidor de desarrollo en `localhost:4321`   |
+| `pnpm build`      | Build de producción en `./dist/`             |
+| `pnpm preview`    | Preview local del build                      |
+| `pnpm check`      | Diagnóstico de tipos (`astro check`)         |
+| `pnpm lint`       | Lint con Biome                               |
+| `pnpm format`     | Formateo con Biome y Prettier (`.astro`)     |
+
+## Estructura
 
 ```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+src/
+├── core/               Audio procedural y física de resortes
+├── design-system/      Tokens, componentes y motor tipográfico morphic
+├── features/
+│   ├── consent/        Pantalla de consentimiento (spec §8)
+│   ├── projects/       Vista espiral de proyectos (spec §9.3)
+│   └── welcome/        Backdrop de nubes WebGL del consentimiento
+├── layouts/
+└── pages/
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## Referencias
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
-
-Any static assets, like images, can be placed in the `public/` directory.
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `pnpm install`             | Installs dependencies                            |
-| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
-| `pnpm build`           | Build your production site to `./dist/`          |
-| `pnpm preview`         | Preview your build locally, before deploying     |
-| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+- Spec del proyecto: `spec/000-master-spec.md` (local)
+- Reglas del proyecto: `.agentrules` (local)
+- Documentación de Astro: https://docs.astro.build
