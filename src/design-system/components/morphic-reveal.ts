@@ -12,12 +12,25 @@ export const resetNodesToNeutral = (nodes: MorphicNodes): void => {
 };
 
 export const resetNodesToIntro = (nodes: MorphicNodes): void => {
-  nodes.blurNode.setAttribute("stdDeviation", "20 20");
-  nodes.matrixNode.setAttribute("values", "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11");
-  nodes.cyanTopNode?.setAttribute("dx", `-${nodes.shiftX}`);
-  nodes.cyanTopNode?.setAttribute("dy", `-${nodes.shiftY}`);
-  nodes.cyanBottomNode?.setAttribute("dx", `${(nodes.shiftX * 0.3).toFixed(2)}`);
-  nodes.cyanBottomNode?.setAttribute("dy", `${(nodes.shiftY * 0.7).toFixed(2)}`);
+  const isWhite = nodes.textColorNode?.getAttribute("values")?.includes("0 0 0 0 1") ?? false;
+  nodes.blurNode.setAttribute("stdDeviation", isWhite ? "6 6" : "20 20");
+  nodes.matrixNode.setAttribute(
+    "values",
+    isWhite
+      ? "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 10 -3"
+      : "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11",
+  );
+  if (!isWhite) {
+    nodes.cyanTopNode?.setAttribute("dx", `-${nodes.shiftX}`);
+    nodes.cyanTopNode?.setAttribute("dy", `-${nodes.shiftY}`);
+    nodes.cyanBottomNode?.setAttribute("dx", `${(nodes.shiftX * 0.3).toFixed(2)}`);
+    nodes.cyanBottomNode?.setAttribute("dy", `${(nodes.shiftY * 0.7).toFixed(2)}`);
+  } else {
+    nodes.cyanTopNode?.setAttribute("dx", "0");
+    nodes.cyanTopNode?.setAttribute("dy", "0");
+    nodes.cyanBottomNode?.setAttribute("dx", "0");
+    nodes.cyanBottomNode?.setAttribute("dy", "0");
+  }
   nodes.element.style.filter = `url(#${nodes.filterId})`;
 };
 
@@ -29,6 +42,7 @@ export const createRevealTimeline = (
 ): gsap.core.Timeline => {
   const { element, blurNode, matrixNode, cyanTopNode, cyanBottomNode } = nodes;
   const { isChromatic, shiftX, shiftY, duration } = nodes;
+  const isWhite = nodes.textColorNode?.getAttribute("values")?.includes("0 0 0 0 1") ?? false;
 
   const stdAttr = blurNode.getAttribute("stdDeviation")?.trim() ?? "20 20";
   const stdParts = stdAttr.split(/\s+/).map(Number);
@@ -40,9 +54,9 @@ export const createRevealTimeline = (
   const state = {
     x: initialX,
     y: initialY,
-    slope: GOOEY.initSlope,
-    offset: GOOEY.initOffset,
-    chromaticProgress: 1.0,
+    slope: isWhite ? 10 : GOOEY.initSlope,
+    offset: isWhite ? -3 : GOOEY.initOffset,
+    chromaticProgress: isWhite ? 0 : 1.0,
   };
 
   let prevBlur = "";

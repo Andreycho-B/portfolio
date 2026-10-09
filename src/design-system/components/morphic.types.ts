@@ -19,4 +19,5 @@ export interface MorphicNodes {
   readonly phrases: readonly string[];
   readonly mutateWord?: string;
   readonly textColorNode: SVGFEColorMatrixElement | null;
+  readonly cyanLayerNode: SVGFEColorMatrixElement | null;
 }

@@ -42,6 +42,7 @@ const blurNodeId = `${filterId}-blur`;
 const matrixNodeId = `${filterId}-matrix`;
 const cyanTopId = `${filterId}-cyan-top`;
 const cyanBottomId = `${filterId}-cyan-bottom`;
+const cyanLayerId = `${filterId}-cyan-layer`;
 const textColorId = `${filterId}-color`;
 ---
 
@@ -58,6 +59,7 @@ const textColorId = `${filterId}-color`;
   data-blur-node={blurNodeId}
   data-matrix-node={matrixNodeId}
   data-text-color={textColorId}
+  data-cyan-layer={chromatic ? cyanLayerId : undefined}
   data-cyan-top={chromatic ? cyanTopId : undefined}
   data-cyan-bottom={chromatic ? cyanBottomId : undefined}
   data-shift-x={shiftX}
@@ -116,6 +118,7 @@ const textColorId = `${filterId}-color`;
             <feMergeNode in="cyanBottom" />
           </feMerge>
           <feColorMatrix
+            id={cyanLayerId}
             in="cyanCombined"
             mode="matrix"
             values="0 0 0 0 0   0 0 0 0 0.8   0 0 0 0 1   0 0 0 0.95 0"
@@ -154,15 +157,31 @@ const textColorId = `${filterId}-color`;
     text-align: center;
   }
 
+  :global(.morphic-line) {
+    display: block;
+    margin: 0;
+    padding: 0;
+    line-height: inherit;
+    transform-origin: 50% 50%;
+    will-change: transform, opacity, filter;
+  }
+
   :global(.morphic-mutant-word) {
     display: inline-block;
     cursor: default;
     white-space: nowrap;
+    letter-spacing: inherit;
+  }
+
+  :global(.morphic-line:has(> .morphic-mutant-word)) {
+    height: calc(var(--lh-heading) * 1em);
   }
 
   :global(.morphic-char) {
     display: inline-block;
     position: relative;
+    vertical-align: baseline;
+    letter-spacing: inherit;
     will-change: transform, filter;
   }
 
@@ -186,11 +205,7 @@ const textColorId = `${filterId}-color`;
 <script>
   import { initMorphicText } from "./morphic-animation";
 
-  if (document.readyState !== "loading") {
-    initMorphicText();
-  } else {
-    document.addEventListener("DOMContentLoaded", initMorphicText);
-  }
-
+  if (document.readyState !== "loading") initMorphicText();
+  else document.addEventListener("DOMContentLoaded", initMorphicText);
   document.addEventListener("astro:page-load", initMorphicText);
 </script>

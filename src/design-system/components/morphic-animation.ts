@@ -1,6 +1,6 @@
 import type { MorphicNodes } from "./morphic.types";
 import { createExitTimeline } from "./morphic-exit";
-import { startMutationLoop } from "./morphic-mutation";
+import { startMutationLoop, wrapMutantWord } from "./morphic-mutation";
 import { createRevealTimeline, resetNodesToIntro, resetNodesToNeutral } from "./morphic-reveal";
 
 export type { MorphicNodes };
@@ -20,11 +20,8 @@ const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
     return null;
 
   const isChromatic = el.dataset.chromatic === "true";
-  const getOffset = (id?: string): SVGFEOffsetElement | null => {
-    if (!isChromatic || !id) return null;
-    const node = document.getElementById(id);
-    return node instanceof SVGFEOffsetElement ? node : null;
-  };
+  const getNode = <T extends Element>(id?: string): T | null =>
+    id ? (document.getElementById(id) as T | null) : null;
 
   const filterId = (el.dataset.blurNode ?? "").replace("-blur", "");
   const exitDelay = el.dataset.exitDelay !== undefined ? parseNum(el.dataset.exitDelay, 1.5) : null;
@@ -45,15 +42,12 @@ const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
     }
   }
 
-  const colorNode = document.getElementById(el.dataset.textColor ?? "");
-  const textColorNode = colorNode instanceof SVGFEColorMatrixElement ? colorNode : null;
-
   return {
     element: el,
     blurNode,
     matrixNode,
-    cyanTopNode: getOffset(el.dataset.cyanTop),
-    cyanBottomNode: getOffset(el.dataset.cyanBottom),
+    cyanTopNode: isChromatic ? getNode<SVGFEOffsetElement>(el.dataset.cyanTop) : null,
+    cyanBottomNode: isChromatic ? getNode<SVGFEOffsetElement>(el.dataset.cyanBottom) : null,
     isChromatic,
     shiftX: parseNum(el.dataset.shiftX, 3.5),
     shiftY: parseNum(el.dataset.shiftY, 1.5),
@@ -64,7 +58,8 @@ const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
     filterId,
     phrases,
     mutateWord: el.dataset.mutateWord,
-    textColorNode,
+    textColorNode: getNode<SVGFEColorMatrixElement>(el.dataset.textColor),
+    cyanLayerNode: getNode<SVGFEColorMatrixElement>(el.dataset.cyanLayer),
   };
 };
 
@@ -93,11 +88,20 @@ export const playMorphicSequence = (nodes: MorphicNodes): void => {
     const currentPhrase = nodes.phrases[phraseIndex] ?? "";
     const isPhraseWhite = phraseIndex >= 2;
     nodes.element.textContent = currentPhrase;
+    if (nodes.mutateWord && currentPhrase.includes(nodes.mutateWord)) {
+      wrapMutantWord(nodes.element, nodes.mutateWord);
+    }
     nodes.textColorNode?.setAttribute(
       "values",
       isPhraseWhite
         ? "0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1 0"
         : "0 0 0 0 0.08  0 0 0 0 0.08  0 0 0 0 0.08  0 0 0 1 0",
+    );
+    nodes.cyanLayerNode?.setAttribute(
+      "values",
+      isPhraseWhite
+        ? "0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0 0"
+        : "0 0 0 0 0   0 0 0 0 0.8   0 0 0 0 1   0 0 0 0.95 0",
     );
     nodes.element.style.color = isPhraseWhite ? "#ffffff" : "var(--color-fg, #1a1714)";
     resetNodesToIntro(nodes);
