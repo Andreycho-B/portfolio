@@ -1,5 +1,7 @@
 import * as THREE from "three";
 
+export const CREME_BACKGROUND = "#f5f1ea";
+
 const RIM_INTENSITY = 0.85;
 const RIM_POWER = 3.5;
 const FRINGE_STRENGTH = 0.16;

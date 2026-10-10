@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { createHelixWorld } from "./helix-cards";
 import type { HelixCardDatum, HelixConfig, HelixSceneHandle } from "./helix-cards.types";
+import { CREME_BACKGROUND } from "./helix-materials";
 import { createPostPipeline } from "./helix-postfx";
 
 // Cámara teleobjetivo: FOV estrecho (32°) que comprime la perspectiva
@@ -11,7 +12,7 @@ const MAX_PIXEL_RATIO = 2;
 const PX_PER_SLOT = 140;
 const FLOW_EASE = 0.075;
 
-const CREME_BACKGROUND = new THREE.Color("#f5f1ea");
+const CREME_BACKGROUND_COLOR = new THREE.Color(CREME_BACKGROUND);
 
 const HELIX_CONFIG: HelixConfig = {
   cardCount: 12,
@@ -82,7 +83,7 @@ export const createHelixScene = async (
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO));
 
   const scene = new THREE.Scene();
-  scene.background = CREME_BACKGROUND;
+  scene.background = CREME_BACKGROUND_COLOR;
   addLights(scene);
 
   const camera = new THREE.PerspectiveCamera(CAMERA_FOV_DEG, 1, 0.1, 100);
