@@ -39,6 +39,8 @@ export type HelixWorldLayout = {
   readonly group: THREE.Group;
   /** Punto de enfoque nítido fijo en el mundo (las tarjetas fluyen a través de él) */
   readonly focusTarget: THREE.Vector3;
+  /** Bbox canónico del arco visible (slots 1..8), invariante bajo el avance */
+  readonly framingBox: THREE.Box3;
   /** Desplaza las tarjetas `advance` slots a lo largo de la hélice (ilimitado) */
   readonly setAdvance: (advance: number) => void;
 };
