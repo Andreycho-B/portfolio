@@ -32,6 +32,7 @@ export type HelixSceneHandle = {
   readonly start: () => void;
   /** Suma `deltaPx` de gestos (rueda/arrastre) al avance objetivo de la hélice */
   readonly scrollBy: (deltaPx: number) => void;
+  readonly scrollTo: (slots: number) => void;
   readonly dispose: () => void;
 };
 

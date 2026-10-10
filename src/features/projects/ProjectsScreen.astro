@@ -50,6 +50,11 @@
 
     let helix: HelixSceneHandle | null = null;
 
+    const WHEEL_LINE_PX = 16;
+    const PX_PER_SLOT = 140;
+    const TOUCH_GAIN = 1.4;
+    const HELIX_LAP_SLOTS = 12;
+
     const revealProjectsZone = () => {
       zone.hidden = false;
       void import("./helix-scene")
@@ -71,29 +76,84 @@
     const onZoneWheel = (event: WheelEvent) => {
       if (zone.hidden) return;
       event.preventDefault();
-      helix?.scrollBy(event.deltaY);
+      const deltaPx =
+        event.deltaMode === 1
+          ? event.deltaY * WHEEL_LINE_PX
+          : event.deltaMode === 2
+            ? event.deltaY * zone.clientHeight
+            : event.deltaY;
+      helix?.scrollBy(deltaPx);
     };
     window.addEventListener("wheel", onZoneWheel, { passive: false });
 
+    const onZoneKeyDown = (event: KeyboardEvent) => {
+      if (zone.hidden || !helix) return;
+      const slots =
+        event.key === "ArrowDown"
+          ? 1
+          : event.key === "ArrowUp"
+            ? -1
+            : event.key === "PageDown"
+              ? 3
+              : event.key === "PageUp"
+                ? -3
+                : null;
+      if (slots !== null) {
+        event.preventDefault();
+        helix.scrollBy(slots * PX_PER_SLOT);
+        return;
+      }
+      if (event.key === "Home") {
+        event.preventDefault();
+        helix.scrollTo(0);
+      } else if (event.key === "End") {
+        event.preventDefault();
+        helix.scrollTo(HELIX_LAP_SLOTS);
+      }
+    };
+    window.addEventListener("keydown", onZoneKeyDown);
+
+    let trackedTouchId: number | null = null;
     let lastTouchY: number | null = null;
+    const resetTouchDrag = () => {
+      trackedTouchId = null;
+      lastTouchY = null;
+    };
     const onZoneTouchStart = (event: TouchEvent) => {
+      if (event.touches.length !== 1) {
+        resetTouchDrag();
+        return;
+      }
       const touch = event.touches.item(0);
-      if (event.touches.length === 1 && touch) lastTouchY = touch.clientY;
+      if (touch) {
+        trackedTouchId = touch.identifier;
+        lastTouchY = touch.clientY;
+      }
     };
     const onZoneTouchMove = (event: TouchEvent) => {
       if (zone.hidden) return;
       event.preventDefault();
+      if (event.touches.length !== 1) {
+        resetTouchDrag();
+        return;
+      }
       const touch = event.touches.item(0);
-      if (event.touches.length !== 1 || !touch || lastTouchY === null) return;
-      helix?.scrollBy((lastTouchY - touch.clientY) * 1.4);
+      if (!touch) return;
+      if (touch.identifier !== trackedTouchId || lastTouchY === null) {
+        trackedTouchId = touch.identifier;
+        lastTouchY = touch.clientY;
+        return;
+      }
+      helix?.scrollBy((lastTouchY - touch.clientY) * TOUCH_GAIN);
       lastTouchY = touch.clientY;
     };
     const onZoneTouchEnd = () => {
-      lastTouchY = null;
+      resetTouchDrag();
     };
     zone.addEventListener("touchstart", onZoneTouchStart, { passive: false });
     zone.addEventListener("touchmove", onZoneTouchMove, { passive: false });
     zone.addEventListener("touchend", onZoneTouchEnd);
+    zone.addEventListener("touchcancel", onZoneTouchEnd);
 
     const onZoneResize = () => {
       if (helix && !zone.hidden) helix.resize(zone.clientWidth, zone.clientHeight);
@@ -102,9 +162,11 @@
 
     const destroy = () => {
       window.removeEventListener("wheel", onZoneWheel);
+      window.removeEventListener("keydown", onZoneKeyDown);
       zone.removeEventListener("touchstart", onZoneTouchStart);
       zone.removeEventListener("touchmove", onZoneTouchMove);
       zone.removeEventListener("touchend", onZoneTouchEnd);
+      zone.removeEventListener("touchcancel", onZoneTouchEnd);
       window.removeEventListener("resize", onZoneResize);
       document.removeEventListener("consent:completed", revealProjectsZone);
       helix?.dispose();

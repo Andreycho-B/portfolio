@@ -109,6 +109,14 @@ export const createHelixScene = async (
     }
   };
 
+  const scrollTo = (slots: number): void => {
+    targetAdvance = slots;
+    if (reducedMotion) {
+      currentAdvance = targetAdvance;
+      world.setAdvance(currentAdvance);
+    }
+  };
+
   const resize = (width: number, height: number): void => {
     renderer.setSize(width, height, false);
     camera.aspect = width / Math.max(1, height);
@@ -154,5 +162,5 @@ export const createHelixScene = async (
     pipeline.dispose();
   };
 
-  return { resize, start, scrollBy, dispose };
+  return { resize, start, scrollBy, scrollTo, dispose };
 };
