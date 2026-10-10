@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { createHelixWorld } from "./helix-cards";
 import type { HelixCardDatum, HelixConfig, HelixSceneHandle } from "./helix-cards.types";
 import { CREME_BACKGROUND } from "./helix-materials";
@@ -13,6 +14,7 @@ const PX_PER_SLOT = 140;
 const FLOW_EASE = 0.075;
 
 const CREME_BACKGROUND_COLOR = new THREE.Color(CREME_BACKGROUND);
+const ENVIRONMENT_INTENSITY = 0.5;
 
 const HELIX_CONFIG: HelixConfig = {
   cardCount: 12,
@@ -85,6 +87,12 @@ export const createHelixScene = async (
   const scene = new THREE.Scene();
   scene.background = CREME_BACKGROUND_COLOR;
   addLights(scene);
+
+  const pmremGenerator = new THREE.PMREMGenerator(renderer);
+  const environmentTexture = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+  pmremGenerator.dispose();
+  scene.environment = environmentTexture;
+  scene.environmentIntensity = ENVIRONMENT_INTENSITY;
 
   const camera = new THREE.PerspectiveCamera(CAMERA_FOV_DEG, 1, 0.1, 100);
   camera.position.set(0, 2.4, 21);
@@ -159,6 +167,7 @@ export const createHelixScene = async (
       }
       material.dispose();
     });
+    environmentTexture.dispose();
     renderer.dispose();
     pipeline.dispose();
   };
