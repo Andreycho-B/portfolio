@@ -1,9 +1,10 @@
 import * as THREE from "three";
-import { createHelixWorld } from "./helix-cards";
-import type { HelixCardDatum, HelixConfig, HelixSceneHandle } from "./helix-cards.types";
+import { createHelixWorld, HELIX_CONFIG } from "./helix-cards";
+import type { HelixCardDatum, HelixSceneHandle } from "./helix-cards.types";
 import { setupHelixEnvironment } from "./helix-environment";
 import { CREME_BACKGROUND } from "./helix-materials";
 import { createPostPipeline } from "./helix-postfx";
+import { createHelixQualityGovernor } from "./helix-quality";
 
 // Cámara teleobjetivo: FOV estrecho (32°) que comprime la perspectiva
 const CAMERA_FOV_DEG = 32;
@@ -14,22 +15,9 @@ const PX_PER_SLOT = 140;
 const FLOW_EASE = 0.075;
 const FLOW_EPSILON = 1e-4;
 const IDLE_FRAME_LIMIT = 2;
+const FRAME_GAP_MAX_MS = 200;
 
 const CREME_BACKGROUND_COLOR = new THREE.Color(CREME_BACKGROUND);
-
-const HELIX_CONFIG: HelixConfig = {
-  cardCount: 12,
-  radius: 5.5,
-  angleStep: THREE.MathUtils.degToRad(16),
-  axialStep: 0.85,
-  cardWidth: 3.0,
-  cardHeight: 4.25,
-  cardThickness: 0.08,
-  pitch: THREE.MathUtils.degToRad(-32),
-  yaw: THREE.MathUtils.degToRad(22),
-  groupRoll: THREE.MathUtils.degToRad(-135),
-  groupElevation: THREE.MathUtils.degToRad(15),
-};
 
 // Encuadre automático sobre el arco visible (tarjetas 1..8): la tarjeta
 // frontal queda deliberadamente recortada por el borde inferior-izquierdo
@@ -91,8 +79,21 @@ export const createHelixScene = async (
   let needsRender = true;
   let targetAdvance = 0;
   let currentAdvance = 0;
+  let lastWidth = 1;
+  let lastHeight = 1;
+  let lastRenderTimeMs = performance.now();
   const reducedMotion =
     typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const governor = createHelixQualityGovernor({
+    renderer,
+    pipeline,
+    getViewportSize: () => ({ width: lastWidth, height: lastHeight }),
+    highPixelRatioCap: MAX_PIXEL_RATIO,
+    onQualityChange: () => {
+      needsRender = true;
+    },
+  });
 
   const schedule = (): void => {
     needsRender = true;
@@ -122,6 +123,8 @@ export const createHelixScene = async (
   };
 
   const resize = (width: number, height: number): void => {
+    lastWidth = width;
+    lastHeight = height;
     renderer.setSize(width, height, false);
     camera.aspect = width / Math.max(1, height);
     camera.updateProjectionMatrix();
@@ -138,6 +141,10 @@ export const createHelixScene = async (
       needsRender = true;
     }
     if (needsRender) {
+      const now = performance.now();
+      const deltaMs = now - lastRenderTimeMs;
+      lastRenderTimeMs = now;
+      if (deltaMs > 0 && deltaMs < FRAME_GAP_MAX_MS) governor.sampleFrame(deltaMs);
       pipeline.composer.render();
       needsRender = false;
       idleFrames = 0;

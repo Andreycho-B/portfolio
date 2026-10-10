@@ -12,12 +12,14 @@ import * as THREE from "three";
 const BLOOM_LUMINANCE_THRESHOLD = 0.95;
 const BLOOM_INTENSITY = 0.55;
 const DOF_BOKEH_SCALE = 1.6;
+const DOF_BOKEH_SCALE_DEGRADED = 0.8;
 const DOF_RESOLUTION_Y = 480;
 const COMPOSER_MULTISAMPLING = 4;
 
 export type PostPipeline = {
   readonly composer: EffectComposer;
   readonly resize: (width: number, height: number) => void;
+  readonly setDegraded: (degraded: boolean) => void;
   readonly dispose: () => void;
 };
 
@@ -52,6 +54,11 @@ export const createPostPipeline = (
     composer,
     resize: (width, height) => {
       composer.setSize(width, height);
+    },
+    setDegraded: (degraded) => {
+      depthOfField.bokehScale = degraded ? DOF_BOKEH_SCALE_DEGRADED : DOF_BOKEH_SCALE;
+      bloom.intensity = degraded ? 0 : BLOOM_INTENSITY;
+      composer.multisampling = degraded ? 0 : COMPOSER_MULTISAMPLING;
     },
     dispose: () => {
       composer.dispose();
