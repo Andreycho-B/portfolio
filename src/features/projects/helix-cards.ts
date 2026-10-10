@@ -65,14 +65,14 @@ export const createHelixWorld = async (
     entries.push({ shell, shellMaterial, artMaterial });
   }
 
-  const period = config.cardCount + EXIT_WINDOW_SLOTS;
+  const period = config.cardCount;
 
   const setAdvance = (advance: number): void => {
     for (let i = 0; i < entries.length; i++) {
       const entry = entries[i];
       if (!entry) continue;
 
-      const slot = modulo(i - advance + EXIT_WINDOW_SLOTS, period) - EXIT_WINDOW_SLOTS;
+      const slot = modulo(i - advance, period);
       const theta = slot * config.angleStep;
       entry.shell.position.set(
         config.radius * Math.cos(theta),
@@ -80,7 +80,7 @@ export const createHelixWorld = async (
         -slot * config.axialStep,
       );
 
-      const exitFade = slot >= 0 ? 1 : clamp01(1 + slot / EXIT_WINDOW_SLOTS);
+      const exitFade = clamp01(slot / EXIT_WINDOW_SLOTS);
       const entryFade = clamp01((config.cardCount - slot) / ENTRY_FADE_SLOTS);
       const opacity = Math.min(exitFade, entryFade);
 
