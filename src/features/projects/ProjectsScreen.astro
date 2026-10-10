@@ -134,6 +134,7 @@
         )
         .then((scene) => {
           if (!scene) {
+            console.warn("[Projects] WebGL no disponible; se muestra el listado estático");
             showProjectsFallback();
             return;
           }
@@ -144,7 +145,8 @@
           scene.start();
           canvas.classList.add("is-revealed");
         })
-        .catch(() => {
+        .catch((error: unknown) => {
+          console.error("[Projects] Fallo al iniciar la escena del carrusel:", error);
           showProjectsFallback();
         });
     };
