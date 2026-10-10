@@ -12,6 +12,8 @@ const MAX_PIXEL_RATIO = 2;
 // px de gesto que equivalen a una tarjeta de recorrido helicoidal
 const PX_PER_SLOT = 140;
 const FLOW_EASE = 0.075;
+const FLOW_EPSILON = 1e-4;
+const IDLE_FRAME_LIMIT = 2;
 
 const CREME_BACKGROUND_COLOR = new THREE.Color(CREME_BACKGROUND);
 const ENVIRONMENT_INTENSITY = 0.5;
@@ -109,10 +111,21 @@ export const createHelixScene = async (
 
   let animationFrameId: number | null = null;
   let running = false;
+  let idleFrames = 0;
+  let needsRender = true;
   let targetAdvance = 0;
   let currentAdvance = 0;
   const reducedMotion =
     typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const schedule = (): void => {
+    needsRender = true;
+    if (!running) {
+      running = true;
+      idleFrames = 0;
+      animationFrameId = requestAnimationFrame(frame);
+    }
+  };
 
   const scrollBy = (deltaPx: number): void => {
     targetAdvance += deltaPx / PX_PER_SLOT;
@@ -120,6 +133,7 @@ export const createHelixScene = async (
       currentAdvance = targetAdvance;
       world.setAdvance(currentAdvance);
     }
+    schedule();
   };
 
   const scrollTo = (slots: number): void => {
@@ -128,6 +142,7 @@ export const createHelixScene = async (
       currentAdvance = targetAdvance;
       world.setAdvance(currentAdvance);
     }
+    schedule();
   };
 
   const resize = (width: number, height: number): void => {
@@ -136,21 +151,33 @@ export const createHelixScene = async (
     camera.updateProjectionMatrix();
     frameHelix(camera, world.framingBox, camera.aspect);
     pipeline.resize(width, height);
+    schedule();
   };
 
   const frame = (): void => {
-    if (!reducedMotion) {
+    animationFrameId = null;
+    if (!reducedMotion && Math.abs(targetAdvance - currentAdvance) > FLOW_EPSILON) {
       currentAdvance += (targetAdvance - currentAdvance) * FLOW_EASE;
       world.setAdvance(currentAdvance);
+      needsRender = true;
     }
-    pipeline.composer.render();
-    if (running) animationFrameId = requestAnimationFrame(frame);
+    if (needsRender) {
+      pipeline.composer.render();
+      needsRender = false;
+      idleFrames = 0;
+    } else {
+      idleFrames += 1;
+    }
+    if (!running) return;
+    if (idleFrames <= IDLE_FRAME_LIMIT) {
+      animationFrameId = requestAnimationFrame(frame);
+    } else {
+      running = false;
+    }
   };
 
   const start = (): void => {
-    if (running) return;
-    running = true;
-    animationFrameId = requestAnimationFrame(frame);
+    schedule();
   };
 
   const dispose = (): void => {
