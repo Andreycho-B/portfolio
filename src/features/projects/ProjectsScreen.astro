@@ -54,6 +54,9 @@
     const PX_PER_SLOT = 140;
     const TOUCH_GAIN = 1.4;
     const HELIX_LAP_SLOTS = 12;
+    const MOMENTUM_WINDOW_MS = 80;
+    const MOMENTUM_CARRY_MS = 240;
+    const MOMENTUM_MAX_PX = 3 * PX_PER_SLOT;
 
     const revealProjectsZone = () => {
       zone.hidden = false;
@@ -115,9 +118,11 @@
 
     let trackedTouchId: number | null = null;
     let lastTouchY: number | null = null;
+    let touchSamples: { time: number; deltaPx: number }[] = [];
     const resetTouchDrag = () => {
       trackedTouchId = null;
       lastTouchY = null;
+      touchSamples = [];
     };
     const onZoneTouchStart = (event: TouchEvent) => {
       if (event.touches.length !== 1) {
@@ -128,6 +133,7 @@
       if (touch) {
         trackedTouchId = touch.identifier;
         lastTouchY = touch.clientY;
+        touchSamples = [];
       }
     };
     const onZoneTouchMove = (event: TouchEvent) => {
@@ -142,12 +148,27 @@
       if (touch.identifier !== trackedTouchId || lastTouchY === null) {
         trackedTouchId = touch.identifier;
         lastTouchY = touch.clientY;
+        touchSamples = [];
         return;
       }
-      helix?.scrollBy((lastTouchY - touch.clientY) * TOUCH_GAIN);
+      const deltaPx = (lastTouchY - touch.clientY) * TOUCH_GAIN;
+      helix?.scrollBy(deltaPx);
       lastTouchY = touch.clientY;
+      const now = performance.now();
+      touchSamples.push({ time: now, deltaPx });
+      touchSamples = touchSamples.filter((sample) => now - sample.time <= MOMENTUM_WINDOW_MS);
     };
     const onZoneTouchEnd = () => {
+      const first = touchSamples[0];
+      const last = touchSamples[touchSamples.length - 1];
+      if (first && last) {
+        const elapsed = last.time - first.time;
+        if (elapsed > 0) {
+          const totalPx = touchSamples.reduce((sum, sample) => sum + sample.deltaPx, 0);
+          const momentumPx = (totalPx / elapsed) * MOMENTUM_CARRY_MS;
+          helix?.scrollBy(Math.min(MOMENTUM_MAX_PX, Math.max(-MOMENTUM_MAX_PX, momentumPx)));
+        }
+      }
       resetTouchDrag();
     };
     zone.addEventListener("touchstart", onZoneTouchStart, { passive: false });
