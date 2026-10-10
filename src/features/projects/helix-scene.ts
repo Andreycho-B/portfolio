@@ -30,18 +30,14 @@ const HELIX_CONFIG: HelixConfig = {
 // Encuadre automático sobre el arco visible (tarjetas 1..8): la tarjeta
 // frontal queda deliberadamente recortada por el borde inferior-izquierdo
 // del encuadre, como en la referencia. FOV teleobjetivo conservado.
+// El bbox es canónico (slots 1..8): el encuadre no depende del avance.
 const frameHelix = (
   camera: THREE.PerspectiveCamera,
-  world: Awaited<ReturnType<typeof createHelixWorld>>,
+  framingBox: THREE.Box3,
   aspect: number,
 ): void => {
-  const shells = world.group.children;
-  const bbox = new THREE.Box3();
-  for (let i = 1; i <= 8 && i < shells.length; i++) {
-    bbox.expandByObject(shells[i] ?? new THREE.Object3D());
-  }
-  const center = bbox.getCenter(new THREE.Vector3());
-  const size = bbox.getSize(new THREE.Vector3());
+  const center = framingBox.getCenter(new THREE.Vector3());
+  const size = framingBox.getSize(new THREE.Vector3());
 
   const margin = 1.06;
   const halfHeight = (size.y * margin) / 2;
@@ -117,7 +113,7 @@ export const createHelixScene = async (
     renderer.setSize(width, height, false);
     camera.aspect = width / Math.max(1, height);
     camera.updateProjectionMatrix();
-    frameHelix(camera, world, camera.aspect);
+    frameHelix(camera, world.framingBox, camera.aspect);
     pipeline.resize(width, height);
   };
 

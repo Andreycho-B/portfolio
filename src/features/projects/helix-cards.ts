@@ -92,6 +92,12 @@ export const createHelixWorld = async (
   group.rotation.x = config.groupElevation;
   group.updateMatrixWorld(true);
 
+  const framingBox = new THREE.Box3();
+  for (let i = 1; i <= 8 && i < entries.length; i++) {
+    const shell = entries[i]?.shell;
+    if (shell) framingBox.expandByObject(shell);
+  }
+
   // Plano de enfoque fijo en el mundo: las tarjetas fluyen a través de él
   const focusCard = entries[Math.floor(config.cardCount * 0.22)]?.shell ?? entries[0]?.shell;
   if (!focusCard) {
@@ -100,5 +106,5 @@ export const createHelixWorld = async (
   const focusTarget = new THREE.Vector3();
   focusCard.getWorldPosition(focusTarget);
 
-  return { group, focusTarget, setAdvance };
+  return { group, focusTarget, framingBox, setAdvance };
 };
