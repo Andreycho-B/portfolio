@@ -7,6 +7,10 @@
       aria-label="Espiral de proyectos"
     ></canvas>
   </div>
+  <div class="projects-fallback" data-projects-fallback hidden>
+    <p class="fallback-label">Proyectos</p>
+    <ol class="fallback-list"></ol>
+  </div>
 </section>
 
 <style>
@@ -30,6 +34,54 @@
   .helix-canvas.is-revealed {
     opacity: 1;
   }
+  .projects-fallback {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--space-md);
+    padding: calc(var(--container-padding) + env(safe-area-inset-top)) var(--container-padding)
+      calc(var(--container-padding) + env(safe-area-inset-bottom));
+    background: var(--color-bg);
+  }
+  .fallback-label {
+    font-family: var(--font-text);
+    font-size: var(--text-xs);
+    letter-spacing: var(--ls-labels);
+    text-transform: uppercase;
+    color: var(--color-fg-muted);
+  }
+  .fallback-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+  .fallback-list li {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-sm);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-sm);
+  }
+  .fallback-index {
+    font-family: var(--font-display);
+    font-weight: var(--weight-black);
+    font-size: var(--text-lg);
+    color: var(--color-fg-muted);
+  }
+  .fallback-name {
+    font-family: var(--font-display);
+    font-weight: var(--weight-black);
+    font-size: var(--text-xl);
+    color: var(--color-fg);
+  }
+  .fallback-discipline {
+    font-family: var(--font-text);
+    font-size: var(--text-sm);
+    color: var(--color-fg-muted);
+  }
   @media (prefers-reduced-motion: reduce) {
     .helix-canvas {
       opacity: 1;
@@ -41,6 +93,7 @@
 <script>
   import { HELIX_CARD_DATA } from "./helix-cards-data";
   import type { HelixSceneHandle } from "./helix-cards.types";
+  import { mountHelixInput } from "./helix-input";
 
   const mountProjectsZone = (): void => {
     const zone = document.querySelector<HTMLElement>("[data-projects-screen]");
@@ -50,26 +103,49 @@
 
     let helix: HelixSceneHandle | null = null;
 
-    const WHEEL_LINE_PX = 16;
-    const PX_PER_SLOT = 140;
-    const TOUCH_GAIN = 1.4;
-    const HELIX_LAP_SLOTS = 12;
-    const MOMENTUM_WINDOW_MS = 80;
-    const MOMENTUM_CARRY_MS = 240;
-    const MOMENTUM_MAX_PX = 3 * PX_PER_SLOT;
+    const fallback = zone.querySelector<HTMLElement>("[data-projects-fallback]");
+    const fallbackList = zone.querySelector<HTMLOListElement>(".fallback-list");
+
+    const showProjectsFallback = () => {
+      if (!fallback || !fallbackList || fallback.dataset.filled === "true") return;
+      fallback.dataset.filled = "true";
+      for (const project of HELIX_CARD_DATA) {
+        const item = document.createElement("li");
+        const index = document.createElement("span");
+        index.className = "fallback-index";
+        index.textContent = project.index;
+        const name = document.createElement("span");
+        name.className = "fallback-name";
+        name.textContent = project.name;
+        const discipline = document.createElement("span");
+        discipline.className = "fallback-discipline";
+        discipline.textContent = project.discipline;
+        item.append(index, name, discipline);
+        fallbackList.append(item);
+      }
+      fallback.hidden = false;
+    };
 
     const revealProjectsZone = () => {
       zone.hidden = false;
       void import("./helix-scene")
-        .then(({ createHelixScene }) => createHelixScene(canvas, HELIX_CARD_DATA))
+        .then(({ createHelixScene }) =>
+          createHelixScene(canvas, HELIX_CARD_DATA, showProjectsFallback),
+        )
         .then((scene) => {
-          if (!scene) return;
+          if (!scene) {
+            showProjectsFallback();
+            return;
+          }
           helix = scene;
           const width = zone.clientWidth;
           const height = zone.clientHeight;
           scene.resize(width, height);
           scene.start();
           canvas.classList.add("is-revealed");
+        })
+        .catch(() => {
+          showProjectsFallback();
         });
     };
 
@@ -78,112 +154,18 @@
     const preloadHelixScene = () => {
       void import("./helix-scene");
     };
-    if ("requestIdleCallback" in window) {
+    if (typeof window.requestIdleCallback === "function") {
       window.requestIdleCallback(preloadHelixScene, { timeout: 2000 });
     } else {
       window.setTimeout(preloadHelixScene, 1500);
     }
 
-    // Scroll nativo y zoom desactivados: los gestos alimentan el flujo helicoidal
-    const onZoneWheel = (event: WheelEvent) => {
-      if (zone.hidden) return;
-      event.preventDefault();
-      const deltaPx =
-        event.deltaMode === 1
-          ? event.deltaY * WHEEL_LINE_PX
-          : event.deltaMode === 2
-            ? event.deltaY * zone.clientHeight
-            : event.deltaY;
-      helix?.scrollBy(deltaPx);
-    };
-    window.addEventListener("wheel", onZoneWheel, { passive: false });
-
-    const onZoneKeyDown = (event: KeyboardEvent) => {
-      if (zone.hidden || !helix) return;
-      const slots =
-        event.key === "ArrowDown"
-          ? 1
-          : event.key === "ArrowUp"
-            ? -1
-            : event.key === "PageDown"
-              ? 3
-              : event.key === "PageUp"
-                ? -3
-                : null;
-      if (slots !== null) {
-        event.preventDefault();
-        helix.scrollBy(slots * PX_PER_SLOT);
-        return;
-      }
-      if (event.key === "Home") {
-        event.preventDefault();
-        helix.scrollTo(0);
-      } else if (event.key === "End") {
-        event.preventDefault();
-        helix.scrollTo(HELIX_LAP_SLOTS);
-      }
-    };
-    window.addEventListener("keydown", onZoneKeyDown);
-
-    let trackedTouchId: number | null = null;
-    let lastTouchY: number | null = null;
-    let touchSamples: { time: number; deltaPx: number }[] = [];
-    const resetTouchDrag = () => {
-      trackedTouchId = null;
-      lastTouchY = null;
-      touchSamples = [];
-    };
-    const onZoneTouchStart = (event: TouchEvent) => {
-      if (event.touches.length !== 1) {
-        resetTouchDrag();
-        return;
-      }
-      const touch = event.touches.item(0);
-      if (touch) {
-        trackedTouchId = touch.identifier;
-        lastTouchY = touch.clientY;
-        touchSamples = [];
-      }
-    };
-    const onZoneTouchMove = (event: TouchEvent) => {
-      if (zone.hidden) return;
-      event.preventDefault();
-      if (event.touches.length !== 1) {
-        resetTouchDrag();
-        return;
-      }
-      const touch = event.touches.item(0);
-      if (!touch) return;
-      if (touch.identifier !== trackedTouchId || lastTouchY === null) {
-        trackedTouchId = touch.identifier;
-        lastTouchY = touch.clientY;
-        touchSamples = [];
-        return;
-      }
-      const deltaPx = (lastTouchY - touch.clientY) * TOUCH_GAIN;
-      helix?.scrollBy(deltaPx);
-      lastTouchY = touch.clientY;
-      const now = performance.now();
-      touchSamples.push({ time: now, deltaPx });
-      touchSamples = touchSamples.filter((sample) => now - sample.time <= MOMENTUM_WINDOW_MS);
-    };
-    const onZoneTouchEnd = () => {
-      const first = touchSamples[0];
-      const last = touchSamples[touchSamples.length - 1];
-      if (first && last) {
-        const elapsed = last.time - first.time;
-        if (elapsed > 0) {
-          const totalPx = touchSamples.reduce((sum, sample) => sum + sample.deltaPx, 0);
-          const momentumPx = (totalPx / elapsed) * MOMENTUM_CARRY_MS;
-          helix?.scrollBy(Math.min(MOMENTUM_MAX_PX, Math.max(-MOMENTUM_MAX_PX, momentumPx)));
-        }
-      }
-      resetTouchDrag();
-    };
-    zone.addEventListener("touchstart", onZoneTouchStart, { passive: false });
-    zone.addEventListener("touchmove", onZoneTouchMove, { passive: false });
-    zone.addEventListener("touchend", onZoneTouchEnd);
-    zone.addEventListener("touchcancel", onZoneTouchEnd);
+    const input = mountHelixInput(zone, {
+      isZoneVisible: () => !zone.hidden,
+      zoneClientHeight: () => zone.clientHeight,
+      advanceBy: (deltaPx) => helix?.scrollBy(deltaPx),
+      advanceTo: (slots) => helix?.scrollTo(slots),
+    });
 
     const onZoneResize = () => {
       if (helix && !zone.hidden) helix.resize(zone.clientWidth, zone.clientHeight);
@@ -191,12 +173,7 @@
     window.addEventListener("resize", onZoneResize);
 
     const destroy = () => {
-      window.removeEventListener("wheel", onZoneWheel);
-      window.removeEventListener("keydown", onZoneKeyDown);
-      zone.removeEventListener("touchstart", onZoneTouchStart);
-      zone.removeEventListener("touchmove", onZoneTouchMove);
-      zone.removeEventListener("touchend", onZoneTouchEnd);
-      zone.removeEventListener("touchcancel", onZoneTouchEnd);
+      input.dispose();
       window.removeEventListener("resize", onZoneResize);
       document.removeEventListener("consent:completed", revealProjectsZone);
       helix?.dispose();
