@@ -155,6 +155,7 @@ export const createHelixScene = async (
       material.dispose();
     });
     renderer.dispose();
+    pipeline.dispose();
   };
 
   return { resize, start, scrollBy, dispose };
