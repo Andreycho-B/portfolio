@@ -1,0 +1,102 @@
+---
+interface Props {
+  filterId: string;
+  blurNodeId: string;
+  matrixNodeId: string;
+  textColorId: string;
+  cyanLayerId: string;
+  cyanTopId: string;
+  cyanBottomId: string;
+  blurX: number;
+  blurY: number;
+  chromatic: boolean;
+  shiftX: number;
+  shiftY: number;
+}
+
+const {
+  filterId,
+  blurNodeId,
+  matrixNodeId,
+  textColorId,
+  cyanLayerId,
+  cyanTopId,
+  cyanBottomId,
+  blurX,
+  blurY,
+  chromatic,
+  shiftX,
+  shiftY,
+} = Astro.props;
+---
+
+<svg aria-hidden="true" class="morphic-svg">
+  <defs>
+    <filter
+      id={filterId}
+      x="-50%"
+      y="-50%"
+      width="200%"
+      height="200%"
+      color-interpolation-filters="sRGB"
+    >
+      <feGaussianBlur
+        id={blurNodeId}
+        in="SourceGraphic"
+        stdDeviation={`${blurX} ${blurY}`}
+        result="blur"
+      />
+      <feColorMatrix
+        id={matrixNodeId}
+        in="blur"
+        mode="matrix"
+        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11"
+        result="morphicCore"
+      />
+      {chromatic && (
+        <>
+          <feOffset id={cyanTopId} in="morphicCore" dx={-shiftX} dy={-shiftY} result="cyanTop" />
+          <feOffset
+            id={cyanBottomId}
+            in="morphicCore"
+            dx={shiftX * 0.3}
+            dy={shiftY * 0.7}
+            result="cyanBottom"
+          />
+          <feMerge result="cyanCombined">
+            <feMergeNode in="cyanTop" />
+            <feMergeNode in="cyanBottom" />
+          </feMerge>
+          <feColorMatrix
+            id={cyanLayerId}
+            in="cyanCombined"
+            mode="matrix"
+            values="0 0 0 0 0   0 0 0 0 0.8   0 0 0 0 1   0 0 0 0.95 0"
+            result="cyanLayer"
+          />
+          <feColorMatrix
+            id={textColorId}
+            in="morphicCore"
+            mode="matrix"
+            values="0 0 0 0 0.08   0 0 0 0 0.08   0 0 0 0 0.08   0 0 0 1 0"
+            result="textCore"
+          />
+          <feMerge>
+            <feMergeNode in="cyanLayer" />
+            <feMergeNode in="textCore" />
+          </feMerge>
+        </>
+      )}
+    </filter>
+  </defs>
+</svg>
+
+<style>
+  .morphic-svg {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+</style>
