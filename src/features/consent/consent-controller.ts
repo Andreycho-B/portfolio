@@ -1,9 +1,9 @@
 import { gsap } from "gsap";
 import { getAudioSystem } from "../../core/audio";
 import { getCursorController } from "../../design-system/components/cursor-controller";
-import { initCloudCanvas } from "../welcome/cloud-controller";
-import { initWelcomeBackdrop } from "../welcome/welcome-backdrop";
+import { initCloudCanvas } from "./cloud-controller";
 import { type ConsentCollapseTargets, executeCollapseTimeline } from "./consent-collapse";
+import { initWelcomeBackdrop } from "./welcome-backdrop";
 
 const CURSOR_LABEL_CONSENT = "Ingresar";
 
@@ -23,7 +23,9 @@ export const initConsentScreen = (): void => {
   const vignette = screenElement.querySelector<HTMLElement>(".top-blur-vignette");
 
   const backdrop = initWelcomeBackdrop(screenElement);
-  const cloud = cloudCanvas ? initCloudCanvas(cloudCanvas) : null;
+  const cloud = cloudCanvas
+    ? initCloudCanvas(cloudCanvas, { contentEl: contentElement, actionsEl: actionsElement })
+    : null;
   const audio = getAudioSystem();
   const cursor = getCursorController();
   const collapseTargets: ConsentCollapseTargets = {

@@ -1,7 +1,7 @@
 import { gsap } from "gsap";
 import type { CursorController } from "../../design-system/components/cursor-controller";
-import type { CloudControllerHandle } from "../welcome/cloud.types";
-import type { WelcomeBackdropHandle } from "../welcome/welcome-backdrop";
+import type { CloudControllerHandle } from "./cloud.types";
+import type { WelcomeBackdropHandle } from "./welcome-backdrop";
 
 export interface ConsentCollapseTargets {
   readonly screenElement: HTMLElement;

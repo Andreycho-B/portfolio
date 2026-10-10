@@ -2,12 +2,20 @@ import { createSpring2D } from "../../design-system/components/spring-physics";
 import type { CloudControllerHandle, CloudCursorState, TextClearZone } from "./cloud.types";
 import { createCloudRenderer } from "./cloud-renderer";
 
-export const initCloudCanvas = (canvas: HTMLCanvasElement): CloudControllerHandle | null => {
+interface CloudClearZoneTargets {
+  readonly contentEl: HTMLElement | null;
+  readonly actionsEl: HTMLElement | null;
+}
+
+export const initCloudCanvas = (
+  canvas: HTMLCanvasElement,
+  clearZones: CloudClearZoneTargets,
+): CloudControllerHandle | null => {
   const renderer = createCloudRenderer(canvas);
   if (!renderer) return null;
 
-  const contentEl = document.querySelector<HTMLElement>("[data-consent-content]");
-  const actionsEl = document.querySelector<HTMLElement>("[data-consent-actions]");
+  const contentEl = clearZones.contentEl;
+  const actionsEl = clearZones.actionsEl;
 
   let animationFrameId: number | null = null;
   let isRevealed = false;
