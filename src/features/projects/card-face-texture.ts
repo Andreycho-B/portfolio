@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { HelixCardDatum } from "./helix-cards.types";
+import { CREME_BACKGROUND } from "./helix-materials";
 
 const TEXTURE_WIDTH = 600;
 const TEXTURE_HEIGHT = 850;
@@ -34,7 +35,7 @@ const drawCardFace = (ctx: CanvasRenderingContext2D, card: HelixCardDatum): void
   drawGrain(ctx);
 
   // Índice e insignia en crema sobre el campo de arte (arte retroiluminado)
-  ctx.fillStyle = "#f5f1ea";
+  ctx.fillStyle = CREME_BACKGROUND;
   ctx.font = '900 210px "Author", system-ui, sans-serif';
   ctx.textBaseline = "top";
   ctx.fillText(card.index, 78, 116);
@@ -65,7 +66,10 @@ const drawCardFace = (ctx: CanvasRenderingContext2D, card: HelixCardDatum): void
 
 const waitForSiteFonts = async (): Promise<void> => {
   if (typeof document === "undefined" || !("fonts" in document)) return;
-  await document.fonts.ready;
+  await Promise.all([
+    document.fonts.load('900 16px "Author"'),
+    document.fonts.load('400 16px "Karrik"'),
+  ]);
 };
 
 export const createCardFaceTexture = async (card: HelixCardDatum): Promise<THREE.CanvasTexture> => {
