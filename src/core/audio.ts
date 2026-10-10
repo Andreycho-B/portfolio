@@ -4,6 +4,7 @@ import type {
   AudioMode,
   TactileFeedbackType,
 } from "./audio.types";
+import { bindTeardownAndVisibility, gracefulMute } from "./audio-lifecycle";
 import {
   startOrganicDrone,
   synthesizeInharmonicGlass,
@@ -44,7 +45,7 @@ export class ProceduralAudioEngine implements AudioEngineContract {
     if (!enableSound) {
       this.mode = "muted";
       this.userMuted = true;
-      this.gracefulMute();
+      gracefulMute(this.audioContext, this.masterGain);
       return true;
     }
 
@@ -67,7 +68,13 @@ export class ProceduralAudioEngine implements AudioEngineContract {
       this.ensureGraph();
       this.startAmbient();
       this.mode = "active";
-      this.bindTeardownAndVisibility();
+      bindTeardownAndVisibility(
+        () => gracefulMute(this.audioContext, this.masterGain, 0.015),
+        () => {
+          if (this.isMuted()) return;
+          this.rampMasterTo(document.hidden ? 0.0001 : 0.7, document.hidden ? 0.25 : 0.35);
+        },
+      );
       return true;
     } catch (error) {
       console.warn("[Audio] Fallo en initialize:", error);
@@ -119,66 +126,31 @@ export class ProceduralAudioEngine implements AudioEngineContract {
     window.addEventListener("keydown", unlock, { once: true, passive: true });
   }
 
-  private bindTeardownAndVisibility(): void {
-    if (typeof window === "undefined") return;
-
-    const zeroRamp = () => this.gracefulMute(0.015);
-    for (const evt of ["pagehide", "beforeunload"] as const) {
-      window.addEventListener(evt, zeroRamp, { capture: true });
-    }
-    document.addEventListener("astro:before-swap", zeroRamp, { once: true });
-
-    document.addEventListener("visibilitychange", () => {
-      if (!this.audioContext || !this.masterGain || this.isMuted()) return;
-      const now = this.audioContext.currentTime;
-      this.masterGain.gain.cancelScheduledValues(now);
-      this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
-      const target = document.hidden ? 0.0001 : 0.7;
-      this.masterGain.gain.linearRampToValueAtTime(target, now + (document.hidden ? 0.25 : 0.35));
-    });
-  }
-
-  private gracefulMute(durationSec = 0.03): void {
+  private rampMasterTo(target: number, durationSec: number): void {
     if (!this.audioContext || !this.masterGain) return;
     const now = this.audioContext.currentTime;
     this.masterGain.gain.cancelScheduledValues(now);
     this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
-    this.masterGain.gain.linearRampToValueAtTime(0, now + durationSec);
-
-    const delayMs = Math.floor(durationSec * 1000) + 15;
-    window.setTimeout(() => {
-      if (this.audioContext?.state === "running") {
-        void this.audioContext.suspend().catch(() => {});
-      }
-    }, delayMs);
+    this.masterGain.gain.linearRampToValueAtTime(target, now + durationSec);
   }
 
   public toggleMute(): boolean {
     this.userMuted = !this.userMuted;
     if (!this.audioContext || !this.masterGain) return this.userMuted;
 
-    const now = this.audioContext.currentTime;
-    this.masterGain.gain.cancelScheduledValues(now);
-    this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
-
     if (this.userMuted) {
-      this.masterGain.gain.linearRampToValueAtTime(0, now + 0.04);
+      this.rampMasterTo(0, 0.04);
       this.mode = "muted";
     } else {
       if (this.audioContext.state === "suspended") void this.audioContext.resume();
-      this.masterGain.gain.linearRampToValueAtTime(0.7, now + 0.3);
+      this.rampMasterTo(0.7, 0.3);
       this.mode = "active";
     }
     return this.userMuted;
   }
 
   public setMasterVolume(level: number): void {
-    if (!this.audioContext || !this.masterGain) return;
-    const clamped = Math.max(0, Math.min(1, level));
-    const now = this.audioContext.currentTime;
-    this.masterGain.gain.cancelScheduledValues(now);
-    this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
-    this.masterGain.gain.linearRampToValueAtTime(clamped, now + 0.08);
+    this.rampMasterTo(Math.max(0, Math.min(1, level)), 0.08);
   }
 
   public playReleaseSound(): void {
@@ -201,7 +173,7 @@ export class ProceduralAudioEngine implements AudioEngineContract {
       this.ambientHandle.stop();
       this.ambientHandle = null;
     }
-    this.gracefulMute(0.04);
+    gracefulMute(this.audioContext, this.masterGain, 0.04);
   }
 }
 
