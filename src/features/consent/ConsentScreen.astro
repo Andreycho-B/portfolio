@@ -1,14 +1,10 @@
 ---
 import MorphicText from "../../design-system/components/MorphicText.astro";
+import WelcomeBackdrop from "./WelcomeBackdrop.astro";
 ---
 
 <div class="consent-container" data-consent-screen>
-  <div class="top-blur-vignette" aria-hidden="true"></div>
-
-  <div class="welcome-backdrop">
-    <div class="welcome-blue-box" data-blue-box></div>
-    <canvas class="welcome-cloud-canvas" data-cloud-canvas></canvas>
-  </div>
+  <WelcomeBackdrop />
 
   <div class="consent-content" data-consent-content>
     <MorphicText
@@ -54,108 +50,6 @@ import MorphicText from "../../design-system/components/MorphicText.astro";
     touch-action: manipulation;
     overflow: hidden;
     transition: color var(--dur-base) var(--ease-base);
-  }
-  .top-blur-vignette {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: clamp(140px, 18vh, 220px);
-    pointer-events: none;
-    z-index: 10;
-    transform: translateZ(0);
-  }
-  .top-blur-vignette::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    mask-image: linear-gradient(to bottom, #000 0%, #000d 20%, #0008 45%, transparent 80%);
-    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000d 20%, #0008 45%, transparent 80%);
-  }
-  .top-blur-vignette::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    mask-image: linear-gradient(to bottom, #000 0%, #000e 35%, #0006 65%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000e 35%, #0006 65%, transparent 100%);
-  }
-  .welcome-backdrop {
-    position: absolute;
-    inset: 0;
-    overflow: hidden;
-    pointer-events: none;
-    z-index: 0;
-    contain: strict;
-  }
-  .welcome-blue-box {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    background:
-      radial-gradient(90% 80% at 15% 15%, #0052d0 0%, #006bf0 38%, transparent 75%),
-      linear-gradient(
-        150deg,
-        #0065f0 0%,
-        #1682ff 36%,
-        #60b0ff 58%,
-        #c2e2ff 76%,
-        #ffffff 92%,
-        #ffffff 100%
-      );
-    background-attachment: fixed;
-    background-size: 100vw 100vh;
-    opacity: 0;
-    transform: translate(-50%, -50%) translateZ(0);
-    transform-origin: 50% 50%;
-    will-change: transform;
-    pointer-events: none;
-  }
-  .welcome-blue-box::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: #1f94ff;
-    transition: opacity 1.35s cubic-bezier(0.65, 0, 0.35, 1);
-  }
-  .welcome-blue-box.is-expanding::after {
-    opacity: 0;
-  }
-  .welcome-cloud-canvas {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 1;
-    opacity: 0;
-    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-    --wipe-edge: 100;
-    --wipe-soft: 45;
-    mask-image: linear-gradient(
-      to bottom,
-      #000 0%,
-      #000 calc(var(--wipe-edge) * 1%),
-      rgba(0, 0, 0, 0.78) calc((var(--wipe-edge) + var(--wipe-soft) * 0.29) * 1%),
-      rgba(0, 0, 0, 0.42) calc((var(--wipe-edge) + var(--wipe-soft) * 0.55) * 1%),
-      rgba(0, 0, 0, 0.12) calc((var(--wipe-edge) + var(--wipe-soft) * 0.8) * 1%),
-      transparent calc((var(--wipe-edge) + var(--wipe-soft)) * 1%)
-    );
-    -webkit-mask-image: linear-gradient(
-      to bottom,
-      #000 0%,
-      #000 calc(var(--wipe-edge) * 1%),
-      rgba(0, 0, 0, 0.78) calc((var(--wipe-edge) + var(--wipe-soft) * 0.29) * 1%),
-      rgba(0, 0, 0, 0.42) calc((var(--wipe-edge) + var(--wipe-soft) * 0.55) * 1%),
-      rgba(0, 0, 0, 0.12) calc((var(--wipe-edge) + var(--wipe-soft) * 0.8) * 1%),
-      transparent calc((var(--wipe-edge) + var(--wipe-soft)) * 1%)
-    );
-  }
-  .welcome-cloud-canvas.is-revealed {
-    opacity: 1;
   }
   .consent-container[data-backdrop-active="true"] {
     --color-fg: #ffffff;
