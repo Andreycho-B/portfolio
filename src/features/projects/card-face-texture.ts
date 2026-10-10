@@ -4,6 +4,7 @@ import { CREME_BACKGROUND } from "./helix-materials";
 
 const TEXTURE_WIDTH = 600;
 const TEXTURE_HEIGHT = 850;
+const TEXTURE_SCALE = 2;
 
 const drawGrain = (ctx: CanvasRenderingContext2D): void => {
   ctx.save();
@@ -72,19 +73,23 @@ const waitForSiteFonts = async (): Promise<void> => {
   ]);
 };
 
-export const createCardFaceTexture = async (card: HelixCardDatum): Promise<THREE.CanvasTexture> => {
+export const createCardFaceTexture = async (
+  card: HelixCardDatum,
+  maxAnisotropy: number,
+): Promise<THREE.CanvasTexture> => {
   await waitForSiteFonts();
 
   const canvas = document.createElement("canvas");
-  canvas.width = TEXTURE_WIDTH;
-  canvas.height = TEXTURE_HEIGHT;
+  canvas.width = TEXTURE_WIDTH * TEXTURE_SCALE;
+  canvas.height = TEXTURE_HEIGHT * TEXTURE_SCALE;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas 2D no disponible para la textura de tarjeta");
+  ctx.scale(TEXTURE_SCALE, TEXTURE_SCALE);
 
   drawCardFace(ctx, card);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 4;
+  texture.anisotropy = maxAnisotropy;
   return texture;
 };

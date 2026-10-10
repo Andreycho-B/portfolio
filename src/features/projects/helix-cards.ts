@@ -25,6 +25,7 @@ type HelixCardEntry = {
 export const createHelixWorld = async (
   config: HelixConfig,
   cardData: readonly HelixCardDatum[],
+  maxAnisotropy: number,
 ): Promise<HelixWorldLayout> => {
   const group = new THREE.Group();
 
@@ -41,7 +42,9 @@ export const createHelixWorld = async (
   );
 
   // 3 texturas reales compartidas entre las repeticiones honestas (Spec §9.1)
-  const artTextures = await Promise.all(cardData.map((card) => createCardFaceTexture(card)));
+  const artTextures = await Promise.all(
+    cardData.map((card) => createCardFaceTexture(card, maxAnisotropy)),
+  );
 
   const entries: HelixCardEntry[] = [];
   for (let i = 0; i < config.cardCount; i++) {
