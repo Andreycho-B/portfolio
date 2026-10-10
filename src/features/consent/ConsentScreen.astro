@@ -86,7 +86,7 @@ import WelcomeBackdrop from "./WelcomeBackdrop.astro";
   }
   .consent-actions {
     position: absolute;
-    bottom: clamp(1.25rem, 4vh, 2.25rem);
+    bottom: calc(clamp(1.25rem, 4vh, 2.25rem) + env(safe-area-inset-bottom));
     z-index: 2;
   }
   .consent-prompt.is-revealed,
