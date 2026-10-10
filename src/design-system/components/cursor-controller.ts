@@ -12,9 +12,16 @@ export interface CursorController {
   readonly destroy: () => void;
 }
 
-const NOOP_CONTROLLER: CursorController = new Proxy({} as CursorController, {
-  get: () => () => {},
-});
+const NOOP_CONTROLLER: CursorController = {
+  enable: () => {},
+  disable: () => {},
+  setExpanded: () => {},
+  setMuted: () => {},
+  setPressed: () => {},
+  setInverted: () => {},
+  pulse: () => {},
+  destroy: () => {},
+};
 let controllerInstance: CursorController | null = null;
 
 export const getCursorController = (): CursorController => {
@@ -27,7 +34,8 @@ export const getCursorController = (): CursorController => {
     window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
   if (!cursorEl || !isFinePointer) {
-    return NOOP_CONTROLLER;
+    controllerInstance = NOOP_CONTROLLER;
+    return controllerInstance;
   }
 
   const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
