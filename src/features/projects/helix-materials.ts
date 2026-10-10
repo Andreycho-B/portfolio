@@ -28,7 +28,7 @@ export const createAcrylicMaterial = (): THREE.MeshPhysicalMaterial => {
     clearcoat: 1.0,
     clearcoatRoughness: 0.02,
     transparent: true,
-    side: THREE.DoubleSide,
+    side: THREE.FrontSide,
   });
 
   material.onBeforeCompile = (shader) => {
@@ -48,4 +48,5 @@ export const createArtMaterial = (texture: THREE.Texture): THREE.MeshBasicMateri
   new THREE.MeshBasicMaterial({
     map: texture,
     toneMapped: true,
+    alphaToCoverage: true,
   });

@@ -10,10 +10,6 @@ const ART_INSET = 0.075;
 const BEVEL_RADIUS = 0.03;
 const BEVEL_SEGMENTS = 4;
 
-// Ventana de salida más allá del frente: la tarjeta crece al pasar la cámara
-// mientras se funde; la entrada al extremo lejano se funde dentro del desenfoque.
-// Ambos extremos alcanzan opacidad 0 exactamente donde ocurre el teletransporte
-// de la envoltura, de modo que el bucle es invisible en ambas direcciones.
 const EXIT_WINDOW_SLOTS = 1.0;
 const ENTRY_FADE_SLOTS = 1.2;
 
@@ -87,6 +83,7 @@ export const createHelixWorld = async (
 
       entry.shellMaterial.opacity = opacity;
       entry.artMaterial.opacity = opacity;
+      entry.shell.visible = opacity > 0.001;
     }
   };
   setAdvance(0);

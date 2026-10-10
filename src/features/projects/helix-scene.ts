@@ -13,7 +13,7 @@ const FLOW_EASE = 0.075;
 
 const CREME_BACKGROUND = new THREE.Color("#f5f1ea");
 
-export const HELIX_CONFIG: HelixConfig = {
+const HELIX_CONFIG: HelixConfig = {
   cardCount: 12,
   radius: 5.5,
   angleStep: THREE.MathUtils.degToRad(16),
