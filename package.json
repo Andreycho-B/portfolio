@@ -12,6 +12,7 @@
     "astro": "astro",
     "check": "astro check",
     "lint": "biome check .",
+    "verify": "astro check && biome check . && astro build",
     "format": "biome format --write . && prettier --write \"**/*.astro\"",
     "prepare": "husky"
   },
@@ -21,9 +22,6 @@
     "gsap": "3.15.0",
     "postprocessing": "6.39.5",
     "three": "0.186.1"
-  },
-  "allowScripts": {
-    "esbuild": true
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
