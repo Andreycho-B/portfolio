@@ -46,13 +46,19 @@ const frameHelix = (
 export const createHelixScene = async (
   canvas: HTMLCanvasElement,
   cardData: readonly HelixCardDatum[],
+  onContextLost?: () => void,
 ): Promise<HelixSceneHandle | null> => {
-  const renderer = new THREE.WebGLRenderer({
-    canvas,
-    antialias: true,
-    alpha: false,
-    powerPreference: "high-performance",
-  });
+  let renderer: THREE.WebGLRenderer;
+  try {
+    renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: true,
+      alpha: false,
+      powerPreference: "high-performance",
+    });
+  } catch {
+    return null;
+  }
   renderer.toneMapping = THREE.NeutralToneMapping;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO));
 
@@ -163,7 +169,17 @@ export const createHelixScene = async (
     schedule();
   };
 
+  const handleContextLost = (event: Event): void => {
+    event.preventDefault();
+    running = false;
+    if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+    onContextLost?.();
+  };
+  canvas.addEventListener("webglcontextlost", handleContextLost);
+
   const dispose = (): void => {
+    canvas.removeEventListener("webglcontextlost", handleContextLost);
     running = false;
     if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
     const disposedMaterials = new Set<THREE.Material>();
