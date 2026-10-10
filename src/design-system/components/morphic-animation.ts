@@ -42,6 +42,18 @@ const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
     }
   }
 
+  let phraseRoles: string[] = [];
+  if (el.dataset.phraseRoles) {
+    try {
+      const parsed: unknown = JSON.parse(el.dataset.phraseRoles);
+      if (Array.isArray(parsed) && parsed.every((s) => typeof s === "string")) {
+        phraseRoles = parsed;
+      }
+    } catch {
+      console.warn("[MorphicText] JSON de data-phrase-roles inválido");
+    }
+  }
+
   return {
     element: el,
     blurNode,
@@ -57,6 +69,7 @@ const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
     loop: el.dataset.loop === "true",
     filterId,
     phrases,
+    phraseRoles,
     mutateWord: el.dataset.mutateWord,
     textColorNode: getNode<SVGFEColorMatrixElement>(el.dataset.textColor),
     cyanLayerNode: getNode<SVGFEColorMatrixElement>(el.dataset.cyanLayer),
@@ -91,7 +104,8 @@ export const playMorphicSequence = (nodes: MorphicNodes): void => {
 
   const runIntro = () => {
     const currentPhrase = nodes.phrases[phraseIndex] ?? "";
-    const isPhraseWhite = phraseIndex >= 2;
+    const currentRole = nodes.phraseRoles[phraseIndex] ?? "";
+    const isPhraseWhite = currentRole === "final";
     nodes.element.textContent = currentPhrase;
     if (nodes.mutateWord && currentPhrase.includes(nodes.mutateWord)) {
       wrapMutantWord(nodes.element, nodes.mutateWord);
@@ -114,7 +128,7 @@ export const playMorphicSequence = (nodes: MorphicNodes): void => {
     nodes.element.dispatchEvent(
       new CustomEvent("morphic:phrase-start", {
         bubbles: true,
-        detail: { phraseIndex, phrase: currentPhrase },
+        detail: { phraseIndex, phrase: currentPhrase, role: currentRole },
       }),
     );
 
@@ -126,7 +140,7 @@ export const playMorphicSequence = (nodes: MorphicNodes): void => {
       nodes.element.dispatchEvent(
         new CustomEvent("morphic:phrase-revealed", {
           bubbles: true,
-          detail: { phraseIndex, phrase: currentPhrase },
+          detail: { phraseIndex, phrase: currentPhrase, role: currentRole },
         }),
       );
       if (shouldExit) {
@@ -150,11 +164,15 @@ export const playMorphicSequence = (nodes: MorphicNodes): void => {
       nodes.element.dispatchEvent(
         new CustomEvent("morphic:phrase-exited", {
           bubbles: true,
-          detail: { phraseIndex: exitedIndex, phrase: nodes.phrases[exitedIndex] ?? "" },
+          detail: {
+            phraseIndex: exitedIndex,
+            phrase: nodes.phrases[exitedIndex] ?? "",
+            role: nodes.phraseRoles[exitedIndex] ?? "",
+          },
         }),
       );
       phraseIndex = (phraseIndex + 1) % nodes.phrases.length;
-      if (phraseIndex === 2) {
+      if (nodes.phraseRoles[phraseIndex] === "final") {
         const onCovered = () => {
           if (coverSync) {
             document.removeEventListener("welcome:backdrop-covered", coverSync);

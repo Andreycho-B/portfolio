@@ -4,6 +4,7 @@ import MorphicFilterSvg from "./MorphicFilterSvg.astro";
 interface Props {
   text?: string;
   phrases?: string[];
+  phraseRoles?: string[];
   duration?: number;
   blurX?: number;
   blurY?: number;
@@ -21,6 +22,7 @@ interface Props {
 const {
   text = "",
   phrases,
+  phraseRoles,
   duration = 1.9,
   blurX = 20,
   blurY = 20,
@@ -57,6 +59,7 @@ const textColorId = `${filterId}-color`;
   data-exit-delay={exitDelay}
   data-loop={loop ? "true" : undefined}
   data-phrases={phrases ? JSON.stringify(phrases) : undefined}
+  data-phrase-roles={phraseRoles ? JSON.stringify(phraseRoles) : undefined}
   data-mutate-word={mutateWord}
   data-blur-node={blurNodeId}
   data-matrix-node={matrixNodeId}

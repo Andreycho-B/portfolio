@@ -103,9 +103,9 @@ export const initWelcomeBackdrop = (rootEl: HTMLElement): WelcomeBackdropHandle 
 
   // Se activa ÚNICAMENTE después de que 'Soy Andrey' se haya ido completamente
   const onPhraseExited = (evt: Event) => {
-    const customEvt = evt as CustomEvent<{ phraseIndex: number; phrase: string }>;
+    const customEvt = evt as CustomEvent<{ phraseIndex: number; phrase: string; role: string }>;
     const detail = customEvt.detail;
-    if (detail && detail.phraseIndex === 1) {
+    if (detail && detail.role === "identity") {
       expand();
     }
   };
