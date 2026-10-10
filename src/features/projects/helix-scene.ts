@@ -1,7 +1,7 @@
 import * as THREE from "three";
-import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { createHelixWorld } from "./helix-cards";
 import type { HelixCardDatum, HelixConfig, HelixSceneHandle } from "./helix-cards.types";
+import { setupHelixEnvironment } from "./helix-environment";
 import { CREME_BACKGROUND } from "./helix-materials";
 import { createPostPipeline } from "./helix-postfx";
 
@@ -16,7 +16,6 @@ const FLOW_EPSILON = 1e-4;
 const IDLE_FRAME_LIMIT = 2;
 
 const CREME_BACKGROUND_COLOR = new THREE.Color(CREME_BACKGROUND);
-const ENVIRONMENT_INTENSITY = 0.5;
 
 const HELIX_CONFIG: HelixConfig = {
   cardCount: 12,
@@ -56,23 +55,6 @@ const frameHelix = (
   camera.lookAt(center);
 };
 
-const addLights = (scene: THREE.Scene): void => {
-  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-
-  const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
-  keyLight.position.set(2, 4, 10);
-  scene.add(keyLight);
-
-  // Rim rasante superior-izquierda y contra desde la derecha, en blanco puro
-  const rimUpper = new THREE.DirectionalLight(0xffffff, 4.5);
-  rimUpper.position.set(-8, 12, 4);
-  scene.add(rimUpper);
-
-  const rimSide = new THREE.DirectionalLight(0xffffff, 3.0);
-  rimSide.position.set(8, -6, -2);
-  scene.add(rimSide);
-};
-
 export const createHelixScene = async (
   canvas: HTMLCanvasElement,
   cardData: readonly HelixCardDatum[],
@@ -88,13 +70,7 @@ export const createHelixScene = async (
 
   const scene = new THREE.Scene();
   scene.background = CREME_BACKGROUND_COLOR;
-  addLights(scene);
-
-  const pmremGenerator = new THREE.PMREMGenerator(renderer);
-  const environmentTexture = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
-  pmremGenerator.dispose();
-  scene.environment = environmentTexture;
-  scene.environmentIntensity = ENVIRONMENT_INTENSITY;
+  const environmentTexture = setupHelixEnvironment(scene, renderer);
 
   const camera = new THREE.PerspectiveCamera(CAMERA_FOV_DEG, 1, 0.1, 100);
   camera.position.set(0, 2.4, 21);
