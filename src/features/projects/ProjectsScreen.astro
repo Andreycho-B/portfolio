@@ -75,6 +75,15 @@
 
     document.addEventListener("consent:completed", revealProjectsZone, { once: true });
 
+    const preloadHelixScene = () => {
+      void import("./helix-scene");
+    };
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(preloadHelixScene, { timeout: 2000 });
+    } else {
+      window.setTimeout(preloadHelixScene, 1500);
+    }
+
     // Scroll nativo y zoom desactivados: los gestos alimentan el flujo helicoidal
     const onZoneWheel = (event: WheelEvent) => {
       if (zone.hidden) return;
