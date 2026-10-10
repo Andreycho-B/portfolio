@@ -57,16 +57,17 @@ export const initWelcomeBackdrop = (rootEl: HTMLElement): WelcomeBackdropHandle 
       },
     });
 
-    // Pausa deliberada con pantalla vacía: asegura espacio 100% limpio tras la salida de "Soy Andrey"
-    timeline.to({}, { duration: 0.35 });
-
-    // Fase 1: Nace la línea azul en el centro limpio y abre horizontalmente a 120 FPS vía GPU
-    timeline.to(boxEl, {
-      scaleX: 1,
-      duration: 1.35,
-      ease: "power2.inOut",
-      force3D: true,
-    });
+    // Fase 1: Nace la línea azul en el centro limpio y abre horizontalmente
+    timeline.to(
+      boxEl,
+      {
+        scaleX: 1,
+        duration: 1.35,
+        ease: "power2.inOut",
+        force3D: true,
+      },
+      0.35,
+    );
 
     // Fase 2: Abre verticalmente manteniendo el ancho exacto (rectángulo limpio sin reflows)
     timeline.to(boxEl, {
@@ -76,29 +77,31 @@ export const initWelcomeBackdrop = (rootEl: HTMLElement): WelcomeBackdropHandle 
       force3D: true,
     });
 
-    // Fase 3: Pausa deliberada en la forma rectangular limpia
-    timeline.to({}, { duration: 0.65 });
-
     // Cobertura completa viewport calculada para GPU scale
     const targetScaleX = (window.innerWidth * 1.5) / lineLength;
     const targetScaleY = (window.innerHeight * 1.5) / rectHeight;
     const finalScale = Math.max(targetScaleX, targetScaleY);
 
-    // Fase 4: Expansión elástica a toda la pantalla con peso e inercia física (120 FPS)
-    timeline.to(boxEl, {
-      scaleX: finalScale,
-      scaleY: finalScale,
-      duration: 1.35,
-      ease: "power3.inOut",
-      force3D: true,
-      onStart: () => {
-        boxEl.classList.add("is-expanding");
-        gsap.delayedCall(0.7, () => {
-          rootEl.dataset.backdropActive = "true";
-          document.dispatchEvent(new CustomEvent("welcome:backdrop-covered"));
-        });
+    // Fase 3: Pausa deliberada en la forma rectangular limpia antes de la expansión
+    // Fase 4: Expansión elástica a toda la pantalla con peso e inercia física
+    timeline.to(
+      boxEl,
+      {
+        scaleX: finalScale,
+        scaleY: finalScale,
+        duration: 1.35,
+        ease: "power3.inOut",
+        force3D: true,
+        onStart: () => {
+          boxEl.classList.add("is-expanding");
+          gsap.delayedCall(0.7, () => {
+            rootEl.dataset.backdropActive = "true";
+            document.dispatchEvent(new CustomEvent("welcome:backdrop-covered"));
+          });
+        },
       },
-    });
+      "+=0.65",
+    );
   };
 
   // Se activa ÚNICAMENTE después de que 'Soy Andrey' se haya ido completamente

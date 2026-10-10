@@ -112,7 +112,7 @@ void main() {
   float wind = u_time * 0.035;
   vec3 cloudPos = vec3(p * 1.35 - vec2(wind, 0.0), u_time * 0.012);
 
-  // Deformación de dominio para cúmulos algodonados con alta eficiencia a 120 FPS
+  // Deformación de dominio para cúmulos algodonados
   vec2 warp = vec2(
     snoise(cloudPos + vec3(0.0, 0.0, 1.2)),
     snoise(cloudPos + vec3(5.2, 1.3, 2.8))
