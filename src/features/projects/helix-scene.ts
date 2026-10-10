@@ -98,7 +98,11 @@ export const createHelixScene = async (
   camera.position.set(0, 2.4, 21);
   camera.lookAt(0, 0, 0);
 
-  const world = await createHelixWorld(HELIX_CONFIG, cardData);
+  const world = await createHelixWorld(
+    HELIX_CONFIG,
+    cardData,
+    renderer.capabilities.getMaxAnisotropy(),
+  );
   scene.add(world.group);
 
   const pipeline = createPostPipeline(renderer, scene, camera, world.focusTarget);
