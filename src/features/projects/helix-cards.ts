@@ -4,6 +4,20 @@ import { createCardFaceTexture } from "./card-face-texture";
 import type { HelixCardDatum, HelixConfig, HelixWorldLayout } from "./helix-cards.types";
 import { createAcrylicMaterial, createArtMaterial } from "./helix-materials";
 
+export const HELIX_CONFIG: HelixConfig = {
+  cardCount: 12,
+  radius: 5.5,
+  angleStep: THREE.MathUtils.degToRad(16),
+  axialStep: 0.85,
+  cardWidth: 3.0,
+  cardHeight: 4.25,
+  cardThickness: 0.08,
+  pitch: THREE.MathUtils.degToRad(-32),
+  yaw: THREE.MathUtils.degToRad(22),
+  groupRoll: THREE.MathUtils.degToRad(-135),
+  groupElevation: THREE.MathUtils.degToRad(15),
+};
+
 // Margen de acrílico visible alrededor del núcleo gráfico (mat perimetral)
 const ART_INSET = 0.075;
 // Bisel suficiente para atrapar el destello especular en el canto
