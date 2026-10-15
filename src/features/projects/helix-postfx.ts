@@ -14,7 +14,7 @@ const BLOOM_INTENSITY = 0.55;
 const DOF_BOKEH_SCALE = 1.6;
 const DOF_BOKEH_SCALE_DEGRADED = 0.8;
 const DOF_RESOLUTION_Y = 480;
-const COMPOSER_MULTISAMPLING = 4;
+const COMPOSER_MULTISAMPLING = 2;
 
 export type PostPipeline = {
   readonly composer: EffectComposer;

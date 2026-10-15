@@ -30,10 +30,18 @@ export type HelixConfig = {
 export type HelixSceneHandle = {
   readonly resize: (width: number, height: number) => void;
   readonly start: () => void;
+  /** Dispara la animación de despliegue helicoidal 3D de entrada */
+  readonly playIntro: () => Promise<void>;
   /** Suma `deltaPx` de gestos (rueda/arrastre) al avance objetivo de la hélice */
   readonly scrollBy: (deltaPx: number) => void;
   readonly scrollTo: (slots: number) => void;
   readonly dispose: () => void;
+};
+
+export type HelixCardEntry = {
+  readonly shell: THREE.Mesh;
+  readonly shellMaterial: THREE.MeshPhysicalMaterial;
+  readonly artMaterial: THREE.MeshBasicMaterial;
 };
 
 export type HelixWorldLayout = {
@@ -42,6 +50,8 @@ export type HelixWorldLayout = {
   readonly focusTarget: THREE.Vector3;
   /** Bbox canónico del arco visible (slots 1..8), invariante bajo el avance */
   readonly framingBox: THREE.Box3;
-  /** Desplaza las tarjetas `advance` slots a lo largo de la hélice (ilimitado) */
-  readonly setAdvance: (advance: number) => void;
+  /** Desplaza las tarjetas `advance` slots a lo largo de la hélice con velocidad inercial y progreso de intro */
+  readonly setAdvance: (advance: number, velocity?: number, introProgress?: number) => void;
+  /** Conmuta el fundido del arte entre cobertura MSAA (tier alto) y blending (tier degradado) */
+  readonly setArtAlphaToCoverage: (enabled: boolean) => void;
 };
