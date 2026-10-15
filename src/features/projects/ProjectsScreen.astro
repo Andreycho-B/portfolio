@@ -29,7 +29,7 @@
     width: 100%;
     height: 100%;
     opacity: 0;
-    transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 0.28s ease-out;
   }
   .helix-canvas.is-revealed {
     opacity: 1;
@@ -44,6 +44,9 @@
     padding: calc(var(--container-padding) + env(safe-area-inset-top)) var(--container-padding)
       calc(var(--container-padding) + env(safe-area-inset-bottom));
     background: var(--color-bg);
+  }
+  .projects-fallback[hidden] {
+    display: none;
   }
   .fallback-label {
     font-family: var(--font-text);
@@ -139,11 +142,10 @@
             return;
           }
           helix = scene;
-          const width = zone.clientWidth;
-          const height = zone.clientHeight;
-          scene.resize(width, height);
+          scene.resize(zone.clientWidth, zone.clientHeight);
           scene.start();
           canvas.classList.add("is-revealed");
+          void scene.playIntro();
         })
         .catch((error: unknown) => {
           console.error("[Projects] Fallo al iniciar la escena del carrusel:", error);
@@ -153,9 +155,7 @@
 
     document.addEventListener("consent:completed", revealProjectsZone, { once: true });
 
-    const preloadHelixScene = () => {
-      void import("./helix-scene");
-    };
+    const preloadHelixScene = () => void import("./helix-scene");
     if (typeof window.requestIdleCallback === "function") {
       window.requestIdleCallback(preloadHelixScene, { timeout: 2000 });
     } else {
@@ -169,13 +169,19 @@
       advanceTo: (slots) => helix?.scrollTo(slots),
     });
 
+    let resizeFrameId: number | null = null;
     const onZoneResize = () => {
-      if (helix && !zone.hidden) helix.resize(zone.clientWidth, zone.clientHeight);
+      if (resizeFrameId !== null) return;
+      resizeFrameId = requestAnimationFrame(() => {
+        resizeFrameId = null;
+        if (helix && !zone.hidden) helix.resize(zone.clientWidth, zone.clientHeight);
+      });
     };
     window.addEventListener("resize", onZoneResize);
 
     const destroy = () => {
       input.dispose();
+      if (resizeFrameId !== null) cancelAnimationFrame(resizeFrameId);
       window.removeEventListener("resize", onZoneResize);
       document.removeEventListener("consent:completed", revealProjectsZone);
       helix?.dispose();

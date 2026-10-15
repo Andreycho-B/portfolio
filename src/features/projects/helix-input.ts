@@ -1,7 +1,7 @@
 const WHEEL_LINE_PX = 16;
-const PX_PER_SLOT = 140;
+// Contrato compartido con la escena: píxeles de gesto por slot helicoidal
+export const PX_PER_SLOT = 140;
 const TOUCH_GAIN = 1.4;
-const HELIX_LAP_SLOTS = 12;
 const MOMENTUM_WINDOW_MS = 80;
 const MOMENTUM_CARRY_MS = 240;
 const MOMENTUM_MAX_PX = 3 * PX_PER_SLOT;
@@ -54,9 +54,6 @@ export const mountHelixInput = (
     if (event.key === "Home") {
       event.preventDefault();
       target.advanceTo(0);
-    } else if (event.key === "End") {
-      event.preventDefault();
-      target.advanceTo(HELIX_LAP_SLOTS);
     }
   };
   window.addEventListener("keydown", onKeyDown);

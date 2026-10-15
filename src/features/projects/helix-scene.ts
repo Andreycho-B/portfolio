@@ -2,46 +2,18 @@ import * as THREE from "three";
 import { createHelixWorld, HELIX_CONFIG } from "./helix-cards";
 import type { HelixCardDatum, HelixSceneHandle } from "./helix-cards.types";
 import { setupHelixEnvironment } from "./helix-environment";
+import { CAMERA_FOV_DEG, frameHelix } from "./helix-framing";
 import { CREME_BACKGROUND } from "./helix-materials";
+import { createHelixMotion } from "./helix-motion";
 import { createPostPipeline } from "./helix-postfx";
 import { createHelixQualityGovernor } from "./helix-quality";
 
-// Cámara teleobjetivo: FOV estrecho (32°) que comprime la perspectiva
-const CAMERA_FOV_DEG = 32;
 const MAX_PIXEL_RATIO = 2;
 
-// px de gesto que equivalen a una tarjeta de recorrido helicoidal
-const PX_PER_SLOT = 140;
-const FLOW_EASE = 0.075;
-const FLOW_EPSILON = 1e-4;
 const IDLE_FRAME_LIMIT = 2;
 const FRAME_GAP_MAX_MS = 200;
 
 const CREME_BACKGROUND_COLOR = new THREE.Color(CREME_BACKGROUND);
-
-// Encuadre automático sobre el arco visible (tarjetas 1..8): la tarjeta
-// frontal queda deliberadamente recortada por el borde inferior-izquierdo
-// del encuadre, como en la referencia. FOV teleobjetivo conservado.
-// El bbox es canónico (slots 1..8): el encuadre no depende del avance.
-const frameHelix = (
-  camera: THREE.PerspectiveCamera,
-  framingBox: THREE.Box3,
-  aspect: number,
-): void => {
-  const center = framingBox.getCenter(new THREE.Vector3());
-  const size = framingBox.getSize(new THREE.Vector3());
-
-  const margin = 1.06;
-  const halfHeight = (size.y * margin) / 2;
-  const halfWidth = (size.x * margin) / 2;
-  const halfFovRad = THREE.MathUtils.degToRad(CAMERA_FOV_DEG) / 2;
-  const distanceByHeight = halfHeight / Math.tan(halfFovRad);
-  const distanceByWidth = halfWidth / (Math.tan(halfFovRad) * aspect);
-  const distance = Math.max(distanceByHeight, distanceByWidth);
-
-  camera.position.set(center.x, center.y + distance * 0.1, center.z + distance);
-  camera.lookAt(center);
-};
 
 export const createHelixScene = async (
   canvas: HTMLCanvasElement,
@@ -52,7 +24,7 @@ export const createHelixScene = async (
   try {
     renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: true,
+      antialias: false,
       alpha: false,
       powerPreference: "high-performance",
     });
@@ -83,11 +55,10 @@ export const createHelixScene = async (
   let running = false;
   let idleFrames = 0;
   let needsRender = true;
-  let targetAdvance = 0;
-  let currentAdvance = 0;
   let lastWidth = 1;
   let lastHeight = 1;
   let lastRenderTimeMs = performance.now();
+  let contextLost = false;
   const reducedMotion =
     typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -96,39 +67,43 @@ export const createHelixScene = async (
     pipeline,
     getViewportSize: () => ({ width: lastWidth, height: lastHeight }),
     highPixelRatioCap: MAX_PIXEL_RATIO,
+    setArtAlphaToCoverage: (enabled) => world.setArtAlphaToCoverage(enabled),
     onQualityChange: () => {
       needsRender = true;
     },
   });
 
   const schedule = (): void => {
+    if (contextLost) return;
     needsRender = true;
     if (!running) {
       running = true;
       idleFrames = 0;
+      lastRenderTimeMs = performance.now();
       animationFrameId = requestAnimationFrame(frame);
     }
   };
 
+  const motion = createHelixMotion({
+    applyToWorld: (advance, velocity, introProgress) =>
+      world.setAdvance(advance, velocity, introProgress),
+    requestRender: schedule,
+    periodSlots: HELIX_CONFIG.cardCount,
+    reducedMotion,
+  });
+
   const scrollBy = (deltaPx: number): void => {
-    targetAdvance += deltaPx / PX_PER_SLOT;
-    if (reducedMotion) {
-      currentAdvance = targetAdvance;
-      world.setAdvance(currentAdvance);
-    }
-    schedule();
+    if (contextLost) return;
+    motion.advanceBy(deltaPx);
   };
 
   const scrollTo = (slots: number): void => {
-    targetAdvance = slots;
-    if (reducedMotion) {
-      currentAdvance = targetAdvance;
-      world.setAdvance(currentAdvance);
-    }
-    schedule();
+    if (contextLost) return;
+    motion.advanceTo(slots);
   };
 
   const resize = (width: number, height: number): void => {
+    if (contextLost) return;
     lastWidth = width;
     lastHeight = height;
     renderer.setSize(width, height, false);
@@ -139,24 +114,23 @@ export const createHelixScene = async (
     schedule();
   };
 
-  const frame = (): void => {
+  const frame = (frameTimeMs: number): void => {
     animationFrameId = null;
-    if (!reducedMotion && Math.abs(targetAdvance - currentAdvance) > FLOW_EPSILON) {
-      currentAdvance += (targetAdvance - currentAdvance) * FLOW_EASE;
-      world.setAdvance(currentAdvance);
-      needsRender = true;
-    }
+    const deltaMs = Math.min(Math.max(frameTimeMs - lastRenderTimeMs, 1), FRAME_GAP_MAX_MS);
+    lastRenderTimeMs = frameTimeMs;
+    const dtSeconds = deltaMs / 1000;
+
+    if (motion.tick(dtSeconds)) needsRender = true;
+
     if (needsRender) {
-      const now = performance.now();
-      const deltaMs = now - lastRenderTimeMs;
-      lastRenderTimeMs = now;
-      if (deltaMs > 0 && deltaMs < FRAME_GAP_MAX_MS) governor.sampleFrame(deltaMs);
+      governor.sampleFrame(deltaMs);
       pipeline.composer.render();
       needsRender = false;
       idleFrames = 0;
     } else {
       idleFrames += 1;
     }
+
     if (!running) return;
     if (idleFrames <= IDLE_FRAME_LIMIT) {
       animationFrameId = requestAnimationFrame(frame);
@@ -169,8 +143,11 @@ export const createHelixScene = async (
     schedule();
   };
 
+  const playIntro = (): Promise<void> => motion.playIntro();
+
   const handleContextLost = (event: Event): void => {
     event.preventDefault();
+    contextLost = true;
     running = false;
     if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
     animationFrameId = null;
@@ -179,6 +156,7 @@ export const createHelixScene = async (
   canvas.addEventListener("webglcontextlost", handleContextLost);
 
   const dispose = (): void => {
+    motion.dispose();
     canvas.removeEventListener("webglcontextlost", handleContextLost);
     running = false;
     if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
@@ -202,5 +180,5 @@ export const createHelixScene = async (
     pipeline.dispose();
   };
 
-  return { resize, start, scrollBy, scrollTo, dispose };
+  return { resize, start, playIntro, scrollBy, scrollTo, dispose };
 };

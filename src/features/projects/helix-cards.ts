@@ -1,7 +1,13 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { createCardFaceTexture } from "./card-face-texture";
-import type { HelixCardDatum, HelixConfig, HelixWorldLayout } from "./helix-cards.types";
+import type {
+  HelixCardDatum,
+  HelixCardEntry,
+  HelixConfig,
+  HelixWorldLayout,
+} from "./helix-cards.types";
+import { createHelixChoreography } from "./helix-choreography";
 import { createAcrylicMaterial, createArtMaterial } from "./helix-materials";
 
 export const HELIX_CONFIG: HelixConfig = {
@@ -23,18 +29,6 @@ const ART_INSET = 0.075;
 // Bisel suficiente para atrapar el destello especular en el canto
 const BEVEL_RADIUS = 0.03;
 const BEVEL_SEGMENTS = 4;
-
-const EXIT_WINDOW_SLOTS = 1.0;
-const ENTRY_FADE_SLOTS = 1.2;
-
-const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
-const modulo = (value: number, period: number): number => ((value % period) + period) % period;
-
-type HelixCardEntry = {
-  readonly shell: THREE.Mesh;
-  readonly shellMaterial: THREE.MeshPhysicalMaterial;
-  readonly artMaterial: THREE.MeshBasicMaterial;
-};
 
 export const createHelixWorld = async (
   config: HelixConfig,
@@ -79,31 +73,8 @@ export const createHelixWorld = async (
     entries.push({ shell, shellMaterial, artMaterial });
   }
 
-  const period = config.cardCount;
-
-  const setAdvance = (advance: number): void => {
-    for (let i = 0; i < entries.length; i++) {
-      const entry = entries[i];
-      if (!entry) continue;
-
-      const slot = modulo(i - advance, period);
-      const theta = slot * config.angleStep;
-      entry.shell.position.set(
-        config.radius * Math.cos(theta),
-        config.radius * Math.sin(theta),
-        -slot * config.axialStep,
-      );
-
-      const exitFade = clamp01(slot / EXIT_WINDOW_SLOTS);
-      const entryFade = clamp01((config.cardCount - slot) / ENTRY_FADE_SLOTS);
-      const opacity = Math.min(exitFade, entryFade);
-
-      entry.shellMaterial.opacity = opacity;
-      entry.artMaterial.opacity = opacity;
-      entry.shell.visible = opacity > 0.001;
-    }
-  };
-  setAdvance(0);
+  const choreography = createHelixChoreography(entries, config);
+  choreography.setAdvance(0);
 
   group.rotation.z = config.groupRoll;
   group.rotation.x = config.groupElevation;
@@ -123,5 +94,11 @@ export const createHelixWorld = async (
   const focusTarget = new THREE.Vector3();
   focusCard.getWorldPosition(focusTarget);
 
-  return { group, focusTarget, framingBox, setAdvance };
+  return {
+    group,
+    focusTarget,
+    framingBox,
+    setAdvance: choreography.setAdvance,
+    setArtAlphaToCoverage: choreography.setArtAlphaToCoverage,
+  };
 };
