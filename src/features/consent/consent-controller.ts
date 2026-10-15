@@ -109,7 +109,6 @@ export const initConsentScreen = (): void => {
     isTransitioning = true;
     cleanupListeners();
     cursor.setMuted(false);
-    cursor.setExpanded(false);
     cursor.pulse();
 
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
@@ -133,7 +132,6 @@ export const initConsentScreen = (): void => {
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (prefersReduced) {
-      cursor.setInverted(false);
       const targets = [contentElement, actionsElement, cloudCanvas, blueBox, vignette].filter(
         (el): el is HTMLElement | HTMLCanvasElement => el !== null,
       );
@@ -151,6 +149,8 @@ export const initConsentScreen = (): void => {
               detail: { soundEnabled: enableSound },
             }),
           );
+          cursor.setInverted(false);
+          cursor.setExpanded(false);
         },
       });
       return;
@@ -167,15 +167,12 @@ export const initConsentScreen = (): void => {
     cursor.setInverted(true);
     cursor.setExpanded(true, CURSOR_LABEL_CONSENT);
   };
-
   screenElement.addEventListener("morphic:complete", revealControls, { once: true });
-
   window.addEventListener("pointermove", handlePointerMove, { passive: true });
   window.addEventListener("pointerdown", handlePointerDown);
   window.addEventListener("pointerup", handlePointerUp);
   window.addEventListener("keydown", handleKeyDown);
   screenElement.addEventListener("click", handleScreenClick);
-
   if (muteButton) {
     muteButton.addEventListener("pointerenter", handleMuteEnter);
     muteButton.addEventListener("pointerleave", handleMuteLeave);

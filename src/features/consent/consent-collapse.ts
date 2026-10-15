@@ -1,5 +1,5 @@
 import { gsap } from "gsap";
-import type { CursorController } from "../../design-system/components/cursor-controller";
+import type { CursorController } from "../../design-system/components/cursor.types";
 import type { CloudControllerHandle } from "./cloud.types";
 import type { WelcomeBackdropHandle } from "./welcome-backdrop";
 
@@ -30,7 +30,6 @@ export const executeCollapseTimeline = (
     onComplete: () => {
       backdrop?.destroy();
       cloud?.destroy();
-      cursor.setInverted(false);
       screenElement.style.display = "none";
       screenElement.style.pointerEvents = "none";
       screenElement.dispatchEvent(
@@ -39,6 +38,9 @@ export const executeCollapseTimeline = (
           detail: { soundEnabled: enableSound },
         }),
       );
+      cursor.setInverted(false);
+      cursor.setExpanded(false);
+      cursor.pulse();
     },
   });
 
@@ -106,8 +108,6 @@ export const executeCollapseTimeline = (
     // que su degradado eléctrico se transparente durante la salida hacia el crema
     tl.set(blueBox, { opacity: 0 }, 0);
   }
-
-  tl.call(() => cursor.setInverted(false), undefined, 0.28);
 
   // 2. Micro-anticipación y compresión elástica previa
   tl.to(
