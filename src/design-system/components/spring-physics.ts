@@ -15,11 +15,70 @@ export interface Spring2D {
   step: (dt: number) => boolean;
 }
 
-// Parámetros idénticos a Motion-Primitives / Framer Motion useSpring({ bounce: 0.001 })
+// Física de resorte viva con amortiguamiento ζ ≈ 0.80 (snappy, reactivo, sin oscilación descontrolada)
 export const DEFAULT_SPRING_CONFIG: SpringConfig = {
-  stiffness: 350,
-  damping: 28,
-  mass: 0.5,
+  stiffness: 340,
+  damping: 18,
+  mass: 0.35,
+};
+
+export interface VelocityDeformation {
+  readonly angle: number;
+  readonly scaleX: number;
+  readonly scaleY: number;
+}
+
+export const calculateVelocityDeformation = (
+  vx: number,
+  vy: number,
+  lastAngle = 0,
+): VelocityDeformation => {
+  const speed = Math.hypot(vx, vy);
+  if (speed < 12) {
+    return { angle: lastAngle, scaleX: 1, scaleY: 1 };
+  }
+  const angle = (Math.atan2(vy, vx) * 180) / Math.PI;
+  const stretch = Math.min(speed * 0.00028, 0.28);
+  const scaleX = 1 + stretch;
+  const scaleY = 1 / (1 + stretch * 0.75);
+  return { angle, scaleX, scaleY };
+};
+
+export interface SpringStepResult {
+  readonly isResting: boolean;
+  readonly x: number;
+  readonly y: number;
+  readonly angle: number;
+  readonly scaleX: number;
+  readonly scaleY: number;
+}
+
+export const stepCursorSpring = (
+  spring: Spring2D,
+  dt: number,
+  canDeform: boolean,
+  lastAngle = 0,
+): SpringStepResult => {
+  const isResting = spring.step(dt);
+  if (!canDeform || isResting) {
+    return {
+      isResting,
+      x: spring.currentX,
+      y: spring.currentY,
+      angle: 0,
+      scaleX: 1,
+      scaleY: 1,
+    };
+  }
+  const def = calculateVelocityDeformation(spring.vx, spring.vy, lastAngle);
+  return {
+    isResting: false,
+    x: spring.currentX,
+    y: spring.currentY,
+    angle: def.angle,
+    scaleX: def.scaleX,
+    scaleY: def.scaleY,
+  };
 };
 
 export const createSpring2D = (config: SpringConfig = DEFAULT_SPRING_CONFIG): Spring2D => {
