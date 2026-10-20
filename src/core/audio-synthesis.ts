@@ -1,11 +1,5 @@
-import type { AmbientTextureHandle, GlassHarmonicSpec } from "./audio.types";
+import type { AmbientTextureHandle } from "./audio.types";
 import { playGenerativeChime } from "./audio-chime";
-
-const INHARMONIC_MODES: readonly GlassHarmonicSpec[] = [
-  { ratio: 1.0, gainRatio: 1.0, decayDuration: 3.2 },
-  { ratio: 1.222, gainRatio: 0.35, decayDuration: 2.2 },
-  { ratio: 1.5, gainRatio: 0.2, decayDuration: 1.6 },
-];
 
 export const startOrganicDrone = (
   ctx: AudioContext,
@@ -14,147 +8,137 @@ export const startOrganicDrone = (
   const now = ctx.currentTime;
   const droneGain = ctx.createGain();
   droneGain.gain.setValueAtTime(0.0001, now);
-  // Drone tenue y aterciopelado (reducido a 0.045 con entrada progresiva de 4s)
-  droneGain.gain.exponentialRampToValueAtTime(0.045, now + 4.0);
+  droneGain.gain.exponentialRampToValueAtTime(0.042, now + 3.5);
   droneGain.connect(destination);
 
-  const oscBase = ctx.createOscillator();
+  const oscRoot = ctx.createOscillator();
+  const oscRootDetune = ctx.createOscillator();
   const oscFifth = ctx.createOscillator();
-  const oscThird = ctx.createOscillator();
-  for (const osc of [oscBase, oscFifth, oscThird]) osc.type = "sine";
+  const oscNinth = ctx.createOscillator();
+  for (const osc of [oscRoot, oscRootDetune, oscFifth, oscNinth]) osc.type = "sine";
 
-  oscBase.frequency.setValueAtTime(216.0, now);
-  oscFifth.frequency.setValueAtTime(324.0, now);
-  oscThird.frequency.setValueAtTime(270.0, now);
+  oscRoot.frequency.setValueAtTime(82.41, now);
+  oscRootDetune.frequency.setValueAtTime(82.68, now);
+  oscFifth.frequency.setValueAtTime(123.47, now);
+  oscNinth.frequency.setValueAtTime(185.0, now);
 
+  const rootGain = ctx.createGain();
+  const detuneGain = ctx.createGain();
   const fifthGain = ctx.createGain();
-  const thirdGain = ctx.createGain();
-  fifthGain.gain.setValueAtTime(0.55, now);
-  thirdGain.gain.setValueAtTime(0.35, now);
-  oscFifth.connect(fifthGain);
-  oscThird.connect(thirdGain);
+  const ninthGain = ctx.createGain();
 
-  // Filtro Bessel subcrítico (Q=0.5, corte a 480Hz): el triad completo (216/270/324)
-  // respira sin el trobado opresivo de un corte que gates los parciales superiores
+  rootGain.gain.setValueAtTime(0.45, now);
+  detuneGain.gain.setValueAtTime(0.25, now);
+  fifthGain.gain.setValueAtTime(0.28, now);
+  ninthGain.gain.setValueAtTime(0.16, now);
+
+  oscRoot.connect(rootGain);
+  oscRootDetune.connect(detuneGain);
+  oscFifth.connect(fifthGain);
+  oscNinth.connect(ninthGain);
+
+  const auraOsc1 = ctx.createOscillator();
+  const auraOsc2 = ctx.createOscillator();
+  for (const osc of [auraOsc1, auraOsc2]) osc.type = "sine";
+  auraOsc1.frequency.setValueAtTime(329.63, now);
+  auraOsc2.frequency.setValueAtTime(370.0, now);
+
+  const auraGain = ctx.createGain();
+  auraGain.gain.setValueAtTime(0.0001, now);
+  auraOsc1.connect(auraGain);
+  auraOsc2.connect(auraGain);
+
   const filter = ctx.createBiquadFilter();
   filter.type = "lowpass";
-  filter.frequency.setValueAtTime(480, now);
+  filter.frequency.setValueAtTime(240, now);
   filter.Q.setValueAtTime(0.5, now);
-
-  // LFO de Coherencia Cardiovascular HRV: respiración pausada y sutil de 0.08Hz
-  // sobre la amplitud (no sobre el timbre): oleaje suave sin latidos opresivos
-  const breathLfo = ctx.createOscillator();
-  const breathGain = ctx.createGain();
-  breathLfo.type = "sine";
-  breathLfo.frequency.setValueAtTime(0.08, now);
-  breathGain.gain.setValueAtTime(0.014, now);
-  breathLfo.connect(breathGain);
-  breathGain.connect(droneGain.gain);
 
   const panner = ctx.createStereoPanner();
   const panLfo = ctx.createOscillator();
   const panGain = ctx.createGain();
   panLfo.type = "sine";
-  panLfo.frequency.setValueAtTime(0.03, now);
-  panGain.gain.setValueAtTime(0.15, now);
+  panLfo.frequency.setValueAtTime(0.022, now);
+  panGain.gain.setValueAtTime(0.25, now);
   panLfo.connect(panGain);
   panGain.connect(panner.pan);
 
-  oscBase.connect(filter);
+  rootGain.connect(filter);
+  detuneGain.connect(filter);
   fifthGain.connect(filter);
-  thirdGain.connect(filter);
+  ninthGain.connect(filter);
+  auraGain.connect(filter);
   filter.connect(panner);
   panner.connect(droneGain);
 
-  for (const src of [oscBase, oscFifth, oscThird, breathLfo, panLfo]) src.start(now);
+  for (const src of [oscRoot, oscRootDetune, oscFifth, oscNinth, auraOsc1, auraOsc2, panLfo]) {
+    src.start(now);
+  }
 
-  // Campanadas espaciadas: primera a los 2.4s y luego cada 7-12s
   let chimeTimerId: number | undefined;
-  const scheduleNext = (delayMs: number) => {
+  const scheduleNextChime = (delayMs: number) => {
     chimeTimerId = window.setTimeout(() => {
       playGenerativeChime(ctx, destination);
-      scheduleNext(7000 + Math.random() * 5000);
+      scheduleNextChime(9000 + Math.random() * 7000);
     }, delayMs);
   };
-  scheduleNext(2400);
+  scheduleNextChime(3500);
+
+  let decayTimerId: number | undefined;
+  const triggerProximityAura = (intensity = 1.0): void => {
+    if (ctx.state !== "running") return;
+    const t = ctx.currentTime;
+    const clamped = Math.max(0, Math.min(1.0, intensity));
+    const targetAuraGain = 0.0001 + clamped * 0.045;
+    const targetFreq = 240 + clamped * 220;
+
+    auraGain.gain.setTargetAtTime(targetAuraGain, t, 0.08);
+    filter.frequency.setTargetAtTime(targetFreq, t, 0.1);
+
+    if (decayTimerId !== undefined) window.clearTimeout(decayTimerId);
+    decayTimerId = window.setTimeout(() => {
+      if (ctx.state === "running") {
+        const curT = ctx.currentTime;
+        auraGain.gain.setTargetAtTime(0.0001, curT, 0.6);
+        filter.frequency.setTargetAtTime(240, curT, 0.6);
+      }
+    }, 450);
+  };
 
   const stop = () => {
     if (chimeTimerId !== undefined) window.clearTimeout(chimeTimerId);
-    const stopTime = ctx.currentTime + 0.12;
+    if (decayTimerId !== undefined) window.clearTimeout(decayTimerId);
+
+    const stopTime = ctx.currentTime + 0.15;
     droneGain.gain.cancelScheduledValues(ctx.currentTime);
     droneGain.gain.setValueAtTime(droneGain.gain.value, ctx.currentTime);
-    droneGain.gain.linearRampToValueAtTime(0, stopTime);
+    droneGain.gain.linearRampToValueAtTime(0.0001, stopTime);
 
     window.setTimeout(() => {
       try {
-        for (const node of [oscBase, oscFifth, oscThird, breathLfo, panLfo]) node.stop();
-        breathGain.disconnect();
+        for (const node of [
+          oscRoot,
+          oscRootDetune,
+          oscFifth,
+          oscNinth,
+          auraOsc1,
+          auraOsc2,
+          panLfo,
+        ]) {
+          node.stop();
+          node.disconnect();
+        }
+        rootGain.disconnect();
+        detuneGain.disconnect();
+        fifthGain.disconnect();
+        ninthGain.disconnect();
+        auraGain.disconnect();
+        filter.disconnect();
+        panner.disconnect();
+        panGain.disconnect();
         droneGain.disconnect();
-      } catch {
-        // Nodos ya cerrados
-      }
-    }, 150);
+      } catch {}
+    }, 180);
   };
 
-  return { gainNode: droneGain, stop };
-};
-
-export const synthesizeInharmonicGlass = (
-  ctx: AudioContext,
-  destination: GainNode,
-  fundamental = 432,
-): void => {
-  const now = ctx.currentTime;
-  const strikeGain = ctx.createGain();
-  strikeGain.connect(destination);
-
-  let primaryOsc: OscillatorNode | null = null;
-  for (const { ratio, gainRatio, decayDuration } of INHARMONIC_MODES) {
-    const osc = ctx.createOscillator();
-    const modeGain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(fundamental * ratio, now);
-
-    modeGain.gain.setValueAtTime(0.0001, now);
-    // Ataque suave de 60ms para entrada acogedora sin golpe
-    modeGain.gain.linearRampToValueAtTime(0.09 * gainRatio, now + 0.06);
-    modeGain.gain.exponentialRampToValueAtTime(0.0001, now + decayDuration);
-
-    osc.connect(modeGain);
-    modeGain.connect(strikeGain);
-    osc.start(now);
-    osc.stop(now + decayDuration + 0.05);
-
-    if (ratio === 1.0) primaryOsc = osc;
-  }
-
-  if (primaryOsc) primaryOsc.onended = () => strikeGain.disconnect();
-};
-
-export const synthesizeTactileImpulse = (
-  ctx: AudioContext,
-  destination: GainNode,
-  isTap: boolean,
-): void => {
-  const now = ctx.currentTime;
-  const impulseGain = ctx.createGain();
-  impulseGain.connect(destination);
-
-  const baseFreq = isTap ? 2160 : 2592;
-  const duration = isTap ? 0.03 : 0.012;
-  const peakVolume = isTap ? 0.035 : 0.016;
-
-  const osc = ctx.createOscillator();
-  osc.type = "sine";
-  osc.frequency.setValueAtTime(baseFreq, now);
-  osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.7, now + duration);
-
-  impulseGain.gain.setValueAtTime(0.0001, now);
-  impulseGain.gain.linearRampToValueAtTime(peakVolume, now + 0.002);
-  impulseGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-
-  osc.connect(impulseGain);
-  osc.start(now);
-  osc.stop(now + duration + 0.005);
-  osc.onended = () => impulseGain.disconnect();
+  return { gainNode: droneGain, triggerProximityAura, stop };
 };
