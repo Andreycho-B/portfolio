@@ -1,5 +1,6 @@
 ---
 import { ClientRouter } from "astro:transitions";
+import Analytics from "@vercel/analytics/astro";
 import { PROFILE } from "../core/profile";
 import InteractiveCursor from "../design-system/components/InteractiveCursor.astro";
 import "../design-system/tokens/index.css";
@@ -143,5 +144,6 @@ const personSchema = JSON.stringify({
       </svg>
     </div>
     <slot />
+    <Analytics />
   </body>
 </html>
