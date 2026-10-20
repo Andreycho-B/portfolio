@@ -1,4 +1,5 @@
 ---
+import { ClientRouter } from "astro:transitions";
 import "../design-system/tokens/index.css";
 import InteractiveCursor from "../design-system/components/InteractiveCursor.astro";
 
@@ -6,13 +7,64 @@ interface Props {
   title?: string;
   description?: string;
   lang?: string;
+  image?: string;
+  type?: string;
 }
 
 const {
-  title = "Andrey — Desarrollador Creativo",
-  description = "Portafolio de Andrey, desarrollador creativo.",
+  title = "Andrey Rondón — Desarrollador Fullstack & Tecnólogo ADSO",
+  description = "Portafolio de ingeniería de software de Andrey Rondón (Andrey Ernesto Rondón Corredor). Tecnólogo ADSO (SENA) en Duitama, Colombia. TypeScript, Go, Svelte 5, Angular, PostgreSQL y gobernanza de agentes de IA.",
   lang = "es",
+  image = "/logo-mascot-base.webp",
+  type = "website",
 } = Astro.props;
+
+const canonicalURL = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : Astro.url.href;
+const socialImageURL = Astro.site ? new URL(image, Astro.site).href : image;
+
+const personSchema = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: "Andrey Ernesto Rondón Corredor",
+  alternateName: ["Andrey Rondón", "Andreycho-B"],
+  jobTitle: "Desarrollador de Software Fullstack",
+  description:
+    "Desarrollador de Software Fullstack y Tecnólogo SENA (ADSO) habilitado para etapa práctica. Especialista en TypeScript, Go, Svelte 5, Angular, PostgreSQL y gobernanza de agentes de IA.",
+  url: "https://andreyrondon.dev",
+  sameAs: [
+    "https://github.com/Andreycho-B",
+    "https://linkedin.com/in/andrey-rondón-980345426",
+    "https://instagram.com/andrey_rondonikov",
+  ],
+  alumniOf: {
+    "@type": "EducationalOrganization",
+    name: "Servicio Nacional de Aprendizaje (SENA)",
+  },
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Duitama",
+    addressRegion: "Boyacá",
+    addressCountry: "Colombia",
+  },
+  knowsAbout: [
+    "TypeScript",
+    "Go (Golang)",
+    "PostgreSQL",
+    "SQLC",
+    "Svelte 5",
+    "Angular",
+    "Tailwind CSS",
+    "Node.js",
+    "NestJS",
+    "Argon2id",
+    "WebSockets",
+    "Server-Sent Events",
+    "Docker",
+    "AI Agent Engineering",
+    "Model Context Protocol (MCP)",
+    "Spec-Driven Development",
+  ],
+});
 ---
 
 <!doctype html>
@@ -21,9 +73,33 @@ const {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content={description} />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="author" content="Andrey Ernesto Rondón Corredor" />
+    <meta
+      name="keywords"
+      content="Andrey Rondón, Andrey Ernesto Rondón Corredor, Desarrollador Fullstack, ADSO, SENA, Duitama, Boyacá, Colombia, TypeScript, Go, Golang, Svelte 5, Angular, PostgreSQL, NestJS, AI Agent Engineering, PWA"
+    />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href={canonicalURL} />
+
+    <meta property="og:type" content={type} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={socialImageURL} />
+    <meta property="og:site_name" content="Andrey Rondón — Portfolio" />
+    <meta property="og:locale" content="es_CO" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content={canonicalURL} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImageURL} />
+
+    <script type="application/ld+json" set:html={personSchema} />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="shortcut icon" href="/favicon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#f5f1ea" />
+    <meta name="theme-color" content="#ffffff" />
     <link
       rel="preload"
       href="/fonts/author/Author-Variable.woff2"
@@ -38,10 +114,42 @@ const {
       type="font/woff2"
       crossorigin
     />
+    <ClientRouter />
+    <style is:global>
+      ::view-transition-old(root),
+      ::view-transition-new(root) {
+        animation: none !important;
+      }
+    </style>
     <title>{title}</title>
   </head>
   <body>
     <InteractiveCursor />
+    <div
+      id="fluid-transition-overlay"
+      aria-hidden="true"
+      transition:persist="fluid-transition-overlay"
+      style="position: fixed; inset: 0; z-index: 999999; pointer-events: none; overflow: hidden; will-change: transform;"
+    >
+      <svg
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        style="width: 100%; height: 100%; display: block;"
+      >
+        <path
+          class="fluid-layer-lead"
+          d="M 0 100 L 100 100 L 100 100 L 0 100 Z"
+          fill="#1a1714"
+          vector-effect="non-scaling-stroke"
+        ></path>
+        <path
+          class="fluid-layer-body"
+          d="M 0 100 L 100 100 L 100 100 L 0 100 Z"
+          fill="var(--color-bg, #ffffff)"
+          vector-effect="non-scaling-stroke"
+        ></path>
+      </svg>
+    </div>
     <slot />
   </body>
 </html>

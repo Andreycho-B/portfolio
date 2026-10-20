@@ -1,25 +1,34 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ConsentScreen from "../features/consent/ConsentScreen.astro";
-
-// Escena inicial: bienvenida y consentimiento interactivo de audio (Spec §6 y §8)
-// La presentación de proyectos está en redisenño (Spec §9, estado 1.0.6)
+import ProjectsLensDrum from "../features/projects/ProjectsLensDrum.astro";
 ---
 
 <BaseLayout
-  title="Andrey — Desarrollador Creativo"
-  description="Portafolio personal de Andrey, desarrollador creativo."
+  title="Andrey Rondón — Desarrollador de Software Fullstack & Tecnólogo ADSO"
+  description="Portafolio de ingeniería de software de Andrey Rondón (Andrey Ernesto Rondón Corredor). Tecnólogo ADSO (SENA) en Duitama, Colombia. Go, TypeScript, Svelte 5, Angular, PostgreSQL y gobernanza de IA."
 >
   <main class="page-root">
     <ConsentScreen />
+    <ProjectsLensDrum />
   </main>
 </BaseLayout>
 
 <style>
   .page-root {
     position: relative;
-    width: 100%;
-    min-height: 100vh;
-    overflow-x: clip;
+    width: 100vw;
+    height: 100dvh;
+    overflow: hidden;
+  }
+  .page-root > :global(.consent-container) {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+  }
+  .page-root > :global(.projects-lens-section) {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
   }
 </style>
