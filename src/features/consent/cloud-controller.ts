@@ -125,7 +125,6 @@ export const initCloudCanvas = (
       cloudProgress = Math.min(1, cloudProgress + dt / 2.2);
     }
 
-    // Curva de atenuación suave (cubic ease) para una emergencia cinematográfica gradual
     const cloudOpacity =
       cloudProgress < 0.5
         ? 2 * cloudProgress * cloudProgress

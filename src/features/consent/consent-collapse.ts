@@ -40,11 +40,22 @@ export const executeCollapseTimeline = (
       );
       cursor.setInverted(false);
       cursor.setExpanded(false);
-      cursor.pulse();
     },
   });
 
-  // 1. Arrastre gravitacional ascendente de controles inferiores
+  tl.call(
+    () => {
+      document.dispatchEvent(
+        new CustomEvent("consent:reveal", {
+          bubbles: true,
+          detail: { soundEnabled: enableSound },
+        }),
+      );
+    },
+    [],
+    0.48,
+  );
+
   tl.to(
     promptElement,
     {
@@ -70,8 +81,6 @@ export const executeCollapseTimeline = (
   );
 
   if (cloudCanvas) {
-    // Degradado ascendente: la máscara vive en el CSS; GSAP solo coreografía
-    // la variable --wipe-edge desde su valor de reposo (100) hasta -wipe-soft
     const wipeSoftBand = Number.parseFloat(
       getComputedStyle(cloudCanvas).getPropertyValue("--wipe-soft"),
     );
@@ -80,10 +89,10 @@ export const executeCollapseTimeline = (
         cloudCanvas,
         {
           "--wipe-edge": -wipeSoftBand,
-          duration: 1.8,
+          duration: 1.6,
           ease: "power2.inOut",
         },
-        0.2,
+        0.18,
       );
     } else {
       console.warn("[ConsentScreen] Variable --wipe-soft no definida; se omite el degradado");
@@ -104,12 +113,9 @@ export const executeCollapseTimeline = (
   }
 
   if (blueBox) {
-    // La caja ya está cubierta por el canvas opaco: ocultarla al inicio evita
-    // que su degradado eléctrico se transparente durante la salida hacia el crema
     tl.set(blueBox, { opacity: 0 }, 0);
   }
 
-  // 2. Micro-anticipación y compresión elástica previa
   tl.to(
     contentElement,
     {
@@ -122,18 +128,17 @@ export const executeCollapseTimeline = (
     0,
   );
 
-  // 3. Succión exponencial hiperbólica con deformación y motion blur
   if (line1 && line2) {
     tl.to(
       line1,
       {
-        yPercent: -135,
-        scaleX: 1.8,
-        scaleY: 0.04,
+        yPercent: -120,
+        scaleX: 1.35,
+        scaleY: 0.12,
         opacity: 0,
-        filter: "blur(8px)",
-        duration: 0.52,
-        ease: "expo.in",
+        filter: "blur(12px)",
+        duration: 0.68,
+        ease: "power2.inOut",
         transformOrigin: "50% 0%",
         force3D: true,
       },
@@ -143,29 +148,29 @@ export const executeCollapseTimeline = (
     tl.to(
       line2,
       {
-        yPercent: -135,
-        scaleX: 1.9,
-        scaleY: 0.03,
+        yPercent: -120,
+        scaleX: 1.4,
+        scaleY: 0.1,
         opacity: 0,
-        filter: "blur(10px)",
-        duration: 0.52,
-        ease: "expo.in",
+        filter: "blur(14px)",
+        duration: 0.68,
+        ease: "power2.inOut",
         transformOrigin: "50% 0%",
         force3D: true,
       },
-      0.175,
+      0.18,
     );
   } else {
     tl.to(
       contentElement,
       {
-        yPercent: -135,
-        scaleX: 2.0,
-        scaleY: 0.02,
+        yPercent: -120,
+        scaleX: 1.4,
+        scaleY: 0.1,
         opacity: 0,
-        filter: "blur(10px)",
-        duration: 0.55,
-        ease: "expo.in",
+        filter: "blur(14px)",
+        duration: 0.7,
+        ease: "power2.inOut",
         transformOrigin: "50% 0%",
         force3D: true,
       },
@@ -173,7 +178,6 @@ export const executeCollapseTimeline = (
     );
   }
 
-  // Desvanecimiento final de seguridad del contenedor
   tl.to(
     contentElement,
     {

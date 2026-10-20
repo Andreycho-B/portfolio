@@ -1,7 +1,19 @@
 ---
 import MorphicText from "../../design-system/components/MorphicText.astro";
 import WelcomeBackdrop from "./WelcomeBackdrop.astro";
+import "./consent-screen.css";
 ---
+
+<script is:inline>
+  (() => {
+    try {
+      const stored = localStorage.getItem("portfolio_consent_time");
+      if (stored && Date.now() - Number(stored) < 1800000) {
+        document.documentElement.classList.add("skip-consent");
+      }
+    } catch {}
+  })();
+</script>
 
 <div class="consent-container" data-consent-screen>
   <WelcomeBackdrop />
@@ -37,160 +49,8 @@ import WelcomeBackdrop from "./WelcomeBackdrop.astro";
   </div>
 </div>
 
-<style>
-  .consent-container {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100dvh;
-    padding: var(--container-padding);
-    text-align: center;
-    user-select: none;
-    touch-action: manipulation;
-    overflow: hidden;
-    transition: color var(--dur-base) var(--ease-base);
-  }
-  .consent-container[data-backdrop-active="true"] {
-    --color-fg: #ffffff;
-    --color-fg-muted: rgba(255, 255, 255, 0.72);
-  }
-  .consent-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-xl);
-    transform-origin: center center;
-    will-change: transform, opacity;
-  }
-  .consent-content :global(.morphic-text) {
-    font-size: var(--text-4xl);
-    line-height: var(--lh-heading);
-    letter-spacing: var(--ls-tighter);
-    color: var(--color-fg);
-    transition: color var(--dur-base) var(--ease-base);
-  }
-  .consent-prompt,
-  .consent-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity var(--dur-slow) var(--ease-slow);
-  }
-  .consent-prompt {
-    gap: var(--space-sm);
-  }
-  .consent-actions {
-    position: absolute;
-    bottom: calc(clamp(1.25rem, 4vh, 2.25rem) + env(safe-area-inset-bottom));
-    z-index: 2;
-  }
-  .consent-prompt.is-revealed,
-  .consent-actions.is-revealed {
-    opacity: 1;
-    pointer-events: auto;
-  }
-  .prompt-label {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2xs);
-    font-family: var(--font-text);
-    font-size: var(--text-xs);
-    color: var(--color-fg-muted);
-    letter-spacing: var(--ls-labels);
-    text-transform: uppercase;
-  }
-  .prompt-key {
-    font-size: var(--text-xs);
-    color: var(--color-fg-muted);
-  }
-  .prompt-mobile {
-    display: none;
-  }
-  @media (hover: none) and (pointer: coarse) {
-    .prompt-desktop {
-      display: none;
-    }
-    .prompt-mobile {
-      display: inline;
-    }
-  }
-  .btn-mute-entry {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(26, 23, 20, 0.04);
-    border: 1px solid rgba(26, 23, 20, 0.12);
-    font-family: var(--font-text);
-    font-size: var(--text-sm);
-    font-weight: var(--weight-semibold);
-    color: var(--color-fg-muted);
-    letter-spacing: var(--ls-labels);
-    cursor: pointer;
-    padding: 12px 24px;
-    min-height: 44px;
-    border-radius: var(--radius-pill);
-    corner-smoothing: 60%;
-    -webkit-corner-smoothing: 0.6;
-    user-select: none;
-    will-change: transform;
-    transition:
-      color var(--dur-fast) var(--ease-fast),
-      background-color 0.24s cubic-bezier(0.16, 1, 0.3, 1),
-      border-color 0.24s cubic-bezier(0.16, 1, 0.3, 1),
-      transform 0.32s cubic-bezier(0.34, 1.45, 0.64, 1);
-  }
-  .btn-mute-entry::before {
-    content: "";
-    position: absolute;
-    inset: -6px -12px;
-    border-radius: var(--radius-pill);
-    pointer-events: auto;
-  }
-  .btn-mute-entry:hover,
-  .btn-mute-entry:focus-visible {
-    color: var(--color-fg);
-    background: rgba(26, 23, 20, 0.08);
-    border-color: rgba(26, 23, 20, 0.24);
-    transform: scale(1.03);
-  }
-  .btn-mute-entry:active {
-    transform: scale(0.96);
-    transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-  .consent-container[data-backdrop-active="true"] .btn-mute-entry {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.24);
-    color: rgba(255, 255, 255, 0.85);
-  }
-  .consent-container[data-backdrop-active="true"] .btn-mute-entry:hover,
-  .consent-container[data-backdrop-active="true"] .btn-mute-entry:focus-visible {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.45);
-    color: #ffffff;
-  }
-  :global(html.has-custom-cursor) .btn-mute-entry,
-  :global(html.has-custom-cursor) .btn-mute-entry::before {
-    cursor: none;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .consent-prompt,
-    .consent-actions {
-      opacity: 1 !important;
-      pointer-events: auto !important;
-      transition: none !important;
-    }
-  }
-</style>
 <script>
   import { initConsentScreen } from "./consent-controller";
 
-  if (document.readyState !== "loading") initConsentScreen();
-  else document.addEventListener("DOMContentLoaded", initConsentScreen);
   document.addEventListener("astro:page-load", initConsentScreen);
 </script>
