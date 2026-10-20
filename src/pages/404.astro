@@ -38,7 +38,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 2rem;
+    padding: calc(2rem + env(safe-area-inset-top)) calc(2rem + env(safe-area-inset-right))
+      calc(2rem + env(safe-area-inset-bottom)) calc(2rem + env(safe-area-inset-left));
     background: #000000;
     color: #ffffff;
     text-align: center;
