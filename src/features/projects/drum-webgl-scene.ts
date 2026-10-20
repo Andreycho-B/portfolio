@@ -1,21 +1,9 @@
 import * as THREE from "three";
+import type { DrumWebGLHandle, FrontCardBounds } from "./drum.types";
 import { DRUM_GLASS_FRAGMENT_SHADER, DRUM_GLASS_VERTEX_SHADER } from "./drum-glass-shader";
 import { DRUM_SLOTS, PROJECTS } from "./project-data";
 
-export interface FrontCardBounds {
-  readonly widthRatio: number;
-  readonly heightRatio: number;
-}
-
-export interface DrumWebGLHandle {
-  setRotation: (slotPosition: number) => void;
-  setScrollVelocity: (velocitySlotsPerSecond: number) => void;
-  setIntroProgress: (progress: number) => void;
-  render: () => void;
-  resize: (widthPx: number, heightPx: number) => void;
-  getFrontCardBounds: () => FrontCardBounds;
-  dispose: () => void;
-}
+export type { DrumWebGLHandle, FrontCardBounds };
 
 const BACKGROUND_HEX = 0xffffff;
 const CARD_WIDTH = 2.8,
@@ -47,10 +35,29 @@ const fitTextureCover = (tex: THREE.Texture): void => {
 export const createDrumWebGLScene = (
   canvas: HTMLCanvasElement,
   onTextureReady: () => void,
-): DrumWebGLHandle => {
+  onError?: (error: unknown) => void,
+): DrumWebGLHandle | null => {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(dpr);
+  let renderer: THREE.WebGLRenderer;
+  try {
+    renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: false,
+      powerPreference: "high-performance",
+    });
+    renderer.setPixelRatio(dpr);
+  } catch (err) {
+    console.warn("[DrumWebGLScene] WebGL initialization failed:", err);
+    onError?.(err);
+    return null;
+  }
+
+  const handleContextLost = (event: Event) => {
+    event.preventDefault();
+    console.warn("[DrumWebGLScene] WebGL context lost");
+    onError?.(new Error("WebGL context lost"));
+  };
+  canvas.addEventListener("webglcontextlost", handleContextLost);
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(BACKGROUND_HEX);
@@ -60,10 +67,17 @@ export const createDrumWebGLScene = (
 
   const texLoader = new THREE.TextureLoader();
   const projectTextures = PROJECTS.map((project) => {
-    const tex = texLoader.load(project.imageSrc, (loaded) => {
-      fitTextureCover(loaded);
-      onTextureReady();
-    });
+    const tex = texLoader.load(
+      project.imageSrc,
+      (loaded) => {
+        fitTextureCover(loaded);
+        onTextureReady();
+      },
+      undefined,
+      (err) => {
+        console.warn(`[DrumWebGLScene] Texture load failed: ${project.imageSrc}`, err);
+      },
+    );
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
     return tex;
@@ -180,6 +194,7 @@ export const createDrumWebGLScene = (
   };
 
   const dispose = (): void => {
+    canvas.removeEventListener("webglcontextlost", handleContextLost);
     for (const material of cardMaterials) material.dispose();
     for (const tex of projectTextures) tex.dispose();
     cardGeometry.dispose();

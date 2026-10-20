@@ -1,8 +1,9 @@
 import { getAudioSystem } from "../../core/audio";
 import { getCursorController } from "../../design-system/components/cursor-controller";
+import type { DrumControllerElements } from "./drum.types";
 import { DrumAutoplayController } from "./drum-autoplay";
 import { DrumScrollPhysics } from "./drum-scroll-physics";
-import { type DrumControllerElements, PROJECT_COUNT, PROJECTS } from "./project-data";
+import { PROJECT_COUNT, PROJECTS } from "./project-data";
 
 const CFG = { wheel: 180, drag: 180, snapIdle: 240, lineH: 16, clickTol: 6, label: "Ver" } as const;
 
@@ -23,7 +24,7 @@ export class ProjectDrumController {
   constructor(private readonly els: DrumControllerElements) {
     this.bindListeners(true);
     this.resizeObserver = new ResizeObserver(() => {
-      els.webglScene.resize(els.canvas.clientWidth, els.canvas.clientHeight);
+      els.webglScene?.resize(els.canvas.clientWidth, els.canvas.clientHeight);
       this.requestFrame();
     });
     this.resizeObserver.observe(els.canvas);
@@ -66,6 +67,7 @@ export class ProjectDrumController {
   };
 
   private isOverFrontCard(e: PointerEvent): boolean {
+    if (!this.els.webglScene) return false;
     const { widthRatio, heightRatio } = this.els.webglScene.getFrontCardBounds();
     const r = this.els.canvas.getBoundingClientRect();
     const dx = Math.abs(e.clientX - (r.left + r.width / 2));
@@ -134,6 +136,16 @@ export class ProjectDrumController {
   };
 
   private readonly handleKeyDown = (e: KeyboardEvent): void => {
+    const isFocused =
+      document.activeElement === this.els.viewport ||
+      this.els.root.contains(document.activeElement);
+    if (!isFocused) return;
+
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      this.els.onOpenActive();
+      return;
+    }
     const step = e.key === "ArrowDown" ? 1 : e.key === "ArrowUp" ? -1 : 0;
     if (step === 0) return;
     e.preventDefault();
@@ -184,9 +196,11 @@ export class ProjectDrumController {
     const isAtRest = isSettled && this.drag.id === null && !this.autoplay.isDrifting();
     this.syncActiveProject();
     this.syncAudioTick();
-    this.els.webglScene.setRotation(this.physics.currentPosition);
-    this.els.webglScene.setScrollVelocity(this.physics.scrollVelocity);
-    this.els.webglScene.render();
+    if (this.els.webglScene) {
+      this.els.webglScene.setRotation(this.physics.currentPosition);
+      this.els.webglScene.setScrollVelocity(this.physics.scrollVelocity);
+      this.els.webglScene.render();
+    }
     this.needsRender = false;
     this.rafId = isAtRest && !this.needsRender ? null : requestAnimationFrame(this.tick);
   };
@@ -198,7 +212,7 @@ export class ProjectDrumController {
     this.resizeObserver.disconnect();
     this.autoplay.dispose();
     this.els.morphController.destroy();
-    this.els.webglScene.dispose();
+    this.els.webglScene?.dispose();
     this.physics.dispose();
   }
 }

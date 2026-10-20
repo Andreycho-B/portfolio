@@ -1,15 +1,11 @@
 ---
-import { PROJECTS, type ProjectItem } from "./project-data";
+import { PROJECTS } from "./project-data";
 import "./projects-drum.css";
 
-const initialProject: ProjectItem = PROJECTS[0] ?? {
-  id: "mias",
-  title: "Mías",
-  year: "2026",
-  imageSrc: "/projects/mias/cover.webp",
-  slug: "mias-hamburguesas-de-lujo",
-  theme: "dark",
-};
+const initialProject = PROJECTS[0];
+if (!initialProject) {
+  throw new Error("No projects defined in PROJECTS list");
+}
 ---
 
 <section
@@ -18,6 +14,24 @@ const initialProject: ProjectItem = PROJECTS[0] ?? {
   hidden
   aria-label="Proyectos seleccionados"
 >
+  <!-- Lista accesible e indexable por SEO y lectores de pantalla -->
+  <nav class="sr-only projects-accessible-nav" aria-label="Proyectos de Andrey">
+    <ol>
+      {PROJECTS.map((project, index) => (
+        <li>
+          <a
+            href={project.externalUrl ?? `/proyectos/${project.slug}`}
+            target={project.externalUrl ? "_blank" : undefined}
+            rel={project.externalUrl ? "noopener noreferrer" : undefined}
+            data-project-nav-link={index}
+          >
+            {project.title} ({project.year}) — {project.subtitle ?? project.role ?? ""}
+          </a>
+        </li>
+      ))}
+    </ol>
+  </nav>
+
   <svg aria-hidden="true" class="lens-filter-defs">
     <defs>
       <filter
@@ -44,7 +58,7 @@ const initialProject: ProjectItem = PROJECTS[0] ?? {
   </svg>
 
   <header class="projects-meta-bar">
-    <div class="brand-lockup" role="button" tabindex="0" aria-label="Andrey">
+    <a href="/" class="brand-lockup" aria-label="Andrey — Inicio">
       <img
         src="/logo.webp"
         alt="Andrey"
@@ -53,7 +67,7 @@ const initialProject: ProjectItem = PROJECTS[0] ?? {
         height="34"
         decoding="async"
       />
-    </div>
+    </a>
     <button
       type="button"
       class="sound-toggle-btn"
@@ -73,9 +87,21 @@ const initialProject: ProjectItem = PROJECTS[0] ?? {
     data-drum-viewport
     tabindex="0"
     role="region"
-    aria-label="Carrete de proyectos. Usa la rueda o las flechas para navegar"
+    aria-label="Carrete interactivo de proyectos. Usa las flechas arriba y abajo para rotar y Enter para abrir"
   >
     <canvas class="drum-webgl-canvas" data-drum-canvas aria-hidden="true"></canvas>
+    <div class="drum-fallback-cards" data-drum-fallback aria-hidden="true">
+      {PROJECTS.map((project) => (
+        <a
+          href={project.externalUrl ?? `/proyectos/${project.slug}`}
+          class="fallback-card"
+          tabindex="-1"
+        >
+          <img src={project.imageSrc} alt="" class="fallback-card-img" />
+          <span class="fallback-card-title">{project.title}</span>
+        </a>
+      ))}
+    </div>
   </div>
 
   <div class="projects-stage">
@@ -128,7 +154,7 @@ const initialProject: ProjectItem = PROJECTS[0] ?? {
       <div class="drum-track" aria-hidden="true">
         <div class="drum-thumb" data-drum-thumb />
       </div>
-      <span class="drum-total">03</span>
+      <span class="drum-total">{String(PROJECTS.length).padStart(2, "0")}</span>
     </div>
 
     <button
