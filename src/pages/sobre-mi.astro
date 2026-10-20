@@ -1,0 +1,26 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import AboutHeader from "../features/about/AboutHeader.astro";
+import AboutShowcase from "../features/about/AboutShowcase.astro";
+import AboutFooter from "../features/about/AboutFooter.astro";
+import "../features/about/about.css";
+---
+
+<BaseLayout
+  title="Sobre Mí — Andrey Rondón | Desarrollador Fullstack"
+  description="Perfil profesional y competencias técnicas de Andrey Rondón (Andrey Ernesto Rondón Corredor). Tecnólogo ADSO (SENA) en Duitama, Boyacá. Go, TypeScript, Svelte 5, Angular, PostgreSQL y gobernanza de IA."
+>
+  <div class="about-page-stage" data-smooth-viewport>
+    <AboutHeader />
+    <main class="about-main-content">
+      <AboutShowcase />
+      <AboutFooter />
+    </main>
+  </div>
+</BaseLayout>
+
+<script>
+  import { initAboutPage } from "../features/about/about-controller";
+
+  document.addEventListener("astro:page-load", initAboutPage);
+</script>

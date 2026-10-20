@@ -1,0 +1,103 @@
+---
+---
+
+<footer class="about-footer-section" aria-label="Contacto">
+  <div class="footer-contact-bar" data-reveal="fade">
+    <div class="contact-links-row">
+      <a
+        href="mailto:rondonandrey42@gmail.com"
+        class="footer-inline-link"
+        data-cursor-expand="Correo"
+      >
+        rondonandrey42@gmail.com
+      </a>
+      <span class="footer-dot-sep" aria-hidden="true">
+        ·
+      </span>
+      <a
+        href="https://wa.me/573148039636"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="footer-inline-link"
+        data-cursor-expand="WhatsApp"
+      >
+        +57 314 803 9636
+      </a>
+      <span class="footer-dot-sep" aria-hidden="true">
+        ·
+      </span>
+      <a
+        href="https://github.com/Andreycho-B"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="footer-inline-link"
+        data-cursor-expand="GitHub"
+      >
+        GitHub
+      </a>
+      <span class="footer-dot-sep" aria-hidden="true">
+        ·
+      </span>
+      <a
+        href="https://linkedin.com/in/andrey-rondón-980345426"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="footer-inline-link"
+        data-cursor-expand="LinkedIn"
+      >
+        LinkedIn
+      </a>
+      <span class="footer-dot-sep" aria-hidden="true">
+        ·
+      </span>
+      <a
+        href="https://instagram.com/andrey_rondonikov"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="footer-inline-link"
+        data-cursor-expand="Instagram"
+      >
+        Instagram
+      </a>
+    </div>
+
+    <div class="footer-nav-back-row">
+      <a href="/" class="footer-back-link" data-back-trigger data-cursor-expand="Volver">
+        <span class="link-arrow" aria-hidden="true">
+          ←
+        </span>
+        <span>Volver al tambor de proyectos</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="footer-particle-banner" aria-label="ANDREY">
+    <canvas id="footer-particle-canvas" class="footer-particle-canvas" aria-hidden="true"></canvas>
+    <span class="sr-only">ANDREY</span>
+  </div>
+</footer>
+
+<script>
+  import { initParticleText } from "./particle-text";
+
+  let particleCleanup: (() => void) | null = null;
+
+  const setupParticles = () => {
+    if (particleCleanup) {
+      particleCleanup();
+      particleCleanup = null;
+    }
+    const canvas = document.getElementById("footer-particle-canvas");
+    if (canvas instanceof HTMLCanvasElement) {
+      particleCleanup = initParticleText(canvas);
+    }
+  };
+
+  document.addEventListener("astro:page-load", setupParticles);
+  document.addEventListener("astro:before-swap", () => {
+    if (particleCleanup) {
+      particleCleanup();
+      particleCleanup = null;
+    }
+  });
+</script>

@@ -1,0 +1,122 @@
+---
+---
+
+<section class="about-showcase-section" aria-label="Declaración editorial">
+  <div class="editorial-stage-grid">
+    <div class="editorial-col editorial-left">
+      <p class="editorial-paragraph">
+        Soy Andrey Rondón, desarrollador de software fullstack y tecnólogo ADSO (SENA). Me
+        especializo en la construcción de interfaces reactivas de alto rendimiento, sistemas backend
+        concurrentes y seguridad aplicada. No concibo el software como una simple acumulación de
+        funciones para cumplir un plazo por compromiso: la calidad, las buenas prácticas y el
+        refinamiento visual no son añadidos que se colocan al final, sino principios estructurales
+        que determinan la arquitectura, robustez y longevidad de cada proyecto.
+      </p>
+    </div>
+
+    <div class="editorial-col editorial-center">
+      <div class="sculpture-box" id="logo-interactive-box">
+        <div class="mascot-float-rig" id="mascot-float-rig">
+          <div class="mascot-composite" id="center-brand-logo">
+            <img
+              src="/logo-mascot-base.webp"
+              alt="Mascota interactiva Andrey"
+              class="center-brand-logo-img"
+              width="551"
+              height="678"
+              decoding="async"
+            />
+            <svg class="mascot-eyes-overlay" viewBox="0 0 551 678" aria-hidden="true">
+              <g transform="translate(192.18, 519.33)">
+                <g id="mascot-eye-left" class="mascot-eye">
+                  <circle class="mascot-pupil" cx="0" cy="0" r="12.5" fill="#000000" />
+                </g>
+              </g>
+              <g transform="translate(430.22, 463.78)">
+                <g id="mascot-eye-right" class="mascot-eye">
+                  <circle class="mascot-pupil" cx="0" cy="0" r="12.5" fill="#000000" />
+                </g>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="editorial-col editorial-right">
+      <p class="editorial-paragraph">
+        Trabajo en el punto de contacto exacto entre interfaces de precisión y arquitecturas de
+        servidor predecibles y seguras. Gran parte de los productos digitales fallan en esa
+        frontera: pantallas atractivas construidas sobre código frágil que no escala en producción,
+        o arquitecturas robustas atrapadas en experiencias de usuario toscas y lentas. Mi objetivo
+        en cada desarrollo es erradicar esa brecha mediante tipado estricto, integridad
+        transaccional e ingeniería de software rigurosa.
+      </p>
+    </div>
+  </div>
+</section>
+
+<svg
+  aria-hidden="true"
+  class="about-mercury-defs"
+  style="position: absolute; width: 0; height: 0; pointer-events: none; overflow: hidden;"
+>
+  <defs>
+    {[0, 1, 2, 3].map((idx) => (
+      <filter
+        id={`about-morphic-filter-${idx}`}
+        x="-30%"
+        y="-30%"
+        width="160%"
+        height="160%"
+        color-interpolation-filters="sRGB"
+      >
+        <feGaussianBlur
+          id={`about-morphic-blur-${idx}`}
+          in="SourceGraphic"
+          stdDeviation="0 0"
+          result="blur"
+        />
+        <feColorMatrix
+          in="blur"
+          mode="matrix"
+          values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11"
+        />
+      </filter>
+    ))}
+  </defs>
+</svg>
+
+<div class="editorial-stack-list" data-reveal="fade">
+  <div class="editorial-stack-row" data-stack-index="0">
+    <h2 class="stack-row-title">Frontend e Interfaces Reactivas</h2>
+    <p class="stack-row-keywords">
+      TypeScript (Strict) · Svelte 5 (Runes) · Angular 21 (Signals) · Tailwind CSS · PWAs · GSAP ·
+      WebGL · Accesibilidad WCAG
+    </p>
+  </div>
+
+  <div class="editorial-stack-row" data-stack-index="1">
+    <h2 class="stack-row-title">Backend & Sistemas Concurrentes</h2>
+    <p class="stack-row-keywords">
+      Go (Chi v5) · PostgreSQL 16 · SQLC · pgxpool · Node.js (NestJS 11) · WebSockets · SSE · Libro
+      Mayor Inmutable
+    </p>
+  </div>
+
+  <div class="editorial-stack-row" data-stack-index="2">
+    <h2 class="stack-row-title">Seguridad, DevOps & Resiliencia</h2>
+    <p class="stack-row-keywords">
+      Argon2id (RFC 9106) · JWT Dual · Cookies HttpOnly · Docker · GitHub Actions (CI/CD) · Vitest ·
+      SonarCloud (SAST)
+    </p>
+  </div>
+
+  <div class="editorial-stack-row" data-stack-index="3">
+    <h2 class="stack-row-title">Gobernanza de Agentes IA</h2>
+    <p class="stack-row-keywords">
+      AI Agent Engineering Standard · Model Context Protocol (MCP) · Spec-Driven Dev · Mitigación AI
+      Slop · RFCs · CC BY 4.0
+    </p>
+  </div>
+</div>
