@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://andreyrondon.dev/sitemap-index.xml
+Sitemap: https://www.andreyrondon.dev/sitemap-index.xml
