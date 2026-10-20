@@ -23,7 +23,6 @@ uniform vec4 u_textClearZone;
 uniform vec4 u_actionZone;
 uniform float u_pixelScale;
 
-// Matriz Bayer 8x8 estandarizada para tramado ordenado
 const int bayer8[64] = int[64](
    0, 32,  8, 40,  2, 34, 10, 42,
   48, 16, 56, 24, 50, 18, 58, 26,
@@ -108,11 +107,9 @@ void main() {
   vec2 p = uv;
   p.x *= aspect;
 
-  // Deriva continua del viento de izquierda a derecha + evolución volumétrica
   float wind = u_time * 0.035;
   vec3 cloudPos = vec3(p * 1.35 - vec2(wind, 0.0), u_time * 0.012);
 
-  // Deformación de dominio para cúmulos algodonados
   vec2 warp = vec2(
     snoise(cloudPos + vec3(0.0, 0.0, 1.2)),
     snoise(cloudPos + vec3(5.2, 1.3, 2.8))
@@ -120,7 +117,6 @@ void main() {
 
   float density = fbm(cloudPos + vec3(warp * 0.42, 0.0));
 
-  // Interacción suave con el cursor del ratón (despeje de nubes)
   if (u_cursorActive > 0.01) {
     vec2 cur = u_cursor / u_resolution.xy;
     cur.x *= aspect;
@@ -129,12 +125,9 @@ void main() {
     density -= repulse;
   }
 
-  // Gradiente de cielo para concentración natural de cúmulos en franja media-alta
   float heightBias = smoothstep(0.12, 0.48, uv.y) * 0.28;
   float cloudField = smoothstep(-0.08, 0.56, density + heightBias);
 
-  // Desvanecimiento progresivo y suave hacia el texto central ("Desarrollador Creativo")
-  // Sin hueco abrupto: las nubes se disuelven orgánicamente a través del tramado Bayer
   if (u_textClearZone.z > 0.0) {
     vec2 textCenter = u_textClearZone.xy / u_resolution.xy;
     textCenter.x *= aspect;
@@ -143,16 +136,12 @@ void main() {
     vec2 textOffset = (p - textCenter) / max(textRadii, vec2(0.001));
     float textDist = length(textOffset);
     float textFade = smoothstep(0.75, 2.6, textDist);
-    // Disolución progresiva debajo de los textos: la nube se desvanece hacia el
-    // borde inferior con un gradiente vertical continuo, sin generar un hueco recortado
     float zoneBottom = textCenter.y - textRadii.y * 0.33;
     float belowT = clamp((zoneBottom - p.y) / max(zoneBottom, 0.001), 0.0, 1.0);
     float belowFade = 1.0 - smoothstep(0.0, 0.9, belowT);
     cloudField *= textFade * belowFade;
   }
 
-  // Desvanecimiento progresivo y suave a medida que las nubes se aproximan al texto inferior
-  // No genera un corte o hueco abrupto: modula la masa de nube para disolverla gradualmente
   if (u_actionZone.z > 0.0) {
     vec2 actionCenter = u_actionZone.xy / u_resolution.xy;
     actionCenter.x *= aspect;
@@ -165,12 +154,10 @@ void main() {
     cloudField *= actionFade;
   }
 
-  // Muestreo del tramado Bayer con paso de píxel gráfico nítido
   float pixelScale = u_pixelScale > 0.0 ? u_pixelScale : 2.4;
   ivec2 ditherCoord = ivec2(floor(gl_FragCoord.xy / pixelScale));
   float ditherThreshold = getBayerValue(ditherCoord);
 
-  // Gradiente de cielo diagonal idéntico a la referencia (azul eléctrico a blanco puro)
   vec2 screenUv = gl_FragCoord.xy / u_resolution.xy;
   float diag = (1.0 - screenUv.y) * 0.62 + screenUv.x * 0.52;
 
@@ -183,7 +170,6 @@ void main() {
   skyColor = mix(skyColor, cSoftBlue, smoothstep(0.5, 0.86, diag));
   skyColor = mix(skyColor, cWhite, smoothstep(0.8, 1.12, diag));
 
-  // 1-bit dither: Las nubes emergen moduladas por u_cloudOpacity sobre el degradado
   float cloudPresence = cloudField * smoothstep(0.0, 1.0, u_cloudOpacity);
   float isWhite = step(ditherThreshold, cloudPresence);
   vec3 finalColor = mix(skyColor, vec3(1.0), isWhite);

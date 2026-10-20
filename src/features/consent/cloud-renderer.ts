@@ -49,7 +49,6 @@ export const createCloudRenderer = (canvas: HTMLCanvasElement): CloudWebGLRender
     return null;
   }
 
-  // Geometría de pantalla completa
   const quadBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
   const quadVerts = new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]);
@@ -59,7 +58,6 @@ export const createCloudRenderer = (canvas: HTMLCanvasElement): CloudWebGLRender
   gl.enableVertexAttribArray(posAttr);
   gl.vertexAttribPointer(posAttr, 2, gl.FLOAT, false, 0, 0);
 
-  // Localizaciones de uniforms
   const uTime = gl.getUniformLocation(program, "u_time");
   const uRes = gl.getUniformLocation(program, "u_resolution");
   const uCursor = gl.getUniformLocation(program, "u_cursor");

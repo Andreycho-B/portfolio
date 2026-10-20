@@ -32,12 +32,10 @@ export const initWelcomeBackdrop = (rootEl: HTMLElement): WelcomeBackdropHandle 
       return;
     }
 
-    // Dimensiones rectangulares esbeltas (aspecto > 3:1)
     const lineLength = Math.min(Math.max(window.innerWidth * 0.46, 520), window.innerWidth * 0.9);
     const rectHeight = 160;
     const initialScaleY = 3 / rectHeight;
 
-    // Inicialización precisa en GPU (sin provocar reflow en cada tick)
     gsap.set(boxEl, {
       width: lineLength,
       height: rectHeight,
@@ -57,7 +55,6 @@ export const initWelcomeBackdrop = (rootEl: HTMLElement): WelcomeBackdropHandle 
       },
     });
 
-    // Fase 1: Nace la línea azul en el centro limpio y abre horizontalmente
     timeline.to(
       boxEl,
       {
@@ -69,7 +66,6 @@ export const initWelcomeBackdrop = (rootEl: HTMLElement): WelcomeBackdropHandle 
       0.35,
     );
 
-    // Fase 2: Abre verticalmente manteniendo el ancho exacto (rectángulo limpio sin reflows)
     timeline.to(boxEl, {
       scaleY: 1,
       duration: 0.65,
@@ -77,13 +73,10 @@ export const initWelcomeBackdrop = (rootEl: HTMLElement): WelcomeBackdropHandle 
       force3D: true,
     });
 
-    // Cobertura completa viewport calculada para GPU scale
     const targetScaleX = (window.innerWidth * 1.5) / lineLength;
     const targetScaleY = (window.innerHeight * 1.5) / rectHeight;
     const finalScale = Math.max(targetScaleX, targetScaleY);
 
-    // Fase 3: Pausa deliberada en la forma rectangular limpia antes de la expansión
-    // Fase 4: Expansión elástica a toda la pantalla con peso e inercia física
     timeline.to(
       boxEl,
       {
@@ -104,7 +97,6 @@ export const initWelcomeBackdrop = (rootEl: HTMLElement): WelcomeBackdropHandle 
     );
   };
 
-  // Se activa ÚNICAMENTE después de que 'Soy Andrey' se haya ido completamente
   const onPhraseExited = (evt: Event) => {
     const customEvt = evt as CustomEvent<{ phraseIndex: number; phrase: string; role: string }>;
     const detail = customEvt.detail;
