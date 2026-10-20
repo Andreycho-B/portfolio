@@ -1,6 +1,6 @@
 export type AudioMode = "uninitialized" | "pending_gesture" | "active" | "muted";
 
-export type TactileFeedbackType = "soft_hover" | "glass_tap" | "gravitational_release";
+export type TactileFeedbackType = "wheel_tick" | "jelly_pop" | "click" | "tick";
 
 export interface AudioEngineContract {
   readonly getMode: () => AudioMode;
@@ -9,7 +9,9 @@ export interface AudioEngineContract {
   readonly toggleMute: () => boolean;
   readonly setMasterVolume: (level: number) => void;
   readonly playReleaseSound: () => void;
-  readonly playTactileFeedback: (type: TactileFeedbackType) => void;
+  readonly playProjectArrivalSound: () => void;
+  readonly playTactileFeedback: (type: TactileFeedbackType, velocity?: number) => void;
+  readonly triggerProximityAura: (intensity?: number) => void;
   readonly stop: () => void;
 }
 
@@ -21,5 +23,6 @@ export interface GlassHarmonicSpec {
 
 export interface AmbientTextureHandle {
   readonly gainNode: GainNode;
+  readonly triggerProximityAura: (intensity?: number) => void;
   readonly stop: () => void;
 }

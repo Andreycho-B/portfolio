@@ -4,39 +4,37 @@ import type {
   AudioMode,
   TactileFeedbackType,
 } from "./audio.types";
-import { bindTeardownAndVisibility, gracefulMute } from "./audio-lifecycle";
+import { synthesizeProjectArrival } from "./audio-arrival";
+import { bindTeardownAndVisibility, cancelPendingSuspend, gracefulMute } from "./audio-lifecycle";
+import { startOrganicDrone } from "./audio-synthesis";
 import {
-  startOrganicDrone,
-  synthesizeInharmonicGlass,
-  synthesizeTactileImpulse,
-} from "./audio-synthesis";
+  synthesizeIosSelectionClick,
+  synthesizeIosWheelTick,
+  synthesizeJellyPop,
+  triggerHapticDetent,
+} from "./audio-tactile";
 
 export class ProceduralAudioEngine implements AudioEngineContract {
   private mode: AudioMode = "uninitialized";
   private audioContext: AudioContext | null = null;
   private masterGain: GainNode | null = null;
   private ambientHandle: AmbientTextureHandle | null = null;
+  private unbindLifecycle: (() => void) | null = null;
   private isGraphSetup = false;
   private lastTactileTime = 0;
   private userMuted = false;
 
   constructor() {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && window.AudioContext) {
       try {
-        const AudioCtxClass = window.AudioContext;
-        if (AudioCtxClass) {
-          this.audioContext = new AudioCtxClass();
-        }
-      } catch {
-        // Ignorar si el navegador restringe AudioContext antes del gesto
-      }
+        this.audioContext = new window.AudioContext();
+      } catch {}
     }
   }
 
   public getMode(): AudioMode {
     return this.mode;
   }
-
   public isMuted(): boolean {
     return this.mode === "muted" || this.userMuted;
   }
@@ -48,40 +46,57 @@ export class ProceduralAudioEngine implements AudioEngineContract {
       gracefulMute(this.audioContext, this.masterGain);
       return true;
     }
-
     this.userMuted = false;
-    if (this.mode === "active" && this.audioContext?.state === "running") return true;
 
     try {
       if (!this.audioContext) {
         const AudioCtxClass = window.AudioContext;
         if (!AudioCtxClass) {
-          console.warn("[Audio] Este navegador no soporta la Web Audio API.");
           this.mode = "muted";
           return false;
         }
         this.audioContext = new AudioCtxClass();
       }
 
-      if (this.audioContext.state === "suspended") await this.audioContext.resume();
-
       this.ensureGraph();
-      this.startAmbient();
+      this.setupLifecycle();
+      cancelPendingSuspend();
+
+      if (this.audioContext.state === "suspended") {
+        await this.audioContext.resume().catch(() => {});
+      }
+
+      if (this.audioContext.state === "suspended") {
+        this.mode = "pending_gesture";
+        this.attachDeferredUnlock();
+        return false;
+      }
+
       this.mode = "active";
-      bindTeardownAndVisibility(
-        () => gracefulMute(this.audioContext, this.masterGain, 0.015),
-        () => {
-          if (this.isMuted()) return;
-          this.rampMasterTo(document.hidden ? 0.0001 : 0.7, document.hidden ? 0.25 : 0.35);
-        },
-      );
+      this.startAmbient();
+      this.rampMasterTo(0.7, 0.25);
       return true;
-    } catch (error) {
-      console.warn("[Audio] Fallo en initialize:", error);
+    } catch {
       this.mode = "pending_gesture";
       this.attachDeferredUnlock();
       return false;
     }
+  }
+
+  private setupLifecycle(): void {
+    if (this.unbindLifecycle) return;
+    this.unbindLifecycle = bindTeardownAndVisibility(
+      () => gracefulMute(this.audioContext, this.masterGain, 0.015),
+      () => {
+        if (this.isMuted() || !this.audioContext) return;
+        if (document.hidden) {
+          this.rampMasterTo(0.0001, 0.25);
+        } else {
+          if (this.audioContext.state === "suspended") void this.audioContext.resume();
+          this.rampMasterTo(0.7, 0.35);
+        }
+      },
+    );
   }
 
   private ensureGraph(): void {
@@ -89,25 +104,24 @@ export class ProceduralAudioEngine implements AudioEngineContract {
     const ctx = this.audioContext;
     const now = ctx.currentTime;
 
-    // Filtro Highpass a 22Hz (DC-Blocker): Elimina offset DC que produce el pop al desconectar
     const dcBlocker = ctx.createBiquadFilter();
     dcBlocker.type = "highpass";
-    dcBlocker.frequency.setValueAtTime(22, now);
+    dcBlocker.frequency.setValueAtTime(30, now);
     dcBlocker.Q.setValueAtTime(Math.SQRT1_2, now);
 
-    // Limitador suave: Previene cualquier distorsión o saturación digital
     const limiter = ctx.createDynamicsCompressor();
-    limiter.threshold.setValueAtTime(-3, now);
-    limiter.knee.setValueAtTime(6, now);
-    limiter.ratio.setValueAtTime(8, now);
-    limiter.attack.setValueAtTime(0.003, now);
-    limiter.release.setValueAtTime(0.1, now);
+    limiter.threshold.setValueAtTime(-2.5, now);
+    limiter.knee.setValueAtTime(0, now);
+    limiter.ratio.setValueAtTime(20, now);
+    limiter.attack.setValueAtTime(0.0005, now);
+    limiter.release.setValueAtTime(0.04, now);
 
     this.masterGain = ctx.createGain();
     this.masterGain.gain.setValueAtTime(0.7, now);
-    this.masterGain.connect(limiter);
-    limiter.connect(dcBlocker);
-    dcBlocker.connect(ctx.destination);
+
+    this.masterGain.connect(dcBlocker);
+    dcBlocker.connect(limiter);
+    limiter.connect(ctx.destination);
     this.isGraphSetup = true;
   }
 
@@ -118,32 +132,50 @@ export class ProceduralAudioEngine implements AudioEngineContract {
 
   private attachDeferredUnlock(): void {
     const unlock = async () => {
-      window.removeEventListener("pointerdown", unlock);
-      window.removeEventListener("keydown", unlock);
-      if (this.mode === "pending_gesture" && !this.userMuted) await this.initialize(true);
+      for (const evt of ["pointerdown", "keydown", "wheel"] as const)
+        window.removeEventListener(evt, unlock);
+      if (this.mode === "pending_gesture" && !this.userMuted) {
+        if (this.audioContext?.state === "suspended")
+          await this.audioContext.resume().catch(() => {});
+        if (this.audioContext?.state === "running") {
+          this.mode = "active";
+          this.startAmbient();
+          cancelPendingSuspend();
+          this.rampMasterTo(0.7, 0.35);
+        }
+      }
     };
-    window.addEventListener("pointerdown", unlock, { once: true, passive: true });
-    window.addEventListener("keydown", unlock, { once: true, passive: true });
+    for (const evt of ["pointerdown", "keydown", "wheel"] as const) {
+      window.addEventListener(evt, unlock, { once: true, passive: true });
+    }
   }
 
   private rampMasterTo(target: number, durationSec: number): void {
     if (!this.audioContext || !this.masterGain) return;
     const now = this.audioContext.currentTime;
+    const safeTarget = Math.max(0.0001, Math.min(1, target));
     this.masterGain.gain.cancelScheduledValues(now);
     this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
-    this.masterGain.gain.linearRampToValueAtTime(target, now + durationSec);
+    this.masterGain.gain.linearRampToValueAtTime(safeTarget, now + durationSec);
   }
 
   public toggleMute(): boolean {
     this.userMuted = !this.userMuted;
-    if (!this.audioContext || !this.masterGain) return this.userMuted;
+    try {
+      localStorage.setItem("portfolio_sound_enabled", this.userMuted ? "false" : "true");
+    } catch {}
 
+    if (!this.userMuted && !this.masterGain) {
+      void this.initialize(true);
+      return false;
+    }
+    if (!this.audioContext || !this.masterGain) return this.userMuted;
     if (this.userMuted) {
-      this.rampMasterTo(0, 0.04);
+      this.rampMasterTo(0.0001, 0.04);
       this.mode = "muted";
     } else {
       if (this.audioContext.state === "suspended") void this.audioContext.resume();
-      this.rampMasterTo(0.7, 0.3);
+      this.rampMasterTo(0.7, 0.25);
       this.mode = "active";
     }
     return this.userMuted;
@@ -154,18 +186,33 @@ export class ProceduralAudioEngine implements AudioEngineContract {
   }
 
   public playReleaseSound(): void {
-    if (this.isMuted() || !this.audioContext || !this.masterGain) return;
-    synthesizeInharmonicGlass(this.audioContext, this.masterGain, 432);
+    triggerHapticDetent(10);
+    if (!this.isMuted() && this.audioContext && this.masterGain)
+      synthesizeIosSelectionClick(this.audioContext, this.masterGain);
   }
 
-  public playTactileFeedback(type: TactileFeedbackType): void {
+  public playProjectArrivalSound(): void {
+    if (!this.isMuted() && this.audioContext && this.masterGain)
+      synthesizeProjectArrival(this.audioContext, this.masterGain);
+  }
+
+  public playTactileFeedback(type: TactileFeedbackType, velocity = 0): void {
+    const isWheel = type === "wheel_tick";
+    const isTick = isWheel || type === "tick";
     if (this.isMuted() || !this.audioContext || !this.masterGain) return;
     const now = performance.now();
-    if (now - this.lastTactileTime < 80) return;
+    const throttleMs = isWheel ? 28 : isTick ? 40 : 75;
+    if (now - this.lastTactileTime < throttleMs) return;
     this.lastTactileTime = now;
+    triggerHapticDetent(isTick ? 5 : 8);
+    if (isTick) synthesizeIosWheelTick(this.audioContext, this.masterGain, velocity);
+    else if (type === "click") synthesizeIosSelectionClick(this.audioContext, this.masterGain);
+    else if (type === "jelly_pop") synthesizeJellyPop(this.audioContext, this.masterGain);
+  }
 
-    const isTap = type === "glass_tap" || type === "gravitational_release";
-    synthesizeTactileImpulse(this.audioContext, this.masterGain, isTap);
+  public triggerProximityAura(intensity = 1.0): void {
+    if (!this.isMuted() && this.audioContext && this.ambientHandle)
+      this.ambientHandle.triggerProximityAura(intensity);
   }
 
   public stop(): void {
@@ -173,12 +220,12 @@ export class ProceduralAudioEngine implements AudioEngineContract {
       this.ambientHandle.stop();
       this.ambientHandle = null;
     }
+    this.unbindLifecycle?.();
+    this.unbindLifecycle = null;
     gracefulMute(this.audioContext, this.masterGain, 0.04);
   }
 }
 
 let audioInstance: AudioEngineContract | null = null;
-export const getAudioSystem = (): AudioEngineContract => {
-  if (!audioInstance) audioInstance = new ProceduralAudioEngine();
-  return audioInstance;
-};
+export const getAudioSystem = (): AudioEngineContract =>
+  (audioInstance ??= new ProceduralAudioEngine());
