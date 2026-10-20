@@ -24,26 +24,47 @@ const {
 const canonicalURL = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : Astro.url.href;
 const socialImageURL = Astro.site ? new URL(image, Astro.site).href : image;
 
-const personSchema = JSON.stringify({
+const structuredData = JSON.stringify({
   "@context": "https://schema.org",
-  "@type": "Person",
-  name: PROFILE.fullName,
-  alternateName: PROFILE.alternateNames,
-  jobTitle: PROFILE.role,
-  description: PROFILE.bioShort,
-  url: PROFILE.siteUrl,
-  sameAs: [PROFILE.socials.github.url, PROFILE.socials.linkedin.url, PROFILE.socials.instagram.url],
-  alumniOf: {
-    "@type": "EducationalOrganization",
-    name: PROFILE.education.institution,
-  },
-  address: {
-    "@type": "PostalAddress",
-    addressLocality: PROFILE.location.city,
-    addressRegion: PROFILE.location.region,
-    addressCountry: PROFILE.location.country,
-  },
-  knowsAbout: PROFILE.skills,
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${PROFILE.siteUrl}/#website`,
+      name: PROFILE.shortName,
+      alternateName: [PROFILE.fullName, "andreyrondon.dev"],
+      url: PROFILE.siteUrl,
+      inLanguage: lang,
+      publisher: {
+        "@id": `${PROFILE.siteUrl}/#person`,
+      },
+    },
+    {
+      "@type": "Person",
+      "@id": `${PROFILE.siteUrl}/#person`,
+      name: PROFILE.fullName,
+      alternateName: PROFILE.alternateNames,
+      jobTitle: PROFILE.role,
+      description: description,
+      url: PROFILE.siteUrl,
+      image: socialImageURL,
+      sameAs: [
+        PROFILE.socials.github.url,
+        PROFILE.socials.linkedin.url,
+        PROFILE.socials.instagram.url,
+      ],
+      alumniOf: {
+        "@type": "EducationalOrganization",
+        name: PROFILE.education.institution,
+      },
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: PROFILE.location.city,
+        addressRegion: PROFILE.location.region,
+        addressCountry: PROFILE.location.country,
+      },
+      knowsAbout: PROFILE.skills,
+    },
+  ],
 });
 ---
 
@@ -87,9 +108,13 @@ const personSchema = JSON.stringify({
     <meta name="format-detection" content="telephone=no" />
     <meta name="theme-color" content="#000000" />
 
-    <script type="application/ld+json" set:html={personSchema} />
+    <script type="application/ld+json" set:html={structuredData} />
+    <!-- Favicon & Search Engine Verification Icons -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/favicon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="apple-touch-icon-precomposed" href="/apple-touch-icon-precomposed.png" />
     <link rel="manifest" href="/manifest.webmanifest" />

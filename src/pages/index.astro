@@ -2,11 +2,12 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ConsentScreen from "../features/consent/ConsentScreen.astro";
 import ProjectsLensDrum from "../features/projects/ProjectsLensDrum.astro";
+import { PROFILE } from "../core/profile";
 ---
 
 <BaseLayout
-  title="Andrey Rondón — Desarrollador de Software Fullstack & Tecnólogo ADSO"
-  description="Portafolio de ingeniería de software de Andrey Rondón (Andrey Ernesto Rondón Corredor). Tecnólogo ADSO (SENA) en Duitama, Colombia. Go, TypeScript, Svelte 5, Angular, PostgreSQL y gobernanza de IA."
+  title="Andrey Rondón — Desarrollador de Software Fullstack"
+  description={PROFILE.bioLong}
 >
   <main class="page-root">
     <ConsentScreen />
@@ -17,7 +18,7 @@ import ProjectsLensDrum from "../features/projects/ProjectsLensDrum.astro";
 <style>
   .page-root {
     position: relative;
-    width: 100vw;
+    width: 100%;
     height: 100dvh;
     overflow: hidden;
   }
