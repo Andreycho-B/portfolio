@@ -1,16 +1,14 @@
 # Portafolio Andrey
 
-Portafolio interactivo de ingeniería de software y desarrollo creativo: pantalla de consentimiento táctil, carrete lenticular 3D (WebGL), navegación fluida por transiciones SVG dinámicas, audio procedural sintetizado en vivo y dirección visual minimalista monocromática.
+Portafolio personal con pantalla de consentimiento interactivo, vista espiral de proyectos en WebGL y dirección visual en blanco y negro.
 
-## Stack Tecnológico
+## Stack
 
-- **Framework:** Astro 7 (TypeScript strict, SSG)
-- **Animación & Timelines:** GSAP
-- **Render 3D:** Three.js (Tambor Lenticular con shader de refracción óptica)
-- **Física 2D:** Matter.js (TechGravity en Detalle de Proyecto)
-- **Scroll Suave:** Lenis (orquestado en ticker de GSAP)
-- **Audio:** Web Audio API (síntesis procedural sin archivos de audio estáticos)
-- **Calidad de Código:** Biome + Husky + Prettier (exclusivo `.astro`)
+- Astro 7 + TypeScript strict
+- GSAP para orquestación de timelines
+- Three.js + postprocessing para la vista espiral de proyectos
+- Web Audio API con síntesis procedural (singleton en `src/core/audio.ts`)
+- Biome + Prettier (solo `.astro`) + Husky
 
 ## Comandos
 
@@ -21,22 +19,25 @@ Portafolio interactivo de ingeniería de software y desarrollo creativo: pantall
 | `pnpm build`      | Build de producción en `./dist/`             |
 | `pnpm preview`    | Preview local del build                      |
 | `pnpm check`      | Diagnóstico de tipos (`astro check`)         |
-| `pnpm lint`       | Lint y verificación con Biome                |
-| `pnpm format`     | Formateo con Biome y Prettier                |
+| `pnpm lint`       | Lint con Biome                               |
+| `pnpm format`     | Formateo con Biome y Prettier (`.astro`)     |
 
-## Estructura del Proyecto
+## Estructura
 
 ```text
 src/
-├── core/               Motor de audio procedural, física de resortes y scroll suave
-├── design-system/      Tokens CSS, componentes base, cursor elástico y tipografía mórfica
+├── core/               Audio procedural y física de resortes
+├── design-system/      Tokens, componentes y motor tipográfico morphic
 ├── features/
-│   ├── consent/        Pantalla de consentimiento táctil y backdrop de nubes WebGL
-│   ├── projects/       Tambor Lenticular 3D, controladores de interacción y metadatos
-│   ├── project-detail/ Escaparate de proyectos, especímenes con tilt 3D y Matter.js
-│   ├── about/          Experiencia editorial, mascota interactiva y banner de partículas
-│   └── transitions/    Controlador de transiciones fluidas con curvas Bézier SVG
-├── layouts/            Layout base con metadatos SEO, Open Graph y JSON-LD
-└── pages/              Rutas estáticas (Home, Proyectos y Sobre mí)
+│   ├── consent/        Pantalla de consentimiento (spec §8)
+│   ├── projects/       Vista espiral de proyectos (spec §9.3)
+│   └── welcome/        Backdrop de nubes WebGL del consentimiento
+├── layouts/
+└── pages/
 ```
 
+## Referencias
+
+- Spec del proyecto: `spec/000-master-spec.md` (local)
+- Reglas del proyecto: `.agentrules` (local)
+- Documentación de Astro: https://docs.astro.build
