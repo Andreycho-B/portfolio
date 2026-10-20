@@ -1,0 +1,107 @@
+---
+import type { ProjectItem } from "../projects/project-data";
+
+interface Props {
+  project: ProjectItem;
+}
+
+const { project } = Astro.props;
+
+const splitChars = (text: string) =>
+  text.split("").map((char, index) => ({
+    char: char === " " ? "\u00A0" : char,
+    index,
+  }));
+---
+
+<header class="detail-header">
+  <div class="header-left">
+    <a
+      href="/"
+      class="back-trigger"
+      aria-label="Volver a los proyectos"
+      data-cursor-expand="Volver"
+    >
+      <svg class="back-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path
+          d="M10 12.5L5.5 8L10 3.5"
+          stroke="currentColor"
+          stroke-width="1.3"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+      <span class="roll-track">
+        {splitChars("proyectos").map(({ char, index }) => (
+          <span class="roll-char" style={`--i:${index}`}>
+            <span class="char-top">{char}</span>
+            <span class="char-bot" aria-hidden="true">
+              {char}
+            </span>
+          </span>
+        ))}
+      </span>
+    </a>
+  </div>
+
+  <div class="header-right">
+    {project.liveUrl && (
+      <a
+        href={project.liveUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="action-pill"
+        data-cursor-expand="Visitar"
+      >
+        <span class="roll-track">
+          {splitChars("visitar").map(({ char, index }) => (
+            <span class="roll-char" style={`--i:${index}`}>
+              <span class="char-top">{char}</span>
+              <span class="char-bot" aria-hidden="true">
+                {char}
+              </span>
+            </span>
+          ))}
+        </span>
+        <span class="pill-arrow" aria-hidden="true">
+          ↗
+        </span>
+      </a>
+    )}
+    {project.repoUrl && (
+      <a
+        href={project.repoUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="action-pill"
+        data-cursor-expand="GitHub"
+      >
+        <span class="roll-track">
+          {splitChars("código").map(({ char, index }) => (
+            <span class="roll-char" style={`--i:${index}`}>
+              <span class="char-top">{char}</span>
+              <span class="char-bot" aria-hidden="true">
+                {char}
+              </span>
+            </span>
+          ))}
+        </span>
+        <span class="pill-arrow" aria-hidden="true">
+          ↗
+        </span>
+      </a>
+    )}
+    <button
+      type="button"
+      class="sound-toggle-btn"
+      data-sound-toggle
+      aria-label="Silenciar sonido"
+      aria-pressed="false"
+    >
+      <span class="sound-label">SONIDO</span>
+      <span class="sound-state" data-sound-state>
+        [ON]
+      </span>
+    </button>
+  </div>
+</header>

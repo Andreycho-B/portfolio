@@ -1,0 +1,178 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { PROJECTS, type ProjectItem } from "../../features/projects/project-data";
+import DetailHeader from "../../features/project-detail/DetailHeader.astro";
+import DetailHero from "../../features/project-detail/DetailHero.astro";
+import DetailInfoGrid from "../../features/project-detail/DetailInfoGrid.astro";
+import DetailSpecimens from "../../features/project-detail/DetailSpecimens.astro";
+import DetailConcept from "../../features/project-detail/DetailConcept.astro";
+import DetailTechGravity from "../../features/project-detail/DetailTechGravity.astro";
+import DetailNextProject from "../../features/project-detail/DetailNextProject.astro";
+import "../../features/project-detail/project-detail.css";
+
+export function getStaticPaths() {
+  return PROJECTS.filter((p) => !p.externalUrl).map((project) => ({
+    params: { slug: project.slug },
+    props: { project },
+  }));
+}
+
+interface Props {
+  project: ProjectItem;
+}
+
+const { project } = Astro.props;
+
+const internalProjects = PROJECTS.filter((p) => !p.externalUrl);
+const currentIndex = internalProjects.findIndex((p) => p.slug === project.slug);
+const nextProject =
+  internalProjects.length > 0
+    ? (internalProjects[(currentIndex + 1) % internalProjects.length] ?? project)
+    : project;
+
+const coverImg = project.gallery?.[0] ?? project.imageSrc;
+const mediaItem1 = project.gallery?.[1] ?? coverImg;
+const mediaDuoLeft = project.gallery?.[2] ?? coverImg;
+const mediaDuoRight = project.gallery?.[3] ?? coverImg;
+const mediaItemFinal = project.gallery?.[4] ?? coverImg;
+const nextCoverImg = nextProject.gallery?.[0] ?? nextProject.imageSrc;
+
+const isCoverHorizontal = true;
+const isMedia1Horizontal = false;
+const isDuoLeftHorizontal = false;
+const isDuoRightHorizontal = false;
+const isMediaFinalHorizontal = false;
+const isNextCoverHorizontal = true;
+---
+
+<BaseLayout
+  title={`${project.title} — Andrey Rondón`}
+  description={
+    project.subtitle ? `${project.title} — ${project.subtitle}. ${project.role}` : project.title
+  }
+>
+  <svg aria-hidden="true" class="mercury-filter-defs">
+    <defs>
+      <filter
+        id="detail-title-blur-filter"
+        x="-30%"
+        y="-30%"
+        width="160%"
+        height="160%"
+        color-interpolation-filters="sRGB"
+      >
+        <feGaussianBlur
+          id="detail-title-blur-node"
+          in="SourceGraphic"
+          stdDeviation="0 0"
+          result="blur"
+        />
+        <feColorMatrix
+          in="blur"
+          mode="matrix"
+          values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11"
+        />
+      </filter>
+      <filter
+        id="detail-overview-blur-filter"
+        x="-30%"
+        y="-30%"
+        width="160%"
+        height="160%"
+        color-interpolation-filters="sRGB"
+      >
+        <feGaussianBlur
+          id="detail-overview-blur-node"
+          in="SourceGraphic"
+          stdDeviation="0 0"
+          result="blur"
+        />
+        <feColorMatrix
+          in="blur"
+          mode="matrix"
+          values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11"
+        />
+      </filter>
+      <filter
+        id="detail-statement-blur-filter"
+        x="-30%"
+        y="-30%"
+        width="160%"
+        height="160%"
+        color-interpolation-filters="sRGB"
+      >
+        <feGaussianBlur
+          id="detail-statement-blur-node"
+          in="SourceGraphic"
+          stdDeviation="0 0"
+          result="blur"
+        />
+        <feColorMatrix
+          in="blur"
+          mode="matrix"
+          values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11"
+        />
+      </filter>
+      <filter
+        id="detail-next-blur-filter"
+        x="-30%"
+        y="-30%"
+        width="160%"
+        height="160%"
+        color-interpolation-filters="sRGB"
+      >
+        <feGaussianBlur
+          id="detail-next-blur-node"
+          in="SourceGraphic"
+          stdDeviation="0 0"
+          result="blur"
+        />
+        <feColorMatrix
+          in="blur"
+          mode="matrix"
+          values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11"
+        />
+      </filter>
+    </defs>
+  </svg>
+
+  <div class="project-detail-stage" data-smooth-viewport>
+    <div class="cinematic-entrance-curtain" id="detail-entrance-curtain" aria-hidden="true"></div>
+
+    <DetailHeader project={project} />
+
+    <main class="detail-main">
+      <DetailHero project={project} coverImg={coverImg} isCoverHorizontal={isCoverHorizontal} />
+
+      <DetailInfoGrid project={project} />
+
+      <DetailSpecimens
+        project={project}
+        mediaItem1={mediaItem1}
+        mediaDuoLeft={mediaDuoLeft}
+        mediaDuoRight={mediaDuoRight}
+        mediaItemFinal={mediaItemFinal}
+        isMedia1Horizontal={isMedia1Horizontal}
+        isDuoLeftHorizontal={isDuoLeftHorizontal}
+        isDuoRightHorizontal={isDuoRightHorizontal}
+        isMediaFinalHorizontal={isMediaFinalHorizontal}
+      />
+
+      <DetailConcept project={project} />
+
+      <DetailTechGravity project={project} />
+
+      <DetailNextProject
+        nextProject={nextProject}
+        nextCoverImg={nextCoverImg}
+        isNextCoverHorizontal={isNextCoverHorizontal}
+      />
+    </main>
+  </div>
+</BaseLayout>
+
+<script>
+  import { initProjectDetailPage } from "../../features/project-detail/project-detail-controller";
+
+  document.addEventListener("astro:page-load", initProjectDetailPage);
+</script>

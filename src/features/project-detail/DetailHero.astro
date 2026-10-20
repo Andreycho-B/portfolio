@@ -1,0 +1,44 @@
+---
+import type { ProjectItem } from "../projects/project-data";
+
+interface Props {
+  project: ProjectItem;
+  coverImg: string;
+  isCoverHorizontal: boolean;
+}
+
+const { project, coverImg, isCoverHorizontal } = Astro.props;
+---
+
+<section class="hero-row" aria-label="Portada del proyecto">
+  <div class="hero-col hero-col-title">
+    <div class="hero-title-lockup">
+      <h1 class="project-morphic-title" data-project-title>
+        {project.title}
+      </h1>
+      {project.subtitle && <span class="hero-subtitle-line">{project.subtitle}</span>}
+    </div>
+  </div>
+
+  <div class="hero-col hero-col-specimen">
+    <div
+      class={`hero-specimen-card ${isCoverHorizontal ? "is-horizontal" : ""}`}
+      data-reveal="scale"
+    >
+      <img
+        src={coverImg}
+        alt={project.title}
+        class="hero-specimen-img"
+        loading="eager"
+        decoding="sync"
+        fetchpriority="high"
+      />
+    </div>
+  </div>
+
+  <div class="hero-col hero-col-year">
+    <div class="hero-year-lockup" data-reveal="fade">
+      <span class="hero-year-line">Año — {project.year}</span>
+    </div>
+  </div>
+</section>
