@@ -1,9 +1,9 @@
 import { getAudioSystem } from "../../core/audio";
 import { getCursorController } from "../../design-system/components/cursor-controller";
 import { initIncomingFluidWipe } from "../transitions/fluid-transition-controller";
+import type { DrumWebGLHandle } from "./drum.types";
 import { playDrumIntroAnimation } from "./drum-intro-animation";
 import { navigateWithCurtain } from "./drum-transition";
-import { createDrumWebGLScene, type DrumWebGLHandle } from "./drum-webgl-scene";
 import { initEmailCopy } from "./email-copy";
 import { LogoMagneticController } from "./logo-magnetic-fx";
 import { getProjectBySlug } from "./project-data";
@@ -11,21 +11,39 @@ import { ProjectDrumController } from "./project-drum-controller";
 import { ProjectTitleMorphController } from "./project-title-morph";
 import { initSoundToggle } from "./sound-toggle";
 
+let prewarmedScenePromise: Promise<DrumWebGLHandle | null> | null = null;
 let prewarmedScene: DrumWebGLHandle | null = null;
 let activeDrumController: ProjectDrumController | null = null;
 
-const prewarmScene = (canvas: HTMLCanvasElement): DrumWebGLHandle => {
-  const scene = createDrumWebGLScene(canvas, () => activeDrumController?.invalidate());
-  const width = canvas.clientWidth || window.innerWidth;
-  const height = canvas.clientHeight || window.innerHeight;
-  scene.resize(width, height);
-  scene.render();
-  return scene;
+const loadDrumSceneModule = () => import("./drum-webgl-scene");
+
+const prewarmScene = async (canvas: HTMLCanvasElement): Promise<DrumWebGLHandle | null> => {
+  try {
+    const { createDrumWebGLScene } = await loadDrumSceneModule();
+    const scene = createDrumWebGLScene(
+      canvas,
+      () => activeDrumController?.invalidate(),
+      (err) => {
+        console.warn("[ProjectsMount] WebGL fallback triggered:", err);
+        const root = document.querySelector<HTMLElement>("[data-projects-section]");
+        root?.classList.add("has-webgl-fallback");
+      },
+    );
+    if (!scene) return null;
+    const width = canvas.clientWidth || window.innerWidth;
+    const height = canvas.clientHeight || window.innerHeight;
+    scene.resize(width, height);
+    scene.render();
+    return scene;
+  } catch (err) {
+    console.warn("[ProjectsMount] WebGL load error:", err);
+    return null;
+  }
 };
 
-export const initProjectsSection = (
-  existingScene?: DrumWebGLHandle | null,
-): ((soundEnabled: boolean) => void) | null => {
+export const initProjectsSection = async (
+  sceneInput?: Promise<DrumWebGLHandle | null> | DrumWebGLHandle | null,
+): Promise<((soundEnabled: boolean) => void) | null> => {
   const root = document.querySelector<HTMLElement>("[data-projects-section]");
   if (!root || root.dataset.initialized === "true") return null;
 
@@ -51,11 +69,16 @@ export const initProjectsSection = (
     blurNode,
   });
 
-  let drumController: ProjectDrumController | null = null;
-  const webglScene =
-    existingScene ?? createDrumWebGLScene(canvas, () => drumController?.invalidate());
+  let webglScene: DrumWebGLHandle | null = null;
+  if (sceneInput instanceof Promise) {
+    webglScene = await sceneInput;
+  } else if (sceneInput) {
+    webglScene = sceneInput;
+  } else {
+    webglScene = await prewarmScene(canvas);
+  }
 
-  drumController = new ProjectDrumController({
+  const drumController = new ProjectDrumController({
     root,
     viewport,
     canvas,
@@ -86,24 +109,24 @@ export const initProjectsSection = (
       : null;
 
   const aboutLink = root.querySelector<HTMLAnchorElement>("[data-about-trigger]");
-  if (aboutLink) {
-    aboutLink.addEventListener("click", (e) => {
-      e.preventDefault();
-      navigateWithCurtain({
-        targetUrl: "/sobre-mi",
-        canvas,
-        titleElement,
-      });
+  const handleAboutClick = (e: MouseEvent) => {
+    e.preventDefault();
+    navigateWithCurtain({
+      targetUrl: "/sobre-mi",
+      canvas,
+      titleElement,
     });
-  }
+  };
+  aboutLink?.addEventListener("click", handleAboutClick);
 
   root.dataset.initialized = "true";
 
   const cleanup = () => {
+    aboutLink?.removeEventListener("click", handleAboutClick);
     logoMagnetic?.destroy();
     cleanupSoundToggle();
     cleanupEmailCopy();
-    drumController?.destroy();
+    drumController.destroy();
     activeDrumController = null;
     document.removeEventListener("astro:before-swap", cleanup);
   };
@@ -121,10 +144,10 @@ export const initProjectsSection = (
         pagination: root.querySelector<HTMLElement>(".drum-pagination"),
         actionColumn: root.querySelector<HTMLElement>(".project-action-column"),
         blurNode,
-        onSettleDrum: () => drumController?.playIntroSettling(-1.2),
+        onSettleDrum: () => drumController.playIntroSettling(-1.2),
         onUpdateIntroProgress: (progress: number) => {
-          webglScene.setIntroProgress(progress);
-          drumController?.invalidate();
+          webglScene?.setIntroProgress(progress);
+          drumController.invalidate();
         },
         onPlayArrivalSound: () => audio.playProjectArrivalSound(),
       },
@@ -137,12 +160,10 @@ export const mountProjectsScreen = (): void => {
   const root = document.querySelector<HTMLElement>("[data-projects-section]");
   if (!root) return;
 
-  try {
-    const cursor = getCursorController();
-    cursor.setExpanded(false);
-    cursor.setPressed(false);
-    cursor.setInverted(false);
-  } catch {}
+  const cursor = getCursorController();
+  cursor.setExpanded(false);
+  cursor.setPressed(false);
+  cursor.setInverted(false);
 
   initIncomingFluidWipe();
   const canvas = root.querySelector<HTMLCanvasElement>("[data-drum-canvas]");
@@ -152,39 +173,41 @@ export const mountProjectsScreen = (): void => {
     consentScreen.style.display === "none" ||
     document.documentElement.classList.contains("skip-consent")
   ) {
-    const triggerIntro = initProjectsSection();
-    if (triggerIntro) triggerIntro(false);
+    void initProjectsSection().then((triggerIntro) => {
+      if (triggerIntro) triggerIntro(false);
+    });
     return;
   }
 
   let isTriggered = false;
 
   const schedulePrewarm = () => {
-    if (!canvas || prewarmedScene) return;
+    if (!canvas || prewarmedScenePromise) return;
+    const execute = () => {
+      if (!prewarmedScenePromise && !isTriggered) {
+        prewarmedScenePromise = prewarmScene(canvas).then((scene) => {
+          prewarmedScene = scene;
+          return scene;
+        });
+      }
+    };
     if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      window.requestIdleCallback(() => {
-        if (!prewarmedScene && !isTriggered) {
-          prewarmedScene = prewarmScene(canvas);
-        }
-      });
+      window.requestIdleCallback(execute);
     } else {
-      setTimeout(() => {
-        if (!prewarmedScene && !isTriggered) {
-          prewarmedScene = prewarmScene(canvas);
-        }
-      }, 300);
+      setTimeout(execute, 300);
     }
   };
 
   schedulePrewarm();
 
-  const handleReveal = (event: Event) => {
+  const handleReveal = async (event: Event) => {
     if (isTriggered) return;
     isTriggered = true;
     const customEvent = event as CustomEvent<{ soundEnabled?: boolean }>;
     const soundEnabled = customEvent.detail?.soundEnabled ?? false;
-    const triggerIntro = initProjectsSection(prewarmedScene);
+    const triggerIntro = await initProjectsSection(prewarmedScene ?? prewarmedScenePromise);
     prewarmedScene = null;
+    prewarmedScenePromise = null;
     if (triggerIntro) {
       triggerIntro(soundEnabled);
     }
@@ -194,6 +217,8 @@ export const mountProjectsScreen = (): void => {
   document.addEventListener("consent:completed", handleReveal);
 
   const handleSwap = () => {
+    document.removeEventListener("consent:reveal", handleReveal);
+    document.removeEventListener("consent:completed", handleReveal);
     if (prewarmedScene && !activeDrumController) {
       prewarmedScene.dispose();
       prewarmedScene = null;

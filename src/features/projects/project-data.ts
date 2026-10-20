@@ -1,16 +1,4 @@
-import type { DrumWebGLHandle } from "./drum-webgl-scene";
-import type { ProjectTitleMorphController } from "./project-title-morph";
-
 export type ProjectTheme = "dark" | "light";
-
-export interface DrumControllerElements {
-  readonly root: HTMLElement;
-  readonly viewport: HTMLElement;
-  readonly canvas: HTMLCanvasElement;
-  readonly morphController: ProjectTitleMorphController;
-  readonly webglScene: DrumWebGLHandle;
-  readonly onOpenActive: () => void;
-}
 
 export interface ProjectItem {
   readonly id: string;

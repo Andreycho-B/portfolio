@@ -392,3 +392,50 @@
     justify-self: end;
   }
 }
+
+.drum-fallback-cards {
+  display: none;
+}
+
+.has-webgl-fallback .drum-webgl-canvas {
+  display: none;
+}
+
+.has-webgl-fallback .drum-fallback-cards {
+  display: flex;
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  padding: var(--container-padding);
+  overflow-x: auto;
+}
+
+.has-webgl-fallback .fallback-card {
+  flex: 0 0 clamp(240px, 35vw, 420px);
+  aspect-ratio: 16 / 10;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  position: relative;
+  text-decoration: none;
+}
+
+.has-webgl-fallback .fallback-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.has-webgl-fallback .fallback-card-title {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+}
