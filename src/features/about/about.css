@@ -1,16 +1,3 @@
-html,
-body {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  background-color: #ffffff;
-}
-
-::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
-}
-
 .about-page-stage {
   --margin: clamp(24px, 5vw, 64px);
   --color-bg: #ffffff;

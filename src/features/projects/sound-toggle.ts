@@ -12,7 +12,6 @@ export const initSoundToggle = (root: HTMLElement): (() => void) => {
 
   const syncUI = (isMuted: boolean) => {
     stateLabel.textContent = isMuted ? "[OFF]" : "[ON]";
-    button.setAttribute("aria-label", isMuted ? "Activar sonido" : "Silenciar sonido");
     button.setAttribute("aria-pressed", isMuted ? "true" : "false");
     button.dataset.muted = isMuted ? "true" : "false";
   };

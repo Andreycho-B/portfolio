@@ -1,6 +1,7 @@
 import { getAudioSystem } from "../../core/audio";
 import { destroySmoothScroll, initSmoothScroll } from "../../core/smooth-scroll";
 import { getCursorController } from "../../design-system/components/cursor-controller";
+import { getStoredSoundPreference } from "../consent/consent-storage";
 import { initSoundToggle } from "../projects/sound-toggle";
 import {
   initIncomingFluidWipe,
@@ -20,10 +21,7 @@ export const initAboutPage = (): void => {
   const lenis = initSmoothScroll();
 
   const audio = getAudioSystem();
-  let soundEnabled = true;
-  try {
-    soundEnabled = localStorage.getItem("portfolio_sound_enabled") !== "false";
-  } catch {}
+  const soundEnabled = getStoredSoundPreference();
   void audio.initialize(soundEnabled);
 
   const cursor = getCursorController();

@@ -9,10 +9,20 @@ interface Props {
 const { project } = Astro.props;
 const logos = getProjectLogos(project.tags ?? [], 28);
 const SHAPES = ["circle", "squircle", "pill", "leaf"] as const;
+const uniqueTags = project.tags ?? [];
 ---
 
-<section class="tech-gravity-section" aria-label="Logos interactivos del proyecto">
-  <div class="tech-gravity-stage" id="tech-gravity-stage">
+<section class="tech-gravity-section" aria-label="Tecnologías del proyecto">
+  <div class="sr-only">
+    <h3>Tecnologías aplicadas</h3>
+    <ul>
+      {uniqueTags.map((tag) => (
+        <li>{tag}</li>
+      ))}
+    </ul>
+  </div>
+
+  <div class="tech-gravity-stage" id="tech-gravity-stage" aria-hidden="true">
     {logos.map((logo, index) => {
       const shape = SHAPES[index % SHAPES.length];
       return (
@@ -22,15 +32,8 @@ const SHAPES = ["circle", "squircle", "pill", "leaf"] as const;
           data-shape={shape}
           data-logo-id={logo.id}
           style={`--logo-color: ${logo.color};`}
-          aria-label={logo.name}
         >
-          <img
-            src={logo.svgUrl}
-            alt={logo.name}
-            class="tech-logo-img"
-            loading="eager"
-            decoding="async"
-          />
+          <img src={logo.svgUrl} alt="" class="tech-logo-img" loading="lazy" decoding="async" />
         </div>
       );
     })}

@@ -1,17 +1,20 @@
 ---
 import MorphicText from "../../design-system/components/MorphicText.astro";
 import WelcomeBackdrop from "./WelcomeBackdrop.astro";
+import { CONSENT_KEY, CONSENT_TTL } from "./consent-storage";
 import "./consent-screen.css";
 ---
 
-<script is:inline>
+<script is:inline define:vars={{ CONSENT_KEY, CONSENT_TTL }}>
   (() => {
     try {
-      const stored = localStorage.getItem("portfolio_consent_time");
-      if (stored && Date.now() - Number(stored) < 1800000) {
+      const stored = localStorage.getItem(CONSENT_KEY);
+      if (stored && Date.now() - Number(stored) < CONSENT_TTL) {
         document.documentElement.classList.add("skip-consent");
       }
-    } catch {}
+    } catch {
+      // Storage restricted
+    }
   })();
 </script>
 

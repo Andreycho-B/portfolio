@@ -6,29 +6,6 @@
   opacity: 0;
 }
 
-.cinematic-entrance-curtain {
-  position: fixed;
-  inset: 0;
-  z-index: 99999;
-  background-color: #ffffff;
-  transform: scaleY(1);
-  transform-origin: top center;
-  pointer-events: none;
-  will-change: transform;
-}
-
-html,
-body {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
-}
-
 .project-detail-stage {
   --margin: clamp(24px, 5vw, 64px);
   --space-section: clamp(80px, 14vh, 160px);

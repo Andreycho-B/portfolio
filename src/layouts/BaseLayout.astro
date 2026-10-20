@@ -1,7 +1,8 @@
 ---
 import { ClientRouter } from "astro:transitions";
-import "../design-system/tokens/index.css";
+import { PROFILE } from "../core/profile";
 import InteractiveCursor from "../design-system/components/InteractiveCursor.astro";
+import "../design-system/tokens/index.css";
 
 interface Props {
   title?: string;
@@ -12,8 +13,8 @@ interface Props {
 }
 
 const {
-  title = "Andrey Rondón — Desarrollador de Software Fullstack & Creativo",
-  description = "Portafolio de ingeniería de software de Andrey Rondón (Andrey Ernesto Rondón Corredor). Desarrollador de Software Fullstack & Creativo, Tecnólogo ADSO (SENA) en Duitama, Boyacá, Colombia. TypeScript, Go, Three.js, PostgreSQL y arquitectura de software.",
+  title = `${PROFILE.shortName} — ${PROFILE.role}`,
+  description = PROFILE.bioLong,
   lang = "es",
   image = "/logo-mascot-base.webp",
   type = "website",
@@ -25,45 +26,23 @@ const socialImageURL = Astro.site ? new URL(image, Astro.site).href : image;
 const personSchema = JSON.stringify({
   "@context": "https://schema.org",
   "@type": "Person",
-  name: "Andrey Ernesto Rondón Corredor",
-  alternateName: ["Andrey Rondón", "Andreycho-B"],
-  jobTitle: "Desarrollador de Software Fullstack & Creativo",
-  description:
-    "Desarrollador de Software Fullstack & Creativo, Tecnólogo SENA (ADSO) habilitado para etapa práctica. Especialista en TypeScript, Go, Three.js, PostgreSQL y arquitectura de software.",
-  url: "https://andreyrondon.dev",
-  sameAs: [
-    "https://github.com/Andreycho-B",
-    "https://linkedin.com/in/andrey-rondón-980345426",
-    "https://instagram.com/andrey_rondonikov",
-  ],
+  name: PROFILE.fullName,
+  alternateName: PROFILE.alternateNames,
+  jobTitle: PROFILE.role,
+  description: PROFILE.bioShort,
+  url: PROFILE.siteUrl,
+  sameAs: [PROFILE.socials.github.url, PROFILE.socials.linkedin.url, PROFILE.socials.instagram.url],
   alumniOf: {
     "@type": "EducationalOrganization",
-    name: "Servicio Nacional de Aprendizaje (SENA)",
+    name: PROFILE.education.institution,
   },
   address: {
     "@type": "PostalAddress",
-    addressLocality: "Duitama",
-    addressRegion: "Boyacá",
-    addressCountry: "Colombia",
+    addressLocality: PROFILE.location.city,
+    addressRegion: PROFILE.location.region,
+    addressCountry: PROFILE.location.country,
   },
-  knowsAbout: [
-    "TypeScript",
-    "Go (Golang)",
-    "PostgreSQL",
-    "SQLC",
-    "Svelte 5",
-    "Angular",
-    "Tailwind CSS",
-    "Node.js",
-    "NestJS",
-    "Argon2id",
-    "WebSockets",
-    "Server-Sent Events",
-    "Docker",
-    "WebGL",
-    "Three.js",
-    "Arquitectura de Software",
-  ],
+  knowsAbout: PROFILE.skills,
 });
 ---
 
@@ -73,11 +52,7 @@ const personSchema = JSON.stringify({
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content={description} />
-    <meta name="author" content="Andrey Ernesto Rondón Corredor" />
-    <meta
-      name="keywords"
-      content="Andrey Rondón, Andrey Ernesto Rondón Corredor, Desarrollador Fullstack, Desarrollador Creativo, ADSO, SENA, Duitama, Boyacá, Colombia, TypeScript, Go, Golang, Three.js, Svelte 5, Angular, PostgreSQL, NestJS, PWA"
-    />
+    <meta name="author" content={PROFILE.fullName} />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href={canonicalURL} />
 
