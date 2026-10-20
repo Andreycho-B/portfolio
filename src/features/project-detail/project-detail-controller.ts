@@ -2,6 +2,7 @@ import { gsap } from "gsap";
 import { getAudioSystem } from "../../core/audio";
 import { destroySmoothScroll, initSmoothScroll } from "../../core/smooth-scroll";
 import { getCursorController } from "../../design-system/components/cursor-controller";
+import { getStoredSoundPreference } from "../consent/consent-storage";
 import { initSoundToggle } from "../projects/sound-toggle";
 import {
   initIncomingFluidWipe,
@@ -16,15 +17,6 @@ export const initProjectDetailPage = (): void => {
 
   initSmoothScroll();
 
-  const curtain = document.getElementById("detail-entrance-curtain");
-  if (curtain) {
-    gsap.to(curtain, {
-      transform: "scaleY(0)",
-      duration: 0.75,
-      ease: "expo.out",
-    });
-  }
-
   const heroSpecimen = document.querySelector<HTMLElement>(".hero-specimen-card");
   if (heroSpecimen) {
     gsap.fromTo(
@@ -35,10 +27,7 @@ export const initProjectDetailPage = (): void => {
   }
 
   const audio = getAudioSystem();
-  let soundEnabled = true;
-  try {
-    soundEnabled = localStorage.getItem("portfolio_sound_enabled") !== "false";
-  } catch {}
+  const soundEnabled = getStoredSoundPreference();
   void audio.initialize(soundEnabled);
 
   const cursor = getCursorController();

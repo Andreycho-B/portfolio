@@ -1,33 +1,30 @@
 ---
+import { PROFILE } from "../../core/profile";
 ---
 
 <footer class="about-footer-section" aria-label="Contacto">
   <div class="footer-contact-bar" data-reveal="fade">
     <div class="contact-links-row">
-      <a
-        href="mailto:rondonandrey42@gmail.com"
-        class="footer-inline-link"
-        data-cursor-expand="Correo"
-      >
-        rondonandrey42@gmail.com
+      <a href={`mailto:${PROFILE.email}`} class="footer-inline-link" data-cursor-expand="Correo">
+        {PROFILE.email}
       </a>
       <span class="footer-dot-sep" aria-hidden="true">
         ·
       </span>
       <a
-        href="https://wa.me/573148039636"
+        href={PROFILE.whatsappUrl}
         target="_blank"
         rel="noopener noreferrer"
         class="footer-inline-link"
         data-cursor-expand="WhatsApp"
       >
-        +57 314 803 9636
+        {PROFILE.phone}
       </a>
       <span class="footer-dot-sep" aria-hidden="true">
         ·
       </span>
       <a
-        href="https://github.com/Andreycho-B"
+        href={PROFILE.socials.github.url}
         target="_blank"
         rel="noopener noreferrer"
         class="footer-inline-link"
@@ -39,7 +36,7 @@
         ·
       </span>
       <a
-        href="https://linkedin.com/in/andrey-rondón-980345426"
+        href={PROFILE.socials.linkedin.url}
         target="_blank"
         rel="noopener noreferrer"
         class="footer-inline-link"
@@ -51,7 +48,7 @@
         ·
       </span>
       <a
-        href="https://instagram.com/andrey_rondonikov"
+        href={PROFILE.socials.instagram.url}
         target="_blank"
         rel="noopener noreferrer"
         class="footer-inline-link"
@@ -71,7 +68,7 @@
     </div>
   </div>
 
-  <div class="footer-particle-banner" aria-label="ANDREY">
+  <div class="footer-particle-banner">
     <canvas id="footer-particle-canvas" class="footer-particle-canvas" aria-hidden="true"></canvas>
     <span class="sr-only">ANDREY</span>
   </div>

@@ -1,11 +1,9 @@
 ---
+import { PROFILE } from "../../core/profile";
 import { PROJECTS } from "./project-data";
 import "./projects-drum.css";
 
 const initialProject = PROJECTS[0];
-if (!initialProject) {
-  throw new Error("No projects defined in PROJECTS list");
-}
 ---
 
 <section
@@ -76,7 +74,7 @@ if (!initialProject) {
       aria-pressed="false"
     >
       <span class="sound-label">SONIDO</span>
-      <span class="sound-state" data-sound-state>
+      <span class="sound-state" data-sound-state aria-hidden="true">
         [ON]
       </span>
     </button>
@@ -138,13 +136,13 @@ if (!initialProject) {
 
   <footer class="projects-footer-bar">
     <a
-      href="https://wa.me/573148039636"
+      href={PROFILE.whatsappUrl}
       target="_blank"
       rel="noopener noreferrer"
       class="footer-link footer-link-left"
-      aria-label="WhatsApp: +57 314 803 9636"
+      aria-label={`WhatsApp: ${PROFILE.phone}`}
     >
-      +57 314 803 9636
+      {PROFILE.phone}
     </a>
 
     <div class="drum-pagination">
@@ -161,9 +159,9 @@ if (!initialProject) {
       type="button"
       class="footer-link footer-link-right"
       data-email-link
-      aria-label="Copiar correo: rondonandrey42@gmail.com"
+      aria-label={`Copiar correo: ${PROFILE.email}`}
     >
-      <span data-email-text>RONDONANDREY42@GMAIL.COM</span>
+      <span data-email-text>{PROFILE.email.toUpperCase()}</span>
     </button>
   </footer>
 </section>

@@ -1,7 +1,10 @@
 export type ProjectTheme = "dark" | "light";
 
+export type ProjectId = "mias" | "tusuper" | "estandar";
+export type ProjectSlug = "mias-hamburguesas-de-lujo" | "tu-super" | "estandar-gobernanza-agentes";
+
 export interface ProjectItem {
-  readonly id: string;
+  readonly id: ProjectId;
   readonly title: string;
   readonly subtitle?: string;
   readonly role?: string;
@@ -9,7 +12,7 @@ export interface ProjectItem {
   readonly year: string;
   readonly location?: string;
   readonly imageSrc: string;
-  readonly slug: string;
+  readonly slug: ProjectSlug;
   readonly theme: ProjectTheme;
   readonly liveUrl?: string;
   readonly repoUrl?: string;
@@ -22,7 +25,7 @@ export interface ProjectItem {
   readonly gallery?: readonly string[];
 }
 
-export const PROJECTS: readonly ProjectItem[] = [
+export const PROJECTS: readonly [ProjectItem, ...ProjectItem[]] = [
   {
     id: "mias",
     title: "Mías",

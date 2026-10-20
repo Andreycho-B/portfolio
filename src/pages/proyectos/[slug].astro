@@ -43,14 +43,34 @@ const isDuoLeftHorizontal = false;
 const isDuoRightHorizontal = false;
 const isMediaFinalHorizontal = false;
 const isNextCoverHorizontal = true;
+
+const projectSchema = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "SoftwareSourceCode",
+  name: project.title,
+  headline: project.subtitle ?? project.title,
+  description: project.statementChallenge ?? project.subtitle ?? project.title,
+  author: {
+    "@type": "Person",
+    name: "Andrey Ernesto Rondón Corredor",
+    url: "https://andreyrondon.dev",
+  },
+  codeRepository: project.repoUrl ?? undefined,
+  programmingLanguage: project.tags,
+  dateCreated: project.year,
+  image: coverImg,
+});
 ---
 
 <BaseLayout
-  title={`${project.title} — Andrey Rondón`}
+  title={`${project.title} — Andrey Rondón | Estudio de Caso`}
   description={
     project.subtitle ? `${project.title} — ${project.subtitle}. ${project.role}` : project.title
   }
+  type="article"
+  image={coverImg}
 >
+  <script type="application/ld+json" set:html={projectSchema} />
   <svg aria-hidden="true" class="mercury-filter-defs">
     <defs>
       <filter
@@ -137,8 +157,6 @@ const isNextCoverHorizontal = true;
   </svg>
 
   <div class="project-detail-stage" data-smooth-viewport>
-    <div class="cinematic-entrance-curtain" id="detail-entrance-curtain" aria-hidden="true"></div>
-
     <DetailHeader project={project} />
 
     <main class="detail-main">
