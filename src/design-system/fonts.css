@@ -1,15 +1,13 @@
-/* Author — display (variable) */
 @font-face {
   font-family: "Author";
   src:
     url("/fonts/author/Author-Variable.woff2") format("woff2-variations"),
     url("/fonts/author/Author-Variable.woff2") format("woff2");
-  font-weight: 100 900;
+  font-weight: 160 900;
   font-style: normal;
   font-display: swap;
 }
 
-/* Karrik — texto de lectura */
 @font-face {
   font-family: "Karrik";
   src: url("/fonts/karrik/Karrik-Regular.woff2") format("woff2");
@@ -26,7 +24,6 @@
   font-display: swap;
 }
 
-/* Kaeru Kaeru — mutación tipográfica */
 @font-face {
   font-family: "Kaeru Kaeru";
   src: url("/fonts/kaeru-kaeru/KaeruKaeru-Regular.woff2") format("woff2");
@@ -35,7 +32,6 @@
   font-display: swap;
 }
 
-/* Pilowlava — mutación tipográfica */
 @font-face {
   font-family: "Pilowlava";
   src: url("/fonts/pilowlava/Pilowlava-Regular.woff2") format("woff2");
@@ -44,7 +40,6 @@
   font-display: swap;
 }
 
-/* Lithops — mutación tipográfica */
 @font-face {
   font-family: "Lithops";
   src: url("/fonts/lithops/Lithops-Regular.woff2") format("woff2");
@@ -53,7 +48,6 @@
   font-display: swap;
 }
 
-/* Flor de Ruina Germen — mutación tipográfica */
 @font-face {
   font-family: "Flor de Ruina";
   src: url("/fonts/flor-de-ruina/FlorDeRuina-Germen.woff2") format("woff2");

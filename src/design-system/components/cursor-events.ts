@@ -1,4 +1,4 @@
-export interface CursorEventHandlers {
+interface CursorEventHandlers {
   readonly onMove: (clientX: number, clientY: number) => void;
   readonly onDown: () => void;
   readonly onUp: () => void;

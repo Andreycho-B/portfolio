@@ -8,7 +8,12 @@ interface Props {
 const { defaultLabel = "Ingresar" } = Astro.props;
 ---
 
-<div class="interactive-cursor" data-interactive-cursor aria-hidden="true">
+<div
+  class="interactive-cursor"
+  data-interactive-cursor
+  transition:persist="interactive-cursor"
+  aria-hidden="true"
+>
   <div class="cursor-ring" data-cursor-ring>
     <div class="cursor-pill" data-cursor-pill>
       <div class="cursor-backdrop" data-cursor-backdrop></div>
@@ -45,3 +50,15 @@ const { defaultLabel = "Ingresar" } = Astro.props;
     </div>
   </div>
 </div>
+
+<script>
+  import { getCursorController } from "./cursor-controller";
+
+  const initGlobalCursor = () => {
+    getCursorController().enable();
+  };
+
+  document.addEventListener("astro:page-load", initGlobalCursor);
+  if (document.readyState !== "loading") initGlobalCursor();
+  else document.addEventListener("DOMContentLoaded", initGlobalCursor);
+</script>

@@ -22,7 +22,6 @@ export const createExitTimeline = (
   let prevMatrix = "";
   const timeline = gsap.timeline({ onComplete });
 
-  // 1. Re-licuefacción inicial
   timeline.to(
     state,
     {
@@ -46,7 +45,6 @@ export const createExitTimeline = (
     0,
   );
 
-  // 2. Expansión cromática cian (borde superior e inferior)
   if (isChromatic && (cyanTopNode || cyanBottomNode)) {
     timeline.to(
       state,
@@ -67,7 +65,6 @@ export const createExitTimeline = (
     );
   }
 
-  // 3. Re-difusión de desenfoque
   timeline.to(
     state,
     {
@@ -86,7 +83,6 @@ export const createExitTimeline = (
     exitDuration * 0.15,
   );
 
-  // 4. Contracción y reducción ágil de la masa líquida hasta el fondo
   timeline.to(
     state,
     {
@@ -109,7 +105,6 @@ export const createExitTimeline = (
     exitDuration * 0.5,
   );
 
-  // 5. Desvanecimiento hacia fondo limpio
   timeline.to(
     element,
     { opacity: 0, duration: exitDuration * 0.25, ease: "power1.in" },

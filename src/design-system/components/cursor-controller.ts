@@ -2,6 +2,7 @@ import { gsap } from "gsap";
 import type { CursorController } from "./cursor.types";
 import { createCursorState, NOOP_CONTROLLER } from "./cursor.types";
 import { bindCursorEvents } from "./cursor-events";
+import { initCursorTransforms } from "./cursor-transforms";
 import { createSpring2D, stepCursorSpring } from "./spring-physics";
 
 export type { CursorController };
@@ -9,9 +10,11 @@ export type { CursorController };
 let controllerInstance: CursorController | null = null;
 
 export const getCursorController = (): CursorController => {
-  if (controllerInstance) return controllerInstance;
-
   const cursorEl = document.querySelector<HTMLElement>("[data-interactive-cursor]");
+  if (controllerInstance && controllerInstance !== NOOP_CONTROLLER && cursorEl?.isConnected) {
+    return controllerInstance;
+  }
+
   const ringEl = document.querySelector<HTMLElement>("[data-cursor-ring]");
   const textEl = document.querySelector<HTMLElement>("[data-cursor-text]");
   const isFinePointer =
@@ -25,26 +28,20 @@ export const getCursorController = (): CursorController => {
 
   const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const spring = createSpring2D();
-  gsap.set(cursorEl, { xPercent: -50, yPercent: -50, force3D: true });
-  const setX = gsap.quickSetter(cursorEl, "x", "px");
-  const setY = gsap.quickSetter(cursorEl, "y", "px");
-  const setRot = ringEl ? gsap.quickSetter(ringEl, "rotation", "deg") : () => {};
-  const setScaleX = ringEl ? gsap.quickSetter(ringEl, "scaleX") : () => {};
-  const setScaleY = ringEl ? gsap.quickSetter(ringEl, "scaleY") : () => {};
+  const transforms = initCursorTransforms(cursorEl, ringEl);
   const state = createCursorState();
 
   const resetRing = () => {
-    setRot(0);
-    setScaleX(1);
-    setScaleY(1);
-  };
-
-  const applyTransforms = (x: number, y: number, rot: number, sx: number, sy: number) => {
-    setX(x);
-    setY(y);
-    setRot(rot);
-    setScaleX(sx);
-    setScaleY(sy);
+    if (ringEl) {
+      gsap.to(ringEl, {
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+        duration: 0.22,
+        ease: "power2.out",
+        overwrite: "auto",
+      });
+    }
   };
 
   const updateSpring = (time: number) => {
@@ -54,7 +51,7 @@ export const getCursorController = (): CursorController => {
     if (prefersReduced) {
       spring.currentX = spring.targetX;
       spring.currentY = spring.targetY;
-      applyTransforms(spring.currentX, spring.currentY, 0, 1, 1);
+      transforms.apply(spring.currentX, spring.currentY, 0, 1, 1);
       state.moving = false;
       state.rafId = null;
       return;
@@ -63,7 +60,7 @@ export const getCursorController = (): CursorController => {
     const canDeform = !state.expanded && !state.muted && Date.now() > state.morphUntil;
     const res = stepCursorSpring(spring, dt, canDeform, state.angle);
     state.angle = res.angle;
-    applyTransforms(res.x, res.y, res.angle, res.scaleX, res.scaleY);
+    transforms.apply(res.x, res.y, res.angle, res.scaleX, res.scaleY);
 
     if (!res.isResting) {
       state.rafId = requestAnimationFrame(updateSpring);
@@ -88,7 +85,7 @@ export const getCursorController = (): CursorController => {
       if (!state.hasPos) {
         state.hasPos = true;
         spring.reset(clientX, clientY);
-        applyTransforms(clientX, clientY, 0, 1, 1);
+        transforms.apply(clientX, clientY, 0, 1, 1);
       }
       if (state.enabled) {
         cursorEl.classList.add("is-visible");
@@ -131,12 +128,18 @@ export const getCursorController = (): CursorController => {
 
   const setExpanded = (expanded: boolean, label?: string) => {
     if (!state.enabled) return;
-    if (expanded && label && textEl && textEl.textContent !== label) textEl.textContent = label;
-    if (state.expanded !== expanded) {
+    if (expanded && label && textEl && textEl.textContent !== label) {
+      textEl.textContent = label;
+    }
+    const isDomExpanded = cursorEl.classList.contains("is-expanded");
+    if (state.expanded !== expanded || isDomExpanded !== expanded) {
       state.expanded = expanded;
       cursorEl.classList.toggle("is-expanded", expanded);
       resetRing();
       state.morphUntil = Date.now() + 380;
+    }
+    if (!expanded && textEl && textEl.textContent !== "Ver") {
+      textEl.textContent = "Ver";
     }
   };
 
@@ -153,23 +156,26 @@ export const getCursorController = (): CursorController => {
   };
 
   const setPressed = (pressed: boolean) => {
-    if (!state.enabled || state.pressed === pressed) return;
-    state.pressed = pressed;
-    cursorEl.classList.toggle("is-pressed", pressed);
+    if (state.enabled && state.pressed !== pressed) {
+      state.pressed = pressed;
+      cursorEl.classList.toggle("is-pressed", pressed);
+    }
   };
 
   const setInverted = (inverted: boolean) => {
-    if (!state.enabled || state.inverted === inverted) return;
-    state.inverted = inverted;
-    cursorEl.classList.toggle("is-inverted", inverted);
+    if (state.enabled && state.inverted !== inverted) {
+      state.inverted = inverted;
+      cursorEl.classList.toggle("is-inverted", inverted);
+    }
   };
 
   const pulse = () => {
-    if (!state.enabled) return;
-    gsap
-      .timeline()
-      .to(cursorEl, { scale: 0.92, duration: 0.12, ease: "power1.in", force3D: true })
-      .to(cursorEl, { scale: 1, duration: 0.28, ease: "back.out(1.2)", force3D: true });
+    if (state.enabled) {
+      gsap
+        .timeline()
+        .to(cursorEl, { scale: 0.92, duration: 0.12, ease: "power1.in", force3D: true })
+        .to(cursorEl, { scale: 1, duration: 0.28, ease: "back.out(1.2)", force3D: true });
+    }
   };
 
   const destroy = () => {
@@ -190,3 +196,24 @@ export const getCursorController = (): CursorController => {
   };
   return controllerInstance;
 };
+
+if (typeof document !== "undefined") {
+  const resetCursorTransitionState = () => {
+    if (controllerInstance && controllerInstance !== NOOP_CONTROLLER) {
+      controllerInstance.setExpanded(false);
+      controllerInstance.setPressed(false);
+      controllerInstance.setInverted(false);
+    }
+    const cursorEl = document.querySelector<HTMLElement>("[data-interactive-cursor]");
+    if (cursorEl) {
+      cursorEl.classList.remove("is-expanded", "is-pressed", "is-muted", "is-inverted");
+    }
+    const textEl = document.querySelector<HTMLElement>("[data-cursor-text]");
+    if (textEl) {
+      textEl.textContent = "Ver";
+    }
+  };
+  document.addEventListener("astro:before-swap", resetCursorTransitionState);
+  document.addEventListener("astro:after-swap", resetCursorTransitionState);
+  document.addEventListener("astro:page-load", resetCursorTransitionState);
+}
