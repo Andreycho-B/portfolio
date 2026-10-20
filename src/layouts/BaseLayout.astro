@@ -12,8 +12,8 @@ interface Props {
 }
 
 const {
-  title = "Andrey Rondón — Desarrollador Fullstack & Tecnólogo ADSO",
-  description = "Portafolio de ingeniería de software de Andrey Rondón (Andrey Ernesto Rondón Corredor). Tecnólogo ADSO (SENA) en Duitama, Colombia. TypeScript, Go, Svelte 5, Angular, PostgreSQL y gobernanza de agentes de IA.",
+  title = "Andrey Rondón — Desarrollador de Software Fullstack & Creativo",
+  description = "Portafolio de ingeniería de software de Andrey Rondón (Andrey Ernesto Rondón Corredor). Desarrollador de Software Fullstack & Creativo, Tecnólogo ADSO (SENA) en Duitama, Boyacá, Colombia. TypeScript, Go, Three.js, PostgreSQL y arquitectura de software.",
   lang = "es",
   image = "/logo-mascot-base.webp",
   type = "website",
@@ -27,9 +27,9 @@ const personSchema = JSON.stringify({
   "@type": "Person",
   name: "Andrey Ernesto Rondón Corredor",
   alternateName: ["Andrey Rondón", "Andreycho-B"],
-  jobTitle: "Desarrollador de Software Fullstack",
+  jobTitle: "Desarrollador de Software Fullstack & Creativo",
   description:
-    "Desarrollador de Software Fullstack y Tecnólogo SENA (ADSO) habilitado para etapa práctica. Especialista en TypeScript, Go, Svelte 5, Angular, PostgreSQL y gobernanza de agentes de IA.",
+    "Desarrollador de Software Fullstack & Creativo, Tecnólogo SENA (ADSO) habilitado para etapa práctica. Especialista en TypeScript, Go, Three.js, PostgreSQL y arquitectura de software.",
   url: "https://andreyrondon.dev",
   sameAs: [
     "https://github.com/Andreycho-B",
@@ -60,9 +60,9 @@ const personSchema = JSON.stringify({
     "WebSockets",
     "Server-Sent Events",
     "Docker",
-    "AI Agent Engineering",
-    "Model Context Protocol (MCP)",
-    "Spec-Driven Development",
+    "WebGL",
+    "Three.js",
+    "Arquitectura de Software",
   ],
 });
 ---
@@ -76,7 +76,7 @@ const personSchema = JSON.stringify({
     <meta name="author" content="Andrey Ernesto Rondón Corredor" />
     <meta
       name="keywords"
-      content="Andrey Rondón, Andrey Ernesto Rondón Corredor, Desarrollador Fullstack, ADSO, SENA, Duitama, Boyacá, Colombia, TypeScript, Go, Golang, Svelte 5, Angular, PostgreSQL, NestJS, AI Agent Engineering, PWA"
+      content="Andrey Rondón, Andrey Ernesto Rondón Corredor, Desarrollador Fullstack, Desarrollador Creativo, ADSO, SENA, Duitama, Boyacá, Colombia, TypeScript, Go, Golang, Three.js, Svelte 5, Angular, PostgreSQL, NestJS, PWA"
     />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href={canonicalURL} />
@@ -96,8 +96,8 @@ const personSchema = JSON.stringify({
     <meta name="twitter:image" content={socialImageURL} />
 
     <script type="application/ld+json" set:html={personSchema} />
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="shortcut icon" href="/favicon.png" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#ffffff" />
     <link
