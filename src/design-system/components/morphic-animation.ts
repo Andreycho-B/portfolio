@@ -76,7 +76,7 @@ const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
   };
 };
 
-export const playMorphicSequence = (nodes: MorphicNodes): void => {
+const playMorphicSequence = (nodes: MorphicNodes): void => {
   const prefersReduced =
     typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 

@@ -1,7 +1,3 @@
-/**
- * Contrato de tipos para la animación de texto mórfico y transiciones SVG.
- * Define la estructura de nodos requerida para los filtros cromáticos y revelación.
- */
 export interface MorphicNodes {
   readonly element: HTMLElement;
   readonly blurNode: SVGFEGaussianBlurElement;

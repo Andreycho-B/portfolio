@@ -1,12 +1,8 @@
 :root {
-  /* Z-index. Saltos amplios para permitir capas intermedias sin renumerar. */
   --z-cursor: 9999;
 
-  /* Contenedor */
   --container-padding: clamp(1.5rem, 5vw, 4rem);
-  --content-max-width: 65ch;
 
-  /* Foco — WCAG 2.2, criterio 2.4.13. Mínimo 2px, contraste 3:1. */
   --focus-ring-color: var(--color-brand-blue);
   --focus-ring-width: 2px;
   --focus-ring-offset: 2px;

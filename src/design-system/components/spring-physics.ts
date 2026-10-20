@@ -15,7 +15,6 @@ export interface Spring2D {
   step: (dt: number) => boolean;
 }
 
-// Física de resorte viva con amortiguamiento ζ ≈ 0.80 (snappy, reactivo, sin oscilación descontrolada)
 export const DEFAULT_SPRING_CONFIG: SpringConfig = {
   stiffness: 340,
   damping: 18,
@@ -98,7 +97,6 @@ export const createSpring2D = (config: SpringConfig = DEFAULT_SPRING_CONFIG): Sp
       spring.vy = 0;
     },
     step: (dt: number): boolean => {
-      // Sub-stepping simétrico para máxima estabilidad matemática e inmunidad a fluctuaciones de refresco
       const subDt = dt * 0.5;
       for (let i = 0; i < 2; i++) {
         const dx = spring.targetX - spring.currentX;

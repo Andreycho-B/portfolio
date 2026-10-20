@@ -1,9 +1,10 @@
 :root {
-  --color-bg: #f5f1ea;
+  --color-bg: #ffffff;
   --color-fg: #1a1714;
   --color-fg-muted: #6b6660;
-  --color-border: #d8d2c8;
-  --color-surface: #ede8df;
+  --color-border: #e8e8e8;
 
   --color-brand-blue: #1982e6;
+  --color-glass-dark: rgba(255, 255, 255, 0.14);
+  --color-glass-light: rgba(255, 255, 255, 0.5);
 }
