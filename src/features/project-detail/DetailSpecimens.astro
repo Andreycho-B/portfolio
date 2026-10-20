@@ -1,0 +1,108 @@
+---
+import type { ProjectItem } from "../projects/project-data";
+
+interface Props {
+  project: ProjectItem;
+  mediaItem1: string;
+  mediaDuoLeft: string;
+  mediaDuoRight: string;
+  mediaItemFinal: string;
+  isMedia1Horizontal: boolean;
+  isDuoLeftHorizontal: boolean;
+  isDuoRightHorizontal: boolean;
+  isMediaFinalHorizontal: boolean;
+}
+
+const {
+  project,
+  mediaItem1,
+  mediaDuoLeft,
+  mediaDuoRight,
+  mediaItemFinal,
+  isMedia1Horizontal,
+  isDuoLeftHorizontal,
+  isDuoRightHorizontal,
+  isMediaFinalHorizontal,
+} = Astro.props;
+---
+
+<section class="media-artboard-section" data-reveal="fade">
+  <div class="device-specimen-wrap">
+    <div
+      class={`device-frame ${isMedia1Horizontal ? "is-horizontal" : ""}`}
+      data-reveal="scale"
+      data-tilt-card
+    >
+      <div class="device-tilt-inner">
+        <img
+          src={mediaItem1}
+          alt={`${project.title} — Captura principal`}
+          loading="lazy"
+          decoding="async"
+          class="device-screen-img"
+        />
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="media-artboard-section duo-section" data-reveal="fade">
+  <div class="duo-specimens-container">
+    <div class="device-specimen-wrap">
+      <div
+        class={`device-frame ${isDuoLeftHorizontal ? "is-horizontal" : ""}`}
+        data-reveal="scale"
+        data-tilt-card
+      >
+        <div class="device-tilt-inner">
+          <img
+            src={mediaDuoLeft}
+            alt={`${project.title} — Flujo de interacción`}
+            loading="lazy"
+            decoding="async"
+            class="device-screen-img"
+          />
+        </div>
+      </div>
+    </div>
+    <div class="device-specimen-wrap">
+      <div
+        class={`device-frame ${isDuoRightHorizontal ? "is-horizontal" : ""}`}
+        data-reveal="scale"
+        data-tilt-card
+      >
+        <div class="device-tilt-inner">
+          <img
+            src={mediaDuoRight}
+            alt={`${project.title} — Detalle de pantalla`}
+            loading="lazy"
+            decoding="async"
+            class="device-screen-img"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{mediaItemFinal && (
+  <section class="media-artboard-section" data-reveal="fade">
+    <div class="device-specimen-wrap">
+      <div
+        class={`device-frame ${isMediaFinalHorizontal ? "is-horizontal" : ""}`}
+        data-reveal="scale"
+        data-tilt-card
+      >
+        <div class="device-tilt-inner">
+          <img
+            src={mediaItemFinal}
+            alt={`${project.title} — Captura de cierre`}
+            loading="lazy"
+            decoding="async"
+            class="device-screen-img"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+)}

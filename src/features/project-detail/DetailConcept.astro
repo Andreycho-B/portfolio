@@ -1,0 +1,49 @@
+---
+import type { ProjectItem } from "../projects/project-data";
+
+interface Props {
+  project: ProjectItem;
+}
+
+const { project } = Astro.props;
+
+const statementTitle =
+  project.statementTitle ?? "Arquitectura de Software y Persistencia Concurrente";
+const statementChallenge =
+  project.statementChallenge ??
+  "Resolver la sincronización de estados críticos y la consistencia de datos ante operaciones concurrentes.";
+const statementSolution =
+  project.statementSolution ??
+  "Diseño e implementación de modelos transaccionales deterministas con consultas estrictamente tipadas y pipelines reactivos.";
+---
+
+<section class="editorial-concept-section" aria-label="Ingeniería y decisiones de arquitectura">
+  <div class="statement-header-block">
+    <span class="section-kicker" data-reveal="text">
+      // 05 · ARQUITECTURA E INGENIERÍA
+    </span>
+    <h2 class="statement-main-title" data-morphic-title="statement">
+      {statementTitle}
+    </h2>
+  </div>
+
+  <div class="statement-dialogue-grid">
+    <div class="statement-col">
+      <span class="statement-col-kicker" data-reveal="text">
+        [ RETO DE SISTEMA ]
+      </span>
+      <p class="statement-body-text" data-reveal="text">
+        {statementChallenge}
+      </p>
+    </div>
+
+    <div class="statement-col">
+      <span class="statement-col-kicker" data-reveal="text">
+        [ DECISIÓN TÉCNICA ]
+      </span>
+      <p class="statement-body-text" data-reveal="text">
+        {statementSolution}
+      </p>
+    </div>
+  </div>
+</section>

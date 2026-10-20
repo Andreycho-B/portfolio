@@ -1,0 +1,38 @@
+---
+import type { ProjectItem } from "../projects/project-data";
+import { getProjectLogos } from "./tech-icons";
+
+interface Props {
+  project: ProjectItem;
+}
+
+const { project } = Astro.props;
+const logos = getProjectLogos(project.tags ?? [], 28);
+const SHAPES = ["circle", "squircle", "pill", "leaf"] as const;
+---
+
+<section class="tech-gravity-section" aria-label="Logos interactivos del proyecto">
+  <div class="tech-gravity-stage" id="tech-gravity-stage">
+    {logos.map((logo, index) => {
+      const shape = SHAPES[index % SHAPES.length];
+      return (
+        <div
+          class={`tech-logo-token shape-${shape}`}
+          data-tech-logo
+          data-shape={shape}
+          data-logo-id={logo.id}
+          style={`--logo-color: ${logo.color};`}
+          aria-label={logo.name}
+        >
+          <img
+            src={logo.svgUrl}
+            alt={logo.name}
+            class="tech-logo-img"
+            loading="eager"
+            decoding="async"
+          />
+        </div>
+      );
+    })}
+  </div>
+</section>

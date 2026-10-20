@@ -1,0 +1,58 @@
+---
+import type { ProjectItem } from "../projects/project-data";
+
+interface Props {
+  nextProject: ProjectItem;
+  nextCoverImg: string;
+  isNextCoverHorizontal: boolean;
+}
+
+const { nextProject, nextCoverImg, isNextCoverHorizontal } = Astro.props;
+---
+
+<section class="next-project-section" data-next-section>
+  <div class="portal-expander-overlay" id="portal-expander-overlay" aria-hidden="true"></div>
+  <a
+    href={`/proyectos/${nextProject.slug}`}
+    class="next-project-link-card"
+    aria-label={`Siguiente proyecto: ${nextProject.title}`}
+    data-cursor-expand="Explorar"
+    data-next-portal-link
+  >
+    <div class="next-title-col">
+      <span class="section-kicker" data-reveal="text">
+        // 06 · SIGUIENTE CASO
+      </span>
+      <h2 class="next-main-title" data-morphic-title="next">
+        {nextProject.title}
+      </h2>
+      {nextProject.subtitle && (
+        <p class="next-subtitle-text" data-reveal="text">
+          {nextProject.subtitle}
+        </p>
+      )}
+    </div>
+
+    <div class="next-specimen-col">
+      <div
+        class={`next-specimen-card ${isNextCoverHorizontal ? "is-horizontal" : ""}`}
+        data-reveal="scale"
+        data-next-portal-card
+      >
+        <img
+          src={nextCoverImg}
+          alt={nextProject.title}
+          class="next-specimen-img"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+    </div>
+
+    <div class="next-badge-col">
+      <div data-reveal="text">
+        <span class="next-label-text">Explorar Proyecto ↗</span>
+      </div>
+    </div>
+  </a>
+</section>

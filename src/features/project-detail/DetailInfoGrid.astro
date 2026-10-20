@@ -1,0 +1,125 @@
+---
+import type { ProjectItem } from "../projects/project-data";
+
+interface Props {
+  project: ProjectItem;
+}
+
+const { project } = Astro.props;
+
+const splitChars = (text: string) =>
+  text.split("").map((char, index) => ({
+    char: char === " " ? "\u00A0" : char,
+    index,
+  }));
+---
+
+<section class="info-grid-section" aria-label="Especificación técnica y visión">
+  <aside class="sticky-meta-rail">
+    <div class="meta-rail-block">
+      <span class="section-kicker" data-reveal="text">
+        // 01 · STACK TÉCNICO
+      </span>
+      <ul class="stack-list">
+        {project.tags?.map((tag) => (
+          <li class="stack-item">
+            <span class="roll-track">
+              {splitChars(tag).map(({ char, index }) => (
+                <span class="roll-char" style={`--i:${index}`}>
+                  <span class="char-top">{char}</span>
+                  <span class="char-bot" aria-hidden="true">
+                    {char}
+                  </span>
+                </span>
+              ))}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <div class="meta-rail-block">
+      <span class="section-kicker" data-reveal="text">
+        // 02 · ROL Y PERIODO
+      </span>
+      <div class="role-lockup" data-reveal="text">
+        <p class="role-title">{project.role}</p>
+        <p class="role-period">
+          {project.period} · {project.location}
+        </p>
+      </div>
+    </div>
+
+    {(project.liveUrl || project.repoUrl) && (
+      <div class="meta-rail-block">
+        <span class="section-kicker" data-reveal="text">
+          // 03 · ACCESO DIRECTO
+        </span>
+        <div class="external-links-group" data-reveal="text">
+          {project.liveUrl && (
+            <a
+              href={project.liveUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="external-bullet-link"
+              data-cursor-expand="Explorar"
+            >
+              <span class="bullet-dot" aria-hidden="true" />
+              <span class="roll-track">
+                {splitChars("Ver Sistema en Producción ↗").map(({ char, index }) => (
+                  <span class="roll-char" style={`--i:${index}`}>
+                    <span class="char-top">{char}</span>
+                    <span class="char-bot" aria-hidden="true">
+                      {char}
+                    </span>
+                  </span>
+                ))}
+              </span>
+            </a>
+          )}
+          {project.repoUrl && (
+            <a
+              href={project.repoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="external-bullet-link"
+              data-cursor-expand="GitHub"
+            >
+              <span class="bullet-dot" aria-hidden="true" />
+              <span class="roll-track">
+                {splitChars("Auditar Repositorio ↗").map(({ char, index }) => (
+                  <span class="roll-char" style={`--i:${index}`}>
+                    <span class="char-top">{char}</span>
+                    <span class="char-bot" aria-hidden="true">
+                      {char}
+                    </span>
+                  </span>
+                ))}
+              </span>
+            </a>
+          )}
+        </div>
+      </div>
+    )}
+  </aside>
+
+  <div class="editorial-column">
+    <span class="section-kicker" data-reveal="text">
+      // 04 · MANIFIESTO Y PROPÓSITO
+    </span>
+    {project.subtitle && (
+      <h3 class="editorial-lead-title" data-morphic-title="overview">
+        {project.subtitle}
+      </h3>
+    )}
+    <p class="editorial-narrative" data-reveal="text">
+      {project.highlights?.[0] ??
+        "Desarrollo de software con rigor de ingeniería y artesanía visual."}
+    </p>
+    {project.highlights && project.highlights.length > 1 && (
+      <p class="editorial-subnarrative" data-reveal="text">
+        {project.highlights[1]}
+      </p>
+    )}
+  </div>
+</section>
