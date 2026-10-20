@@ -41,7 +41,7 @@ export const PROFILE: ProfileData = {
     "Desarrollador de Software Fullstack y Tecnólogo SENA (ADSO). Especialista en TypeScript, Go, Three.js, PostgreSQL y arquitectura de software.",
   bioLong:
     "Portafolio oficial de Andrey Rondón. Desarrollador Fullstack & Creativo en Colombia. Especializado en TypeScript, Go, Svelte, Astro, WebGL y PostgreSQL.",
-  siteUrl: "https://andreyrondon.dev",
+  siteUrl: "https://www.andreyrondon.dev",
   email: "rondonandrey42@gmail.com",
   phone: "+57 314 803 9636",
   whatsappUrl: "https://wa.me/573148039636",
