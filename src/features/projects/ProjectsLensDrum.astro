@@ -95,7 +95,11 @@ const initialProject = PROJECTS[0];
           class="fallback-card"
           tabindex="-1"
         >
-          <img src={project.imageSrc} alt="" class="fallback-card-img" />
+          <img
+            src={project.imageSrc}
+            alt={`Captura del proyecto ${project.title}`}
+            class="fallback-card-img"
+          />
           <span class="fallback-card-title">{project.title}</span>
         </a>
       ))}
