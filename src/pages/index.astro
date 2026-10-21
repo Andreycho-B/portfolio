@@ -6,10 +6,14 @@ import { PROFILE } from "../core/profile";
 ---
 
 <BaseLayout
-  title="Andrey Rondón — Desarrollador de Software Fullstack"
+  title="Andrey Rondón — Desarrollador de Software Fullstack & Creativo"
   description={PROFILE.bioLong}
 >
   <main class="page-root">
+    <header class="sr-only">
+      <h1>Andrey Rondón — Desarrollador de Software Fullstack & Creativo</h1>
+      <p>{PROFILE.bioLong}</p>
+    </header>
     <ConsentScreen />
     <ProjectsLensDrum />
   </main>
