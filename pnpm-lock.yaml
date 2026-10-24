@@ -9,10 +9,10 @@ importers:
   .:
     dependencies:
       '@astrojs/sitemap':
-        specifier: ^3.7.4
+        specifier: 3.7.4
         version: 3.7.4
       '@vercel/analytics':
-        specifier: ^2.0.1
+        specifier: 2.0.1
         version: 2.0.1
       astro:
         specifier: 7.3.5
