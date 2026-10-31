@@ -164,11 +164,14 @@ export const initAboutHeroEntrance = (options?: HeroEntranceOptions): (() => voi
     0.4,
   );
 
+  const heroFitsViewport = () => !stageGrid || stageGrid.offsetHeight <= window.innerHeight;
+  let isHeroVisibleAtOnce = heroFitsViewport();
+
   const updateScrollBlur = (scrollY: number) => {
     if (prefersReduced) return;
 
     const maxScroll = Math.max(stageGrid ? stageGrid.offsetHeight * 0.85 : 460, 360);
-    const progress = Math.min(Math.max(scrollY / maxScroll, 0), 1);
+    const progress = isHeroVisibleAtOnce ? Math.min(Math.max(scrollY / maxScroll, 0), 1) : 0;
 
     if (progress > 0.02 && tl.isActive()) {
       tl.kill();
@@ -244,8 +247,15 @@ export const initAboutHeroEntrance = (options?: HeroEntranceOptions): (() => voi
     };
   }
 
+  const onViewportResize = () => {
+    isHeroVisibleAtOnce = heroFitsViewport();
+    updateScrollBlur(window.scrollY);
+  };
+  window.addEventListener("resize", onViewportResize, { passive: true });
+
   return () => {
     tl.kill();
     unbindScroll();
+    window.removeEventListener("resize", onViewportResize);
   };
 };
