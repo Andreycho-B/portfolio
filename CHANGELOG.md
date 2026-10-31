@@ -38,3 +38,5 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 - `pnpm lint`: Biome sin incidencias.
 - `pnpm build`: compilación estática correcta (5 páginas).
 - Prueba manual del toggle de sonido en `/`, `/sobre-mi` y `/proyectos/mias-hamburguesas-de-lujo`: el cursor muestra el icono de silencio cuando hay audio y la etiqueta `Activar` cuando está silenciado, sin estados superpuestos.
+- Despliegue `0f692cf`: el HTML de producción referencia las URLs versionadas y los ocho assets responden HTTP 200 con hashes SHA-256 idénticos a `public/`.
+- El servicio de favicons de Google ya devuelve la mascota al solicitar 256 px para `www.andreyrondon.dev` y `andreyrondon.dev`; las respuestas de 64 px todavía pueden llegar desde la caché perimetral. El icono de 28 × 28 incrustado en el SERP se actualizará cuando Google vuelva a rastrear la página.
