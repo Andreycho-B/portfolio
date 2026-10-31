@@ -24,8 +24,8 @@ export function initParticleText(canvas: HTMLCanvasElement): () => void {
     const offCtx = offscreen.getContext("2d");
     if (!offCtx) return;
 
-    const maxTextWidth = canvas.width * 0.98;
-    const maxTextHeight = canvas.height * 0.94;
+    const maxTextWidth = canvas.width * 0.9;
+    const maxTextHeight = canvas.height * 0.9;
     let fontSize = Math.floor(maxTextHeight);
     if ("letterSpacing" in offCtx) {
       offCtx.letterSpacing = "-0.04em";
