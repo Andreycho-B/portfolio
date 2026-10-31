@@ -15,6 +15,7 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 ### Añadido
 
 - `public/favicon-32x32.png` y `public/favicon-48x48.png` como iconos PNG explícitos para navegadores y buscadores.
+- Copias versionadas `public/favicon-20261031.*`, `public/apple-touch-icon-20261031.png` y `public/apple-touch-icon-precomposed-20261031.png` para forzar a los rastreadores a solicitar una URL de icono que no esté en caché.
 - `CHANGELOG.md` como registro de cambios del proyecto.
 
 ### Cambiado
@@ -22,13 +23,14 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 - `public/favicon.ico`: ICO multirresolución (16, 32 y 48 px) generado desde el maestro opaco.
 - `public/favicon.svg`: lienzo cuadrado de 678 × 678 con fondo blanco y mascota centrada.
 - `public/favicon.png`, `public/icon-192.png`, `public/icon-512.png`, `public/apple-touch-icon.png` y `public/apple-touch-icon-precomposed.png`: fondo blanco opaco; los apple-touch-icon se normalizaron a 180 × 180.
-- `src/layouts/BaseLayout.astro`: los `<link rel="icon">` priorizan `favicon.ico` y los PNG (32, 48, 192 y 512 px); el SVG queda al final. Los apple-touch-icon declaran `sizes="180x180"`.
+- `src/layouts/BaseLayout.astro`: los `<link rel="icon">` apuntan a las URLs versionadas del 31 de octubre de 2026, priorizan el ICO y los PNG (32, 48, 192 y 512 px) y dejan el SVG al final. Los apple-touch-icon declaran `sizes="180x180"`. Los archivos raíz (`/favicon.ico`, `/favicon.svg`, etc.) se conservan para solicitudes directas y compatibilidad.
 
 ### Notas de despliegue
 
-- El favicon con la letra «A» que Google muestra en los resultados es el favicon por defecto de Astro que Google conserva en caché; no es el icono que sirve producción. Tras desplegar, hay que solicitar la indexación de `https://www.andreyrondon.dev/` en Google Search Console y esperar a que Google vuelva a rastrear el sitio.
+- El favicon con la letra «A» que Google muestra en los resultados no es el icono actual ni el favicon por defecto de Astro: es el placeholder que se introdujo en `39dcd43` y se mantuvo hasta `22bf859`; `94ae554` restauró la mascota. Google todavía conserva esa copia incrustada como `data:image/png` en su índice. Las URLs versionadas del 31 de octubre buscan forzar una descarga nueva en el próximo rastreo.
+- Google no permite invalidar el favicon de sus resultados desde el código. Tras desplegar, hay que solicitar la indexación de `https://www.andreyrondon.dev/` en Google Search Console y esperar a que Google vuelva a rastrear el sitio. Puede tardar días o semanas.
 - DuckDuckGo se apoya en el índice de Bing. Para actualizar su caché, solicitar la indexación en Bing Webmaster Tools.
-- Los assets conservan sus URLs, por lo que puede ser necesaria una recarga forzada para verlos en el navegador.
+- Los archivos raíz se mantienen, pero los `<link>` apuntan a nombres versionados; puede ser necesaria una recarga forzada para verlos en el navegador.
 
 ### Verificación
 
