@@ -138,6 +138,10 @@ export const getCursorController = (): CursorController => {
       resetRing();
       state.morphUntil = Date.now() + 380;
     }
+    if (expanded) {
+      state.muted = false;
+      cursorEl.classList.remove("is-muted");
+    }
     if (!expanded && textEl && textEl.textContent !== "Ver") {
       textEl.textContent = "Ver";
     }
