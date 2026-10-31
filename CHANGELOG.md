@@ -24,6 +24,7 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 - `public/favicon.svg`: lienzo cuadrado de 678 × 678 con fondo blanco y mascota centrada.
 - `public/favicon.png`, `public/icon-192.png`, `public/icon-512.png`, `public/apple-touch-icon.png` y `public/apple-touch-icon-precomposed.png`: fondo blanco opaco; los apple-touch-icon se normalizaron a 180 × 180.
 - `src/layouts/BaseLayout.astro`: los `<link rel="icon">` apuntan a las URLs versionadas del 31 de octubre de 2026, priorizan el ICO y los PNG (32, 48, 192 y 512 px) y dejan el SVG al final. Los apple-touch-icon declaran `sizes="180x180"`. Los archivos raíz (`/favicon.ico`, `/favicon.svg`, etc.) se conservan para solicitudes directas y compatibilidad.
+- `src/features/about/AboutHeader.astro`: el botón de volver usa el mismo chevron sin asta que el enlace «sobre mí» del tambor de proyectos, reflejado hacia la izquierda.
 
 ### Notas de despliegue
 
