@@ -51,6 +51,7 @@ export const DRUM_GLASS_FRAGMENT_SHADER = `
 
     vec3 finalColor = vec3(0.0);
     vec3 weightSum = vec3(0.0);
+    vec3 sourceColor = texture2D(tDiffuse, uv).rgb;
     vec2 dispDir = normalize(vec2(dx * 0.45, uv.y > 0.5 ? -1.0 : 1.0));
 
     for (int i = 0; i < 16; i++) {
@@ -70,7 +71,8 @@ export const DRUM_GLASS_FRAGMENT_SHADER = `
     }
 
     finalColor /= weightSum;
-    finalColor *= exp(-dist * 1.5);
+    float whiteMask = smoothstep(0.98, 1.0, min(min(sourceColor.r, sourceColor.g), sourceColor.b));
+    finalColor *= mix(exp(-dist * 1.5), 1.0, whiteMask);
     float dither = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
     finalColor += dither / 255.0;
     gl_FragColor = vec4(finalColor, 1.0);
