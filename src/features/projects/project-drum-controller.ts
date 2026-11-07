@@ -7,6 +7,7 @@ import { PROJECT_COUNT, PROJECTS } from "./project-data";
 
 const CFG = { wheel: 180, drag: 180, snapIdle: 240, lineH: 16, clickTol: 6, label: "Ver" } as const;
 const CANVAS_BAND_GAP = 16;
+const CANVAS_EDGE_INSET = 48;
 const STACKED_QUERY = "(max-width: 900px)";
 const SHORT_VIEWPORT_QUERY = "(max-height: 560px) and (min-width: 480px)";
 
@@ -59,10 +60,10 @@ export class ProjectDrumController {
     const isShortViewport = window.matchMedia(SHORT_VIEWPORT_QUERY).matches;
 
     if (!isStacked && !isShortViewport) {
-      canvas.style.position = "";
-      canvas.style.top = "";
-      canvas.style.left = "";
-      canvas.style.height = "";
+      canvas.style.position = "absolute";
+      canvas.style.left = "0";
+      canvas.style.top = `${CANVAS_EDGE_INSET}px`;
+      canvas.style.height = `${Math.max(root.clientHeight - CANVAS_EDGE_INSET * 2, 120)}px`;
       return;
     }
 
