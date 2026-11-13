@@ -52,7 +52,7 @@ export const DRUM_GLASS_FRAGMENT_SHADER = `
     vec3 finalColor = vec3(0.0);
     vec3 weightSum = vec3(0.0);
     vec3 sourceColor = texture2D(tDiffuse, uv).rgb;
-    vec2 dispDir = normalize(vec2(dx * 0.45, uv.y > 0.5 ? -1.0 : 1.0));
+    vec2 dispDir = vec2(0.0, uv.y > 0.5 ? -1.0 : 1.0);
 
     for (int i = 0; i < 16; i++) {
       float t = float(i) / 15.0;
@@ -63,7 +63,7 @@ export const DRUM_GLASS_FRAGMENT_SHADER = `
         clamp(1.0 - 4.5 * (t - 0.82) * (t - 0.82), 0.0, 1.0)
       );
 
-      float cauchyShift = (pow(t, 1.35) - 0.392) * uChromaticAberration * dist * 32.0;
+      float cauchyShift = (t - 0.5) * uChromaticAberration * dist * 30.0;
       vec2 sampleUv = clamp(uv + dispDir * cauchyShift, vec2(0.0), vec2(1.0));
 
       finalColor += texture2D(tDiffuse, sampleUv).rgb * w;

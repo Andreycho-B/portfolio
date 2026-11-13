@@ -4,9 +4,9 @@
 }
 
 .projects-lens-section {
-  --overlay-fg: var(--color-fg);
-  --overlay-fg-muted: var(--color-fg-muted);
-  --overlay-line: var(--color-border);
+  --overlay-fg: var(--color-bg);
+  --overlay-fg-muted: rgba(255, 255, 255, 0.58);
+  --overlay-line: rgba(255, 255, 255, 0.09);
 
   position: relative;
   width: 100%;
@@ -53,6 +53,7 @@
 .projects-stage {
   position: relative;
   z-index: 1;
+  mix-blend-mode: difference;
   pointer-events: none;
 }
 
@@ -105,6 +106,7 @@
   display: block;
   flex-shrink: 0;
   object-fit: contain;
+  filter: invert(1);
 }
 
 .sound-toggle-btn {
@@ -293,6 +295,7 @@
 .projects-footer-bar {
   position: relative;
   z-index: 1;
+  mix-blend-mode: difference;
   display: flex;
   justify-content: space-between;
   align-items: center;

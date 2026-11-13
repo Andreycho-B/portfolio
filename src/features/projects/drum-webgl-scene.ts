@@ -7,27 +7,27 @@ export type { DrumWebGLHandle, FrontCardBounds };
 
 const BACKGROUND_HEX = 0xffffff;
 const CARD_WIDTH = 2.8,
-  CARD_HEIGHT = 1.33,
-  CARD_GAP = 0.04;
+  CARD_GAP = 0.04,
+  CARD_HEIGHT_PER_VIEW_HALF = 0.85;
 const CAMERA_FOV_DEG = 36;
 const TAN_HALF_FOV = Math.tan(THREE.MathUtils.degToRad(CAMERA_FOV_DEG / 2));
 const CARD_WIDTH_RATIO_MAX = 0.84,
-  CARD_WIDTH_RATIO_MIN = 0.34,
-  CARD_HEIGHT_RATIO_MAX = 0.42;
+  CARD_WIDTH_RATIO_MIN = 0.34;
 const LENS_STRENGTH_BASE = 0.85,
-  LENS_STRENGTH_GAIN = 0.045;
-const CHROMATIC_BASE = 0.012,
-  CHROMATIC_GAIN = 0.0035,
-  LENS_VELOCITY_CAP = 8;
+  LENS_STRENGTH_GAIN = 0.12;
+const CHROMATIC_BASE = 0.01,
+  CHROMATIC_GAIN = 0.003,
+  LENS_VELOCITY_CAP = 3;
+const LENS_BAND_BASE = 0.1,
+  LENS_BAND_GAIN = 0.012;
 
 const SLOT_ANGLE = (2 * Math.PI) / DRUM_SLOTS;
-const TANGENT_RADIUS = (CARD_HEIGHT + CARD_GAP) / (2 * Math.sin(SLOT_ANGLE / 2));
 
-const fitTextureCover = (tex: THREE.Texture): void => {
+const fitTextureCover = (tex: THREE.Texture, cardAspect: number): void => {
   const img = tex.image as { width: number; height: number } | undefined;
   if (!img?.width || !img.height) return;
-  const isWider = img.width / img.height > CARD_WIDTH / CARD_HEIGHT;
-  const ratio = CARD_WIDTH / CARD_HEIGHT / (img.width / img.height);
+  const isWider = img.width / img.height > cardAspect;
+  const ratio = cardAspect / (img.width / img.height);
   tex.repeat.set(isWider ? ratio : 1, isWider ? 1 : 1 / ratio);
   tex.offset.set((1 - tex.repeat.x) / 2, (1 - tex.repeat.y) / 2);
 };
@@ -64,13 +64,14 @@ export const createDrumWebGLScene = (
   const camera = new THREE.PerspectiveCamera(CAMERA_FOV_DEG, 1, 0.1, 100);
   const drumGroup = new THREE.Group();
   scene.add(drumGroup);
+  let cardAspect = 1;
 
   const texLoader = new THREE.TextureLoader();
   const projectTextures = PROJECTS.map((project) => {
     const tex = texLoader.load(
       project.imageSrc,
       (loaded) => {
-        fitTextureCover(loaded);
+        fitTextureCover(loaded, cardAspect);
         onTextureReady();
       },
       undefined,
@@ -83,7 +84,7 @@ export const createDrumWebGLScene = (
     return tex;
   });
 
-  const cardGeometry = new THREE.PlaneGeometry(CARD_WIDTH, CARD_HEIGHT);
+  const cardGeometry = new THREE.PlaneGeometry(CARD_WIDTH, 1);
   const cardMaterials = projectTextures.map(
     (tex) => new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }),
   );
@@ -111,8 +112,8 @@ export const createDrumWebGLScene = (
   const postMaterial = new THREE.ShaderMaterial({
     uniforms: {
       tDiffuse: { value: renderTarget.texture },
-      uBandTop: { value: 0.2 },
-      uBandBot: { value: 0.2 },
+      uBandTop: { value: LENS_BAND_BASE },
+      uBandBot: { value: LENS_BAND_BASE },
       uStrength: { value: LENS_STRENGTH_BASE },
       uCurve: { value: 1.0 },
       uChromaticAberration: { value: CHROMATIC_BASE },
@@ -148,8 +149,10 @@ export const createDrumWebGLScene = (
       CARD_WIDTH_RATIO_MIN,
       CARD_WIDTH_RATIO_MAX,
     );
-    let halfHeight = CARD_WIDTH / widthRatio / 2 / aspect;
-    halfHeight = Math.max(halfHeight, CARD_HEIGHT / (2 * CARD_HEIGHT_RATIO_MAX));
+    const halfHeight = CARD_WIDTH / widthRatio / 2 / aspect;
+    const cardHeight = CARD_HEIGHT_PER_VIEW_HALF * halfHeight;
+    cardAspect = CARD_WIDTH / cardHeight;
+    const tangentRadius = (cardHeight + CARD_GAP) / (2 * Math.sin(SLOT_ANGLE / 2));
 
     camera.aspect = aspect;
     baseCameraZ = halfHeight / TAN_HALF_FOV;
@@ -157,10 +160,16 @@ export const createDrumWebGLScene = (
     camera.position.z = baseCameraZ * (1 + cameraFactor);
     camera.updateProjectionMatrix();
 
-    layoutDrum(TANGENT_RADIUS);
+    cardMeshes.forEach((mesh) => {
+      mesh.scale.set(1, cardHeight, 1);
+    });
+    projectTextures.forEach((tex) => {
+      fitTextureCover(tex, cardAspect);
+    });
+    layoutDrum(tangentRadius);
     frontBounds = {
       widthRatio: CARD_WIDTH / (2 * halfHeight * aspect),
-      heightRatio: CARD_HEIGHT / (2 * halfHeight),
+      heightRatio: cardHeight / (2 * halfHeight),
     };
   };
 
@@ -180,12 +189,12 @@ export const createDrumWebGLScene = (
     if (strengthUniform && chromaticUniform && bandTopUniform && bandBotUniform) {
       const spinSpeed = Math.min(Math.abs(scrollVelocity), LENS_VELOCITY_CAP);
       const opticalFactor = 1 - introProgress;
-      const dynamicBand = 0.2 + spinSpeed * 0.008 + opticalFactor * 0.04;
+      const dynamicBand = LENS_BAND_BASE + spinSpeed * LENS_BAND_GAIN + opticalFactor * 0.02;
       bandTopUniform.value = dynamicBand;
       bandBotUniform.value = dynamicBand;
       strengthUniform.value =
-        LENS_STRENGTH_BASE + spinSpeed * LENS_STRENGTH_GAIN + opticalFactor * 0.22;
-      chromaticUniform.value = CHROMATIC_BASE + spinSpeed * CHROMATIC_GAIN + opticalFactor * 0.024;
+        LENS_STRENGTH_BASE + spinSpeed * LENS_STRENGTH_GAIN + opticalFactor * 0.11;
+      chromaticUniform.value = CHROMATIC_BASE + spinSpeed * CHROMATIC_GAIN + opticalFactor * 0.012;
     }
     renderer.setRenderTarget(renderTarget);
     renderer.render(scene, camera);
