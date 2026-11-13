@@ -1,6 +1,19 @@
 import type { AmbientTextureHandle } from "./audio.types";
 import { playGenerativeChime } from "./audio-chime";
 
+const AURA_PARTIALS = [
+  { frequency: 329.63, mix: 0.5 },
+  { frequency: 493.88, mix: 0.32 },
+  { frequency: 659.25, mix: 0.13 },
+  { frequency: 660, mix: 0.11 },
+] as const;
+const AURA_GAIN = 0.16;
+const AURA_FILTER_HZ = 240;
+const AURA_FILTER_SPAN_HZ = 560;
+const AURA_ATTACK_SEC = 0.12;
+const AURA_RELEASE_SEC = 0.55;
+const AURA_HOLD_MS = 520;
+
 export const startOrganicDrone = (
   ctx: AudioContext,
   destination: GainNode,
@@ -37,20 +50,26 @@ export const startOrganicDrone = (
   oscFifth.connect(fifthGain);
   oscNinth.connect(ninthGain);
 
-  const auraOsc1 = ctx.createOscillator();
-  const auraOsc2 = ctx.createOscillator();
-  for (const osc of [auraOsc1, auraOsc2]) osc.type = "sine";
-  auraOsc1.frequency.setValueAtTime(329.63, now);
-  auraOsc2.frequency.setValueAtTime(370.0, now);
-
   const auraGain = ctx.createGain();
   auraGain.gain.setValueAtTime(0.0001, now);
-  auraOsc1.connect(auraGain);
-  auraOsc2.connect(auraGain);
+
+  const auraOscillators: OscillatorNode[] = [];
+  const auraMixGains: GainNode[] = [];
+  for (const partial of AURA_PARTIALS) {
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(partial.frequency, now);
+    const mixGain = ctx.createGain();
+    mixGain.gain.setValueAtTime(partial.mix, now);
+    osc.connect(mixGain);
+    mixGain.connect(auraGain);
+    auraOscillators.push(osc);
+    auraMixGains.push(mixGain);
+  }
 
   const filter = ctx.createBiquadFilter();
   filter.type = "lowpass";
-  filter.frequency.setValueAtTime(240, now);
+  filter.frequency.setValueAtTime(AURA_FILTER_HZ, now);
   filter.Q.setValueAtTime(0.5, now);
 
   const panner = ctx.createStereoPanner();
@@ -70,7 +89,7 @@ export const startOrganicDrone = (
   filter.connect(panner);
   panner.connect(droneGain);
 
-  for (const src of [oscRoot, oscRootDetune, oscFifth, oscNinth, auraOsc1, auraOsc2, panLfo]) {
+  for (const src of [oscRoot, oscRootDetune, oscFifth, oscNinth, ...auraOscillators, panLfo]) {
     src.start(now);
   }
 
@@ -88,20 +107,20 @@ export const startOrganicDrone = (
     if (ctx.state !== "running") return;
     const t = ctx.currentTime;
     const clamped = Math.max(0, Math.min(1.0, intensity));
-    const targetAuraGain = 0.0001 + clamped * 0.045;
-    const targetFreq = 240 + clamped * 220;
+    const targetAuraGain = 0.0001 + clamped * AURA_GAIN;
+    const targetFreq = AURA_FILTER_HZ + clamped * AURA_FILTER_SPAN_HZ;
 
-    auraGain.gain.setTargetAtTime(targetAuraGain, t, 0.08);
+    auraGain.gain.setTargetAtTime(targetAuraGain, t, AURA_ATTACK_SEC);
     filter.frequency.setTargetAtTime(targetFreq, t, 0.1);
 
     if (decayTimerId !== undefined) window.clearTimeout(decayTimerId);
     decayTimerId = window.setTimeout(() => {
       if (ctx.state === "running") {
         const curT = ctx.currentTime;
-        auraGain.gain.setTargetAtTime(0.0001, curT, 0.6);
-        filter.frequency.setTargetAtTime(240, curT, 0.6);
+        auraGain.gain.setTargetAtTime(0.0001, curT, AURA_RELEASE_SEC);
+        filter.frequency.setTargetAtTime(AURA_FILTER_HZ, curT, AURA_RELEASE_SEC);
       }
-    }, 450);
+    }, AURA_HOLD_MS);
   };
 
   const stop = () => {
@@ -120,13 +139,13 @@ export const startOrganicDrone = (
           oscRootDetune,
           oscFifth,
           oscNinth,
-          auraOsc1,
-          auraOsc2,
+          ...auraOscillators,
           panLfo,
         ]) {
           node.stop();
           node.disconnect();
         }
+        for (const gain of auraMixGains) gain.disconnect();
         rootGain.disconnect();
         detuneGain.disconnect();
         fifthGain.disconnect();

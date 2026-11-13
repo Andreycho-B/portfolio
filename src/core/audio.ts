@@ -9,10 +9,10 @@ import { bindTeardownAndVisibility, cancelPendingSuspend, gracefulMute } from ".
 import { startOrganicDrone } from "./audio-synthesis";
 import {
   synthesizeIosSelectionClick,
-  synthesizeIosWheelTick,
   synthesizeJellyPop,
   triggerHapticDetent,
 } from "./audio-tactile";
+import { synthesizeWheelTick } from "./audio-wheel-tick";
 
 export class ProceduralAudioEngine implements AudioEngineContract {
   private mode: AudioMode = "uninitialized";
@@ -197,15 +197,14 @@ export class ProceduralAudioEngine implements AudioEngineContract {
   }
 
   public playTactileFeedback(type: TactileFeedbackType, velocity = 0): void {
-    const isWheel = type === "wheel_tick";
-    const isTick = isWheel || type === "tick";
+    const isTick = type === "wheel_tick" || type === "tick";
     if (this.isMuted() || !this.audioContext || !this.masterGain) return;
     const now = performance.now();
-    const throttleMs = isWheel ? 28 : isTick ? 40 : 75;
+    const throttleMs = isTick ? 40 : 75;
     if (now - this.lastTactileTime < throttleMs) return;
     this.lastTactileTime = now;
     triggerHapticDetent(isTick ? 5 : 8);
-    if (isTick) synthesizeIosWheelTick(this.audioContext, this.masterGain, velocity);
+    if (isTick) synthesizeWheelTick(this.audioContext, this.masterGain, velocity);
     else if (type === "click") synthesizeIosSelectionClick(this.audioContext, this.masterGain);
     else if (type === "jelly_pop") synthesizeJellyPop(this.audioContext, this.masterGain);
   }

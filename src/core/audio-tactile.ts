@@ -1,12 +1,5 @@
-interface TickCache {
-  readonly sampleRate: number;
-  readonly tickA: AudioBuffer;
-  readonly tickB: AudioBuffer;
-  readonly selectClick: AudioBuffer;
-}
-
-let tickParity = false;
-let cache: TickCache | null = null;
+let cachedSampleRate = 0;
+let cachedSelectClick: AudioBuffer | null = null;
 
 const createAppleDetentBuffer = (
   ctx: AudioContext,
@@ -69,15 +62,12 @@ const createAppleDetentBuffer = (
   return buffer;
 };
 
-const getTickCache = (ctx: AudioContext): TickCache => {
-  if (cache && cache.sampleRate === ctx.sampleRate) return cache;
-  cache = {
-    sampleRate: ctx.sampleRate,
-    tickA: createAppleDetentBuffer(ctx, 360, 1260, 2.8),
-    tickB: createAppleDetentBuffer(ctx, 335, 1180, 2.6),
-    selectClick: createAppleDetentBuffer(ctx, 260, 1080, 4.6),
-  };
-  return cache;
+const getSelectClickBuffer = (ctx: AudioContext): AudioBuffer => {
+  if (!cachedSelectClick || cachedSampleRate !== ctx.sampleRate) {
+    cachedSampleRate = ctx.sampleRate;
+    cachedSelectClick = createAppleDetentBuffer(ctx, 260, 1080, 4.6);
+  }
+  return cachedSelectClick;
 };
 
 export const triggerHapticDetent = (durationMs = 5): void => {
@@ -88,49 +78,9 @@ export const triggerHapticDetent = (durationMs = 5): void => {
   }
 };
 
-export const synthesizeIosWheelTick = (
-  ctx: AudioContext,
-  destination: GainNode,
-  velocitySlotsPerSec = 0,
-): void => {
-  const c = getTickCache(ctx);
-  tickParity = !tickParity;
-  const buffer = tickParity ? c.tickA : c.tickB;
-
-  const src = ctx.createBufferSource();
-  src.buffer = buffer;
-
-  const speed = Math.min(Math.abs(velocitySlotsPerSec), 10);
-  const speedNorm = speed / 10;
-  const targetGain = 0.028 * (1.0 - speedNorm * 0.38);
-
-  src.playbackRate.setValueAtTime(1.0 + speedNorm * 0.15, ctx.currentTime);
-
-  const gain = ctx.createGain();
-  gain.gain.setValueAtTime(targetGain, ctx.currentTime);
-
-  const filter = ctx.createBiquadFilter();
-  filter.type = "lowpass";
-  filter.frequency.setValueAtTime(3200 - speedNorm * 800, ctx.currentTime);
-  filter.Q.setValueAtTime(Math.SQRT1_2, ctx.currentTime);
-
-  src.connect(filter);
-  filter.connect(gain);
-  gain.connect(destination);
-  src.start();
-  src.onended = () => {
-    try {
-      src.disconnect();
-      filter.disconnect();
-      gain.disconnect();
-    } catch {}
-  };
-};
-
 export const synthesizeIosSelectionClick = (ctx: AudioContext, destination: GainNode): void => {
-  const c = getTickCache(ctx);
   const src = ctx.createBufferSource();
-  src.buffer = c.selectClick;
+  src.buffer = getSelectClickBuffer(ctx);
 
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(0.055, ctx.currentTime);
