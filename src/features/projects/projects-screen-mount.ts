@@ -101,12 +101,19 @@ export const initProjectsSection = async (
 
   const cleanupSoundToggle = initSoundToggle(root);
   const cleanupEmailCopy = initEmailCopy(root);
-  const brandLockup = root.querySelector<HTMLElement>(".brand-lockup");
+  const brandLockup = root.querySelector<HTMLAnchorElement>(".brand-lockup");
   const brandMonogram = root.querySelector<HTMLElement>(".brand-monogram");
   const logoMagnetic =
     brandLockup && brandMonogram
       ? new LogoMagneticController({ trigger: brandLockup, target: brandMonogram })
       : null;
+  const handleBrandClick = (event: MouseEvent): void => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+      return;
+    }
+    event.preventDefault();
+  };
+  brandLockup?.addEventListener("click", handleBrandClick);
 
   const aboutLink = root.querySelector<HTMLAnchorElement>("[data-about-trigger]");
   const handleAboutClick = (e: MouseEvent) => {
@@ -122,6 +129,7 @@ export const initProjectsSection = async (
   root.dataset.initialized = "true";
 
   const cleanup = () => {
+    brandLockup?.removeEventListener("click", handleBrandClick);
     aboutLink?.removeEventListener("click", handleAboutClick);
     logoMagnetic?.destroy();
     cleanupSoundToggle();
