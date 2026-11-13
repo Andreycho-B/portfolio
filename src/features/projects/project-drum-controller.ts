@@ -6,10 +6,6 @@ import { DrumScrollPhysics } from "./drum-scroll-physics";
 import { PROJECT_COUNT, PROJECTS } from "./project-data";
 
 const CFG = { wheel: 180, drag: 180, snapIdle: 240, lineH: 16, clickTol: 6, label: "Ver" } as const;
-const CANVAS_BAND_GAP = 16;
-const CANVAS_EDGE_INSET = 48;
-const STACKED_QUERY = "(max-width: 900px)";
-const SHORT_VIEWPORT_QUERY = "(max-height: 560px) and (min-width: 480px)";
 
 export class ProjectDrumController {
   private readonly physics = new DrumScrollPhysics();
@@ -20,7 +16,7 @@ export class ProjectDrumController {
   private activeIndex = -1;
   private tickState = { prevPos: 0, lastDetentPos: 0 };
   private rafId: number | null = null;
-  private bandSyncId: number | null = null;
+  private resizeFrameId: number | null = null;
   private lastFrameTime = 0;
   private needsRender = true;
   private readonly resizeObserver: ResizeObserver;
@@ -28,67 +24,21 @@ export class ProjectDrumController {
   private readonly cursor = getCursorController();
   constructor(private readonly els: DrumControllerElements) {
     this.bindListeners(true);
-    this.syncCanvasBand();
     this.els.webglScene?.resize(this.els.canvas.clientWidth, this.els.canvas.clientHeight);
     this.resizeObserver = new ResizeObserver(() => this.handleViewportResize());
     this.resizeObserver.observe(els.canvas);
-    for (const selector of [
-      ".projects-stage",
-      ".project-info-column",
-      ".project-action-column",
-      ".projects-footer-bar",
-    ]) {
-      const element = els.root.querySelector<HTMLElement>(selector);
-      if (element) this.resizeObserver.observe(element);
-    }
     window.addEventListener("resize", this.handleViewportResize);
     this.syncActiveProject();
     this.requestFrame();
   }
   private readonly handleViewportResize = (): void => {
-    if (this.bandSyncId !== null) return;
-    this.bandSyncId = requestAnimationFrame(() => {
-      this.bandSyncId = null;
-      this.syncCanvasBand();
+    if (this.resizeFrameId !== null) return;
+    this.resizeFrameId = requestAnimationFrame(() => {
+      this.resizeFrameId = null;
       this.els.webglScene?.resize(this.els.canvas.clientWidth, this.els.canvas.clientHeight);
       this.requestFrame();
     });
   };
-  private syncCanvasBand(): void {
-    const { root, canvas } = this.els;
-    const isStacked = window.matchMedia(STACKED_QUERY).matches;
-    const isShortViewport = window.matchMedia(SHORT_VIEWPORT_QUERY).matches;
-
-    if (!isStacked && !isShortViewport) {
-      canvas.style.position = "absolute";
-      canvas.style.left = "0";
-      canvas.style.top = `${CANVAS_EDGE_INSET}px`;
-      canvas.style.height = `${Math.max(root.clientHeight - CANVAS_EDGE_INSET * 2, 120)}px`;
-      return;
-    }
-
-    const stage = root.querySelector<HTMLElement>(".projects-stage");
-    if (!stage) return;
-
-    const rootTop = root.getBoundingClientRect().top;
-    const stageRect = stage.getBoundingClientRect();
-    let bandTop = stageRect.top;
-    let bandHeight = stageRect.height;
-
-    if (isStacked && !isShortViewport) {
-      const info = root.querySelector<HTMLElement>(".project-info-column");
-      const action = root.querySelector<HTMLElement>(".project-action-column");
-      if (!info || !action) return;
-      const infoBottom = info.getBoundingClientRect().bottom;
-      bandTop = infoBottom + CANVAS_BAND_GAP;
-      bandHeight = action.getBoundingClientRect().top - infoBottom - CANVAS_BAND_GAP * 2;
-    }
-
-    canvas.style.position = "absolute";
-    canvas.style.left = "0";
-    canvas.style.top = `${Math.round(bandTop - rootTop)}px`;
-    canvas.style.height = `${Math.round(Math.max(bandHeight, 120))}px`;
-  }
   private bindListeners(attach: boolean): void {
     const fn = attach ? "addEventListener" : "removeEventListener";
     const { root, viewport } = this.els;
@@ -265,7 +215,7 @@ export class ProjectDrumController {
   public destroy(): void {
     if (this.isHoveringCard) this.setCardHover(false);
     if (this.rafId !== null) cancelAnimationFrame(this.rafId);
-    if (this.bandSyncId !== null) cancelAnimationFrame(this.bandSyncId);
+    if (this.resizeFrameId !== null) cancelAnimationFrame(this.resizeFrameId);
     if (this.wheelSnapTimer !== null) window.clearTimeout(this.wheelSnapTimer);
     this.bindListeners(false);
     window.removeEventListener("resize", this.handleViewportResize);
