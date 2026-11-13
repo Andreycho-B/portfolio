@@ -1,6 +1,6 @@
 import { gsap } from "gsap";
 
-export interface DrumIntroElements {
+interface DrumIntroElements {
   readonly root: HTMLElement;
   readonly canvas: HTMLCanvasElement;
   readonly metaBar: HTMLElement | null;

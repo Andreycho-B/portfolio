@@ -2,7 +2,7 @@ import { gsap } from "gsap";
 import Matter from "matter-js";
 import { applyCursorCollision, type LogoBinding } from "./tech-gravity-collision";
 
-export interface TechGravityHandle {
+interface TechGravityHandle {
   destroy: () => void;
 }
 

@@ -1,5 +1,5 @@
 export type SlotPosition = number;
-export type SlotOffset = number;
+type SlotOffset = number;
 
 interface DragSample {
   slot: SlotPosition;

@@ -1,7 +1,7 @@
 import type { CloudCursorState, TextClearZone } from "./cloud.types";
 import { FRAGMENT_SHADER_SOURCE, VERTEX_SHADER_SOURCE } from "./cloud-shader";
 
-export interface CloudWebGLRenderer {
+interface CloudWebGLRenderer {
   render: (
     time: number,
     opacity: number,

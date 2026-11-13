@@ -20,7 +20,7 @@ export const NOOP_CONTROLLER: CursorController = {
   destroy: () => {},
 };
 
-export interface CursorInternalState {
+interface CursorInternalState {
   enabled: boolean;
   hasPos: boolean;
   moving: boolean;

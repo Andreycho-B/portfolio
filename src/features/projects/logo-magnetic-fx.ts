@@ -1,7 +1,7 @@
 import { gsap } from "gsap";
 import { getAudioSystem } from "../../core/audio";
 
-export interface LogoMagneticOptions {
+interface LogoMagneticOptions {
   readonly trigger: HTMLElement;
   readonly target: HTMLElement;
   readonly strength?: number;

@@ -1,6 +1,6 @@
 import { gsap } from "gsap";
 
-export interface TiltFxController {
+interface TiltFxController {
   readonly destroy: () => void;
 }
 

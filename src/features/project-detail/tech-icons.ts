@@ -1,11 +1,11 @@
-export interface OfficialTechLogo {
+interface OfficialTechLogo {
   readonly id: string;
   readonly name: string;
   readonly svgUrl: string;
   readonly color: string;
 }
 
-export const OFFICIAL_TECH_LOGOS: Record<string, OfficialTechLogo> = {
+const OFFICIAL_TECH_LOGOS: Record<string, OfficialTechLogo> = {
   "Go (Chi v5)": { id: "go", name: "Go", svgUrl: "/tech-logos/go.svg", color: "#00ADD8" },
   "PostgreSQL 16": {
     id: "postgresql",

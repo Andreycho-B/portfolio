@@ -2,7 +2,7 @@ import { gsap } from "gsap";
 
 type NumericSetter = (value: number) => void;
 
-export interface CursorTransforms {
+interface CursorTransforms {
   setX: NumericSetter;
   setY: NumericSetter;
   setRot: NumericSetter;

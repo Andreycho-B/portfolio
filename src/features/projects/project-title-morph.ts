@@ -1,7 +1,7 @@
 import { gsap } from "gsap";
 import type { ProjectItem } from "./project-data";
 
-export interface TitleMorphNodes {
+interface TitleMorphNodes {
   readonly titleElement: HTMLElement;
   readonly yearElement: HTMLElement;
   readonly linkElement?: HTMLAnchorElement | null;

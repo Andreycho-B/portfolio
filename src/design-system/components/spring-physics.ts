@@ -1,10 +1,10 @@
-export interface SpringConfig {
+interface SpringConfig {
   readonly stiffness: number;
   readonly damping: number;
   readonly mass: number;
 }
 
-export interface Spring2D {
+interface Spring2D {
   targetX: number;
   targetY: number;
   currentX: number;
@@ -15,19 +15,19 @@ export interface Spring2D {
   step: (dt: number) => boolean;
 }
 
-export const DEFAULT_SPRING_CONFIG: SpringConfig = {
+const DEFAULT_SPRING_CONFIG: SpringConfig = {
   stiffness: 340,
   damping: 18,
   mass: 0.35,
 };
 
-export interface VelocityDeformation {
+interface VelocityDeformation {
   readonly angle: number;
   readonly scaleX: number;
   readonly scaleY: number;
 }
 
-export const calculateVelocityDeformation = (
+const calculateVelocityDeformation = (
   vx: number,
   vy: number,
   lastAngle = 0,
@@ -43,7 +43,7 @@ export const calculateVelocityDeformation = (
   return { angle, scaleX, scaleY };
 };
 
-export interface SpringStepResult {
+interface SpringStepResult {
   readonly isResting: boolean;
   readonly x: number;
   readonly y: number;

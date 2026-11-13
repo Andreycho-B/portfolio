@@ -1,6 +1,6 @@
 import { getHiddenBottomPath } from "./fluid-curve-math";
 
-export interface FluidOverlayHandle {
+interface FluidOverlayHandle {
   readonly overlayElement: HTMLElement;
   readonly leadPathElement: SVGPathElement;
   readonly bodyPathElement: SVGPathElement;

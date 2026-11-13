@@ -1,4 +1,4 @@
-export interface DrumAutoplayOptions {
+interface DrumAutoplayOptions {
   readonly onWake: () => void;
   readonly baseSpeedSlotsPerSec?: number;
   readonly resumeDelayMs?: number;
