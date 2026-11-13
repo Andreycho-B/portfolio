@@ -3,7 +3,7 @@ import {
   navigateWithFluidWipe,
 } from "../transitions/fluid-transition-controller";
 
-export type CurtainTransitionOptions = FluidTransitionOptions;
+type CurtainTransitionOptions = FluidTransitionOptions;
 
 export const navigateWithCurtain = (options: CurtainTransitionOptions): void => {
   navigateWithFluidWipe(options);

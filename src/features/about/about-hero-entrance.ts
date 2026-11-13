@@ -1,7 +1,7 @@
 import { gsap } from "gsap";
 import type Lenis from "lenis";
 
-export interface HeroEntranceOptions {
+interface HeroEntranceOptions {
   readonly onBlink?: (double?: boolean) => void;
   readonly lenis?: Lenis | null;
 }

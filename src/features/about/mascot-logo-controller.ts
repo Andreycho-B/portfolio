@@ -2,7 +2,7 @@ import { gsap } from "gsap";
 import type Lenis from "lenis";
 import { initMascotEyes, type MascotEyesController } from "./mascot-eyes";
 
-export interface MascotLogoHandle {
+interface MascotLogoHandle {
   readonly cleanup: () => void;
   readonly triggerBlink: (double?: boolean) => void;
 }

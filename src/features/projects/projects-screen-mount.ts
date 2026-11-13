@@ -41,7 +41,7 @@ const prewarmScene = async (canvas: HTMLCanvasElement): Promise<DrumWebGLHandle 
   }
 };
 
-export const initProjectsSection = async (
+const initProjectsSection = async (
   sceneInput?: Promise<DrumWebGLHandle | null> | DrumWebGLHandle | null,
 ): Promise<((soundEnabled: boolean) => void) | null> => {
   const root = document.querySelector<HTMLElement>("[data-projects-section]");

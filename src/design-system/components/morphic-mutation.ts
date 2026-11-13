@@ -2,7 +2,7 @@ import { gsap } from "gsap";
 import type { MorphicNodes } from "./morphic-animation";
 import { createCharTimeline, createFilterRef, type FilterRef } from "./morphic-char-timeline";
 
-export const MUTANT_FONTS = [
+const MUTANT_FONTS = [
   "Pilowlava",
   "Lithops",
   "Kaeru Kaeru",
@@ -13,7 +13,7 @@ export const MUTANT_FONTS = [
 
 export type MutantFont = (typeof MUTANT_FONTS)[number];
 
-export const MUTATION_MATRIX: readonly (readonly MutantFont[])[] = [
+const MUTATION_MATRIX: readonly (readonly MutantFont[])[] = [
   [
     "Pilowlava",
     "Author",

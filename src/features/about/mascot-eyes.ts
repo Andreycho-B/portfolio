@@ -1,7 +1,7 @@
 import { gsap } from "gsap";
 import { getAudioSystem } from "../../core/audio";
 
-export interface MascotEyesOptions {
+interface MascotEyesOptions {
   readonly leftEye: SVGElement;
   readonly rightEye: SVGElement;
   readonly interactiveZone?: HTMLElement;

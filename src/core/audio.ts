@@ -14,7 +14,7 @@ import {
 } from "./audio-tactile";
 import { synthesizeWheelTick } from "./audio-wheel-tick";
 
-export class ProceduralAudioEngine implements AudioEngineContract {
+class ProceduralAudioEngine implements AudioEngineContract {
   private mode: AudioMode = "uninitialized";
   private audioContext: AudioContext | null = null;
   private masterGain: GainNode | null = null;

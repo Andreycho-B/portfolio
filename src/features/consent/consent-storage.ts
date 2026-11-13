@@ -1,6 +1,6 @@
 export const CONSENT_TTL = 1800000;
 export const CONSENT_KEY = "portfolio_consent_time";
-export const SOUND_KEY = "portfolio_sound_enabled";
+const SOUND_KEY = "portfolio_sound_enabled";
 
 export const isRecentConsent = (): boolean => {
   try {

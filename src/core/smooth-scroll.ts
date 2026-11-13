@@ -4,7 +4,7 @@ import Lenis from "lenis";
 let lenisInstance: Lenis | null = null;
 let tickerCallback: ((time: number) => void) | null = null;
 
-export interface SmoothScrollOptions {
+interface SmoothScrollOptions {
   readonly duration?: number;
   readonly wheelMultiplier?: number;
   readonly touchMultiplier?: number;

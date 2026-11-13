@@ -1,7 +1,7 @@
-export type ProjectTheme = "dark" | "light";
+type ProjectTheme = "dark" | "light";
 
-export type ProjectId = "mias" | "tusuper" | "estandar";
-export type ProjectSlug = "mias-hamburguesas-de-lujo" | "tu-super" | "estandar-gobernanza-agentes";
+type ProjectId = "mias" | "tusuper" | "estandar";
+type ProjectSlug = "mias-hamburguesas-de-lujo" | "tu-super" | "estandar-gobernanza-agentes";
 
 export interface ProjectItem {
   readonly id: ProjectId;

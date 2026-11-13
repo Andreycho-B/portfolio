@@ -1,10 +1,10 @@
-export interface SocialLink {
+interface SocialLink {
   readonly label: string;
   readonly url: string;
   readonly handle?: string;
 }
 
-export interface ProfileData {
+interface ProfileData {
   readonly fullName: string;
   readonly shortName: string;
   readonly alternateNames: readonly string[];
