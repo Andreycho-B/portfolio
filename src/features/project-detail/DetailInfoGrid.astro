@@ -1,17 +1,12 @@
 ---
 import type { ProjectItem } from "../projects/project-data";
+import { splitChars } from "./tech-icons";
 
 interface Props {
   project: ProjectItem;
 }
 
 const { project } = Astro.props;
-
-const splitChars = (text: string) =>
-  text.split("").map((char, index) => ({
-    char: char === " " ? "\u00A0" : char,
-    index,
-  }));
 ---
 
 <section class="info-grid-section" aria-label="Especificación técnica y visión">
@@ -23,13 +18,12 @@ const splitChars = (text: string) =>
       <ul class="stack-list">
         {project.tags?.map((tag) => (
           <li class="stack-item">
-            <span class="roll-track">
+            <span class="sr-only">{tag}</span>
+            <span class="roll-track" aria-hidden="true">
               {splitChars(tag).map(({ char, index }) => (
                 <span class="roll-char" style={`--i:${index}`}>
                   <span class="char-top">{char}</span>
-                  <span class="char-bot" aria-hidden="true">
-                    {char}
-                  </span>
+                  <span class="char-bot">{char}</span>
                 </span>
               ))}
             </span>
@@ -65,13 +59,12 @@ const splitChars = (text: string) =>
               data-cursor-expand="Explorar"
             >
               <span class="bullet-dot" aria-hidden="true" />
-              <span class="roll-track">
+              <span class="sr-only">Ver Sistema en Producción</span>
+              <span class="roll-track" aria-hidden="true">
                 {splitChars("Ver Sistema en Producción ↗").map(({ char, index }) => (
                   <span class="roll-char" style={`--i:${index}`}>
                     <span class="char-top">{char}</span>
-                    <span class="char-bot" aria-hidden="true">
-                      {char}
-                    </span>
+                    <span class="char-bot">{char}</span>
                   </span>
                 ))}
               </span>
@@ -86,13 +79,12 @@ const splitChars = (text: string) =>
               data-cursor-expand="GitHub"
             >
               <span class="bullet-dot" aria-hidden="true" />
-              <span class="roll-track">
+              <span class="sr-only">Auditar Repositorio</span>
+              <span class="roll-track" aria-hidden="true">
                 {splitChars("Auditar Repositorio ↗").map(({ char, index }) => (
                   <span class="roll-char" style={`--i:${index}`}>
                     <span class="char-top">{char}</span>
-                    <span class="char-bot" aria-hidden="true">
-                      {char}
-                    </span>
+                    <span class="char-bot">{char}</span>
                   </span>
                 ))}
               </span>
@@ -108,9 +100,9 @@ const splitChars = (text: string) =>
       // 04 · MANIFIESTO Y PROPÓSITO
     </span>
     {project.subtitle && (
-      <h3 class="editorial-lead-title" data-morphic-title="overview">
+      <h2 class="editorial-lead-title" data-morphic-title="overview">
         {project.subtitle}
-      </h3>
+      </h2>
     )}
     <p class="editorial-narrative" data-reveal="text">
       {project.highlights?.[0] ??

@@ -14,7 +14,7 @@ const uniqueTags = project.tags ?? [];
 
 <section class="tech-gravity-section" aria-label="Tecnologías del proyecto">
   <div class="sr-only">
-    <h3>Tecnologías aplicadas</h3>
+    <h2>Tecnologías aplicadas</h2>
     <ul>
       {uniqueTags.map((tag) => (
         <li>{tag}</li>
@@ -26,14 +26,16 @@ const uniqueTags = project.tags ?? [];
     {logos.map((logo, index) => {
       const shape = SHAPES[index % SHAPES.length];
       return (
-        <div
-          class={`tech-logo-token shape-${shape}`}
-          data-tech-logo
-          data-shape={shape}
-          data-logo-id={logo.id}
-          style={`--logo-color: ${logo.color};`}
-        >
-          <img src={logo.svgUrl} alt="" class="tech-logo-img" loading="lazy" decoding="async" />
+        <div class={`tech-logo-token shape-${shape}`} data-tech-logo data-shape={shape}>
+          <img
+            src={logo.svgUrl}
+            alt=""
+            width="44"
+            height="44"
+            class="tech-logo-img"
+            loading="lazy"
+            decoding="async"
+          />
         </div>
       );
     })}

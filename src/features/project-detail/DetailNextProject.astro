@@ -4,14 +4,12 @@ import type { ProjectItem } from "../projects/project-data";
 interface Props {
   nextProject: ProjectItem;
   nextCoverImg: string;
-  isNextCoverHorizontal: boolean;
 }
 
-const { nextProject, nextCoverImg, isNextCoverHorizontal } = Astro.props;
+const { nextProject, nextCoverImg } = Astro.props;
 ---
 
-<section class="next-project-section" data-next-section>
-  <div class="portal-expander-overlay" id="portal-expander-overlay" aria-hidden="true"></div>
+<section class="next-project-section">
   <a
     href={`/proyectos/${nextProject.slug}`}
     class="next-project-link-card"
@@ -34,15 +32,13 @@ const { nextProject, nextCoverImg, isNextCoverHorizontal } = Astro.props;
     </div>
 
     <div class="next-specimen-col">
-      <div
-        class={`next-specimen-card ${isNextCoverHorizontal ? "is-horizontal" : ""}`}
-        data-reveal="scale"
-        data-next-portal-card
-      >
+      <div class="next-specimen-card is-horizontal" data-reveal="scale">
         <img
           src={nextCoverImg}
-          alt={nextProject.title}
+          alt={`Vista previa de ${nextProject.title}`}
           class="next-specimen-img"
+          width="1917"
+          height="912"
           loading="lazy"
           decoding="async"
         />

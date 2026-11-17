@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { PROFILE } from "../../core/profile";
 import { PROJECTS, type ProjectItem } from "../../features/projects/project-data";
 import DetailHeader from "../../features/project-detail/DetailHeader.astro";
 import DetailHero from "../../features/project-detail/DetailHero.astro";
@@ -36,13 +37,7 @@ const mediaDuoLeft = project.gallery?.[2] ?? coverImg;
 const mediaDuoRight = project.gallery?.[3] ?? coverImg;
 const mediaItemFinal = project.gallery?.[4] ?? coverImg;
 const nextCoverImg = nextProject.gallery?.[0] ?? nextProject.imageSrc;
-
-const isCoverHorizontal = true;
-const isMedia1Horizontal = false;
-const isDuoLeftHorizontal = false;
-const isDuoRightHorizontal = false;
-const isMediaFinalHorizontal = false;
-const isNextCoverHorizontal = true;
+const coverAbsoluteUrl = Astro.site ? new URL(coverImg, Astro.site).href : coverImg;
 
 const projectSchema = JSON.stringify({
   "@context": "https://schema.org",
@@ -52,13 +47,13 @@ const projectSchema = JSON.stringify({
   description: project.statementChallenge ?? project.subtitle ?? project.title,
   author: {
     "@type": "Person",
-    name: "Andrey Ernesto Rondón Corredor",
-    url: "https://andreyrondon.dev",
+    name: PROFILE.fullName,
+    url: PROFILE.siteUrl,
   },
   codeRepository: project.repoUrl ?? undefined,
   programmingLanguage: project.tags,
   dateCreated: project.year,
-  image: coverImg,
+  image: coverAbsoluteUrl,
 });
 ---
 
@@ -73,94 +68,36 @@ const projectSchema = JSON.stringify({
   <script type="application/ld+json" set:html={projectSchema} />
   <svg aria-hidden="true" class="mercury-filter-defs">
     <defs>
-      <filter
-        id="detail-title-blur-filter"
-        x="-30%"
-        y="-30%"
-        width="160%"
-        height="160%"
-        color-interpolation-filters="sRGB"
-      >
-        <feGaussianBlur
-          id="detail-title-blur-node"
-          in="SourceGraphic"
-          stdDeviation="0 0"
-          result="blur"
-        />
-        <feColorMatrix
-          in="blur"
-          mode="matrix"
-          values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11"
-        />
-      </filter>
-      <filter
-        id="detail-overview-blur-filter"
-        x="-30%"
-        y="-30%"
-        width="160%"
-        height="160%"
-        color-interpolation-filters="sRGB"
-      >
-        <feGaussianBlur
-          id="detail-overview-blur-node"
-          in="SourceGraphic"
-          stdDeviation="0 0"
-          result="blur"
-        />
-        <feColorMatrix
-          in="blur"
-          mode="matrix"
-          values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11"
-        />
-      </filter>
-      <filter
-        id="detail-statement-blur-filter"
-        x="-30%"
-        y="-30%"
-        width="160%"
-        height="160%"
-        color-interpolation-filters="sRGB"
-      >
-        <feGaussianBlur
-          id="detail-statement-blur-node"
-          in="SourceGraphic"
-          stdDeviation="0 0"
-          result="blur"
-        />
-        <feColorMatrix
-          in="blur"
-          mode="matrix"
-          values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11"
-        />
-      </filter>
-      <filter
-        id="detail-next-blur-filter"
-        x="-30%"
-        y="-30%"
-        width="160%"
-        height="160%"
-        color-interpolation-filters="sRGB"
-      >
-        <feGaussianBlur
-          id="detail-next-blur-node"
-          in="SourceGraphic"
-          stdDeviation="0 0"
-          result="blur"
-        />
-        <feColorMatrix
-          in="blur"
-          mode="matrix"
-          values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11"
-        />
-      </filter>
+      {["title", "overview", "statement", "next"].map((key) => (
+        <filter
+          id={`detail-${key}-blur-filter`}
+          x="-30%"
+          y="-30%"
+          width="160%"
+          height="160%"
+          color-interpolation-filters="sRGB"
+        >
+          <feGaussianBlur
+            id={`detail-${key}-blur-node`}
+            in="SourceGraphic"
+            stdDeviation="0 0"
+            result="blur"
+          />
+          <feColorMatrix
+            in="blur"
+            mode="matrix"
+            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11"
+          />
+        </filter>
+      ))}
     </defs>
   </svg>
 
-  <div class="project-detail-stage" data-smooth-viewport>
+  <div class="project-detail-stage">
     <DetailHeader project={project} />
 
     <main class="detail-main">
-      <DetailHero project={project} coverImg={coverImg} isCoverHorizontal={isCoverHorizontal} />
+      <DetailHero project={project} coverImg={coverImg} />
 
       <DetailInfoGrid project={project} />
 
@@ -170,21 +107,13 @@ const projectSchema = JSON.stringify({
         mediaDuoLeft={mediaDuoLeft}
         mediaDuoRight={mediaDuoRight}
         mediaItemFinal={mediaItemFinal}
-        isMedia1Horizontal={isMedia1Horizontal}
-        isDuoLeftHorizontal={isDuoLeftHorizontal}
-        isDuoRightHorizontal={isDuoRightHorizontal}
-        isMediaFinalHorizontal={isMediaFinalHorizontal}
       />
 
       <DetailConcept project={project} />
 
       <DetailTechGravity project={project} />
 
-      <DetailNextProject
-        nextProject={nextProject}
-        nextCoverImg={nextCoverImg}
-        isNextCoverHorizontal={isNextCoverHorizontal}
-      />
+      <DetailNextProject nextProject={nextProject} nextCoverImg={nextCoverImg} />
     </main>
   </div>
 </BaseLayout>

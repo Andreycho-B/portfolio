@@ -4,10 +4,9 @@ import type { ProjectItem } from "../projects/project-data";
 interface Props {
   project: ProjectItem;
   coverImg: string;
-  isCoverHorizontal: boolean;
 }
 
-const { project, coverImg, isCoverHorizontal } = Astro.props;
+const { project, coverImg } = Astro.props;
 ---
 
 <section class="hero-row" aria-label="Portada del proyecto">
@@ -21,14 +20,13 @@ const { project, coverImg, isCoverHorizontal } = Astro.props;
   </div>
 
   <div class="hero-col hero-col-specimen">
-    <div
-      class={`hero-specimen-card ${isCoverHorizontal ? "is-horizontal" : ""}`}
-      data-reveal="scale"
-    >
+    <div class="hero-specimen-card is-horizontal" data-reveal="scale">
       <img
         src={coverImg}
-        alt={project.title}
+        alt={`Portada de ${project.title}`}
         class="hero-specimen-img"
+        width="1917"
+        height="912"
         loading="eager"
         decoding="sync"
         fetchpriority="high"

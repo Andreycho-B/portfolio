@@ -1,55 +1,41 @@
-interface OfficialTechLogo {
+export interface OfficialTechLogo {
   readonly id: string;
-  readonly name: string;
   readonly svgUrl: string;
-  readonly color: string;
 }
 
+export interface SplitCharItem {
+  readonly char: string;
+  readonly index: number;
+}
+
+export const splitChars = (text: string): SplitCharItem[] =>
+  text.split("").map((char, index) => ({
+    char: char === " " ? "\u00A0" : char,
+    index,
+  }));
+
 const OFFICIAL_TECH_LOGOS: Record<string, OfficialTechLogo> = {
-  "Go (Chi v5)": { id: "go", name: "Go", svgUrl: "/tech-logos/go.svg", color: "#00ADD8" },
-  "PostgreSQL 16": {
-    id: "postgresql",
-    name: "PostgreSQL",
-    svgUrl: "/tech-logos/postgresql.svg",
-    color: "#4169E1",
-  },
-  PostgreSQL: {
-    id: "postgresql",
-    name: "PostgreSQL",
-    svgUrl: "/tech-logos/postgresql.svg",
-    color: "#4169E1",
-  },
-  "Svelte 5": { id: "svelte", name: "Svelte", svgUrl: "/tech-logos/svelte.svg", color: "#FF3E00" },
-  "Tailwind CSS": {
-    id: "tailwindcss",
-    name: "Tailwind CSS",
-    svgUrl: "/tech-logos/tailwindcss.svg",
-    color: "#06B6D4",
-  },
-  PWA: { id: "pwa", name: "PWA", svgUrl: "/tech-logos/pwa.svg", color: "#5A0FC8" },
-  "Angular 21": {
-    id: "angular",
-    name: "Angular",
-    svgUrl: "/tech-logos/angular.svg",
-    color: "#DD0031",
-  },
-  "NestJS 11": { id: "nestjs", name: "NestJS", svgUrl: "/tech-logos/nestjs.svg", color: "#E0234E" },
-  Render: { id: "render", name: "Render", svgUrl: "/tech-logos/render.svg", color: "#46E3B7" },
-  GitHub: { id: "github", name: "GitHub", svgUrl: "/tech-logos/github.svg", color: "#181717" },
+  "Go (Chi v5)": { id: "go", svgUrl: "/tech-logos/go.svg" },
+  "PostgreSQL 16": { id: "postgresql", svgUrl: "/tech-logos/postgresql.svg" },
+  PostgreSQL: { id: "postgresql", svgUrl: "/tech-logos/postgresql.svg" },
+  "Svelte 5": { id: "svelte", svgUrl: "/tech-logos/svelte.svg" },
+  "Tailwind CSS": { id: "tailwindcss", svgUrl: "/tech-logos/tailwindcss.svg" },
+  PWA: { id: "pwa", svgUrl: "/tech-logos/pwa.svg" },
+  "Angular 21": { id: "angular", svgUrl: "/tech-logos/angular.svg" },
+  "NestJS 11": { id: "nestjs", svgUrl: "/tech-logos/nestjs.svg" },
+  Render: { id: "render", svgUrl: "/tech-logos/render.svg" },
+  GitHub: { id: "github", svgUrl: "/tech-logos/github.svg" },
 };
 
 export function getProjectLogos(tags: readonly string[], targetCount = 30): OfficialTechLogo[] {
   const validLogos: OfficialTechLogo[] = [];
   for (const tag of tags) {
     const logo = OFFICIAL_TECH_LOGOS[tag];
-    if (logo) {
-      validLogos.push(logo);
-    }
+    if (logo) validLogos.push(logo);
   }
 
-  if (validLogos.length === 0) {
-    const fallback = OFFICIAL_TECH_LOGOS.GitHub;
-    if (fallback) validLogos.push(fallback);
+  if (validLogos.length === 0 && OFFICIAL_TECH_LOGOS.GitHub) {
+    validLogos.push(OFFICIAL_TECH_LOGOS.GitHub);
   }
 
   const pool: OfficialTechLogo[] = [];

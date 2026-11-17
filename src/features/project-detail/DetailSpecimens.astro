@@ -7,36 +7,20 @@ interface Props {
   mediaDuoLeft: string;
   mediaDuoRight: string;
   mediaItemFinal: string;
-  isMedia1Horizontal: boolean;
-  isDuoLeftHorizontal: boolean;
-  isDuoRightHorizontal: boolean;
-  isMediaFinalHorizontal: boolean;
 }
 
-const {
-  project,
-  mediaItem1,
-  mediaDuoLeft,
-  mediaDuoRight,
-  mediaItemFinal,
-  isMedia1Horizontal,
-  isDuoLeftHorizontal,
-  isDuoRightHorizontal,
-  isMediaFinalHorizontal,
-} = Astro.props;
+const { project, mediaItem1, mediaDuoLeft, mediaDuoRight, mediaItemFinal } = Astro.props;
 ---
 
 <section class="media-artboard-section" data-reveal="fade">
   <div class="device-specimen-wrap">
-    <div
-      class={`device-frame ${isMedia1Horizontal ? "is-horizontal" : ""}`}
-      data-reveal="scale"
-      data-tilt-card
-    >
+    <div class="device-frame" data-reveal="scale" data-tilt-card>
       <div class="device-tilt-inner">
         <img
           src={mediaItem1}
           alt={`${project.title} — Captura principal`}
+          width="1179"
+          height="2556"
           loading="lazy"
           decoding="async"
           class="device-screen-img"
@@ -49,15 +33,13 @@ const {
 <section class="media-artboard-section duo-section" data-reveal="fade">
   <div class="duo-specimens-container">
     <div class="device-specimen-wrap">
-      <div
-        class={`device-frame ${isDuoLeftHorizontal ? "is-horizontal" : ""}`}
-        data-reveal="scale"
-        data-tilt-card
-      >
+      <div class="device-frame" data-reveal="scale" data-tilt-card>
         <div class="device-tilt-inner">
           <img
             src={mediaDuoLeft}
             alt={`${project.title} — Flujo de interacción`}
+            width="1179"
+            height="2556"
             loading="lazy"
             decoding="async"
             class="device-screen-img"
@@ -66,15 +48,13 @@ const {
       </div>
     </div>
     <div class="device-specimen-wrap">
-      <div
-        class={`device-frame ${isDuoRightHorizontal ? "is-horizontal" : ""}`}
-        data-reveal="scale"
-        data-tilt-card
-      >
+      <div class="device-frame" data-reveal="scale" data-tilt-card>
         <div class="device-tilt-inner">
           <img
             src={mediaDuoRight}
             alt={`${project.title} — Detalle de pantalla`}
+            width="1179"
+            height="2556"
             loading="lazy"
             decoding="async"
             class="device-screen-img"
@@ -88,15 +68,13 @@ const {
 {mediaItemFinal && (
   <section class="media-artboard-section" data-reveal="fade">
     <div class="device-specimen-wrap">
-      <div
-        class={`device-frame ${isMediaFinalHorizontal ? "is-horizontal" : ""}`}
-        data-reveal="scale"
-        data-tilt-card
-      >
+      <div class="device-frame" data-reveal="scale" data-tilt-card>
         <div class="device-tilt-inner">
           <img
             src={mediaItemFinal}
             alt={`${project.title} — Captura de cierre`}
+            width="1846"
+            height="2304"
             loading="lazy"
             decoding="async"
             class="device-screen-img"

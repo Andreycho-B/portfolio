@@ -12,6 +12,24 @@ export function initTechGravity(container: HTMLElement): TechGravityHandle | nul
 
   const width = Math.max(container.clientWidth, 320);
   const height = Math.max(container.clientHeight, 360);
+  const prefersReduced =
+    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  if (prefersReduced) {
+    logoElements.forEach((el, index) => {
+      const w = el.offsetWidth || 76;
+      const h = el.offsetHeight || 76;
+      const cols = Math.max(2, Math.floor(width / (w + 18)));
+      const row = Math.floor(index / cols);
+      const col = index % cols;
+      const x = (width / (cols + 1)) * (col + 1) - w / 2;
+      const y = height - (row + 1) * (h + 14);
+      el.style.transform = `translate3d(${x.toFixed(1)}px, ${Math.max(16, y).toFixed(1)}px, 0)`;
+      el.style.opacity = "1";
+    });
+    return { destroy: () => {} };
+  }
+
   const engine = Matter.Engine.create({ gravity: { x: 0, y: 1.15, scale: 0.001 } });
   const wOpt = { isStatic: true, friction: 0.35, restitution: 0.3 };
 
