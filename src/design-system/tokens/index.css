@@ -1,7 +1,67 @@
-@import "./colors.css";
-@import "./typography.css";
-@import "./spacing.css";
-@import "./motion.css";
-@import "./layout.css";
 @import "../fonts.css";
 @import "../reset.css";
+
+:root {
+  --color-bg: #ffffff;
+  --color-fg: #1a1714;
+  --color-fg-muted: #6b6660;
+  --color-border: #e8e8e8;
+  --color-brand-blue: #1982e6;
+
+  --font-display: "Author", system-ui, -apple-system, sans-serif;
+  --font-text: "Karrik", system-ui, -apple-system, sans-serif;
+
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-4xl: clamp(3rem, 8vw, 7rem);
+
+  --weight-black: 900;
+
+  --lh-heading: 1.05;
+  --lh-body: 1.55;
+
+  --ls-tighter: -0.05em;
+  --ls-tight: -0.04em;
+  --ls-labels: 0.01em;
+  --ls-metadata: 0.02em;
+
+  --space-2xs: 8px;
+  --space-xs: 12px;
+  --space-sm: 16px;
+  --space-md: 24px;
+  --space-xl: 48px;
+  --space-2xl: 64px;
+
+  --radius-pill: 9999px;
+
+  --dur-fast: 200ms;
+  --ease-fast: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --dur-base: 400ms;
+  --ease-base: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --dur-slow: 800ms;
+  --ease-slow: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --z-cursor: 9999;
+  --container-padding: clamp(1.5rem, 5vw, 4rem);
+
+  --focus-ring-color: var(--color-brand-blue);
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --focus-ring-style: solid;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 1ms;
+    --dur-base: 1ms;
+    --dur-slow: 1ms;
+  }
+}
+
+:focus-visible {
+  outline: var(--focus-ring-width) var(--focus-ring-style) var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}

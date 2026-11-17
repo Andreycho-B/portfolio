@@ -1,4 +1,4 @@
-import type { MorphicNodes } from "./morphic.types";
+import { type MorphicNodes, resolveMorphicNodes } from "./morphic.types";
 import { createExitTimeline } from "./morphic-exit";
 import { startMutationLoop, wrapMutantWord } from "./morphic-mutation";
 import { createRevealTimeline, resetNodesToIntro, resetNodesToNeutral } from "./morphic-reveal";
@@ -6,84 +6,24 @@ import { createRevealTimeline, resetNodesToIntro, resetNodesToNeutral } from "./
 export type { MorphicNodes };
 export { resetNodesToIntro, resetNodesToNeutral };
 
-const parseNum = (val: string | undefined, def: number): number => {
-  const n = Number(val);
-  return Number.isFinite(n) && val?.trim() !== "" ? n : def;
-};
-
-const resolveNodes = (el: HTMLElement): MorphicNodes | null => {
-  const blurNode = document.getElementById(el.dataset.blurNode ?? "");
-  const matrixNode = document.getElementById(el.dataset.matrixNode ?? "");
-  if (
-    !(blurNode instanceof SVGFEGaussianBlurElement && matrixNode instanceof SVGFEColorMatrixElement)
-  )
-    return null;
-
-  const isChromatic = el.dataset.chromatic === "true";
-  const getNode = <T extends Element>(id?: string): T | null =>
-    id ? (document.getElementById(id) as T | null) : null;
-
-  const filterId = (el.dataset.blurNode ?? "").replace("-blur", "");
-  const exitDelay = el.dataset.exitDelay !== undefined ? parseNum(el.dataset.exitDelay, 1.5) : null;
-
-  let phrases: string[] = [el.textContent?.trim() ?? ""];
-  if (el.dataset.phrases) {
-    try {
-      const parsed: unknown = JSON.parse(el.dataset.phrases);
-      if (
-        Array.isArray(parsed) &&
-        parsed.length > 0 &&
-        parsed.every((s) => typeof s === "string")
-      ) {
-        phrases = parsed;
-      }
-    } catch {
-      console.warn("[MorphicText] JSON de data-phrases inválido");
-    }
-  }
-
-  let phraseRoles: string[] = [];
-  if (el.dataset.phraseRoles) {
-    try {
-      const parsed: unknown = JSON.parse(el.dataset.phraseRoles);
-      if (Array.isArray(parsed) && parsed.every((s) => typeof s === "string")) {
-        phraseRoles = parsed;
-      }
-    } catch {
-      console.warn("[MorphicText] JSON de data-phrase-roles inválido");
-    }
-  }
-
-  return {
-    element: el,
-    blurNode,
-    matrixNode,
-    cyanTopNode: isChromatic ? getNode<SVGFEOffsetElement>(el.dataset.cyanTop) : null,
-    cyanBottomNode: isChromatic ? getNode<SVGFEOffsetElement>(el.dataset.cyanBottom) : null,
-    isChromatic,
-    shiftX: parseNum(el.dataset.shiftX, 3.5),
-    shiftY: parseNum(el.dataset.shiftY, 1.5),
-    delay: parseNum(el.dataset.delay, 0),
-    duration: parseNum(el.dataset.duration, 1.9),
-    exitDelay,
-    loop: el.dataset.loop === "true",
-    filterId,
-    phrases,
-    phraseRoles,
-    mutateWord: el.dataset.mutateWord,
-    textColorNode: getNode<SVGFEColorMatrixElement>(el.dataset.textColor),
-    cyanLayerNode: getNode<SVGFEColorMatrixElement>(el.dataset.cyanLayer),
-  };
-};
-
 const playMorphicSequence = (nodes: MorphicNodes): void => {
   const prefersReduced =
     typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   if (prefersReduced) {
+    const lastIdx = Math.max(0, nodes.phrases.length - 1);
+    const finalPhrase = nodes.phrases[lastIdx] ?? "";
+    const finalRole = nodes.phraseRoles[lastIdx] ?? "";
     resetNodesToNeutral(nodes);
-    nodes.element.textContent = nodes.phrases[nodes.phrases.length - 1] ?? "";
+    nodes.element.textContent = finalPhrase;
+    if (nodes.mutateWord && finalPhrase.includes(nodes.mutateWord)) {
+      wrapMutantWord(nodes.element, nodes.mutateWord);
+    }
+    if (finalRole === "final") {
+      nodes.element.style.color = "#ffffff";
+    }
     nodes.element.style.opacity = "1";
+    nodes.element.dataset.morphicComplete = "true";
     nodes.element.dispatchEvent(new CustomEvent("morphic:complete", { bubbles: true }));
     return;
   }
@@ -147,6 +87,7 @@ const playMorphicSequence = (nodes: MorphicNodes): void => {
         const delaySec = nodes.exitDelay ?? 0.8;
         timerId = window.setTimeout(runExit, delaySec * 1000);
       } else {
+        nodes.element.dataset.morphicComplete = "true";
         nodes.element.dispatchEvent(new CustomEvent("morphic:complete", { bubbles: true }));
         if (nodes.mutateWord) startMutationLoop(nodes);
       }
@@ -202,7 +143,7 @@ export const initMorphicText = (): void => {
     for (const entry of entries) {
       if (entry.isIntersecting && entry.target instanceof HTMLElement) {
         obs.unobserve(entry.target);
-        const nodes = resolveNodes(entry.target);
+        const nodes = resolveMorphicNodes(entry.target);
         if (nodes) playMorphicSequence(nodes);
       }
     }
@@ -213,9 +154,13 @@ export const initMorphicText = (): void => {
       ? new IntersectionObserver(onIntersect, { threshold: 0.15 })
       : null;
 
+  if (observer) {
+    document.addEventListener("astro:before-swap", () => observer.disconnect(), { once: true });
+  }
+
   els.forEach((el) => {
     el.dataset.morphicMounted = "true";
-    const nodes = resolveNodes(el);
+    const nodes = resolveMorphicNodes(el);
     if (!nodes) return;
     if (observer) observer.observe(el);
     else playMorphicSequence(nodes);

@@ -21,8 +21,32 @@ const STORAGE_PENDING_KEY = "portfolio_fluid_wipe_pending";
 
 let isTransitioning = false;
 
-const playFluidSweepOut = (): Promise<void> => {
-  return new Promise((resolve) => {
+export const isModifiedClick = (event: MouseEvent): boolean =>
+  event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0;
+
+const setPendingFlag = (pending: boolean): void => {
+  try {
+    if (pending) sessionStorage.setItem(STORAGE_PENDING_KEY, "true");
+    else sessionStorage.removeItem(STORAGE_PENDING_KEY);
+  } catch (err) {
+    console.warn("[FluidTransition] SessionStorage access restricted:", err);
+  }
+};
+
+const consumePendingFlag = (): boolean => {
+  try {
+    if (sessionStorage.getItem(STORAGE_PENDING_KEY) === "true") {
+      sessionStorage.removeItem(STORAGE_PENDING_KEY);
+      return true;
+    }
+  } catch (err) {
+    console.warn("[FluidTransition] SessionStorage read restricted:", err);
+  }
+  return false;
+};
+
+const playFluidSweepOut = (): Promise<void> =>
+  new Promise((resolve) => {
     const overlay = getOrCreateFluidOverlay();
     overlay.setPointerEvents(true);
 
@@ -31,19 +55,11 @@ const playFluidSweepOut = (): Promise<void> => {
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (prefersReduced) {
-      gsap.to(overlay.overlayElement, {
-        opacity: 0,
-        duration: 0.2,
-        ease: "power1.out",
-        onComplete: () => {
-          overlay.setPointerEvents(false);
-          overlay.setLeadPath(getHiddenBottomPath());
-          overlay.setBodyPath(getHiddenBottomPath());
-          gsap.set(overlay.overlayElement, { opacity: 1 });
-          isTransitioning = false;
-          resolve();
-        },
-      });
+      overlay.setPointerEvents(false);
+      overlay.setLeadPath(getHiddenBottomPath());
+      overlay.setBodyPath(getHiddenBottomPath());
+      isTransitioning = false;
+      resolve();
       return;
     }
 
@@ -69,9 +85,7 @@ const playFluidSweepOut = (): Promise<void> => {
         progress: 1,
         duration: 0.72,
         ease: "power4.inOut",
-        onUpdate: () => {
-          overlay.setBodyPath(calculateSweepOutPath(bodyState.progress, 0.95));
-        },
+        onUpdate: () => overlay.setBodyPath(calculateSweepOutPath(bodyState.progress, 0.95)),
       },
       0,
     );
@@ -82,14 +96,11 @@ const playFluidSweepOut = (): Promise<void> => {
         progress: 1,
         duration: 0.7,
         ease: "power4.inOut",
-        onUpdate: () => {
-          overlay.setLeadPath(calculateSweepOutPath(leadState.progress, 1.25));
-        },
+        onUpdate: () => overlay.setLeadPath(calculateSweepOutPath(leadState.progress, 1.25)),
       },
       0.06,
     );
   });
-};
 
 export const navigateWithFluidWipe = ({
   targetUrl,
@@ -100,68 +111,42 @@ export const navigateWithFluidWipe = ({
   if (isTransitioning) return;
   isTransitioning = true;
 
-  const audio = getAudioSystem();
-  audio.playTactileFeedback("click", 0.85);
-
-  try {
-    const cursor = getCursorController();
-    cursor.setExpanded(false);
-    cursor.setPressed(false);
-    cursor.setInverted(false);
-  } catch {}
-
-  const overlay = getOrCreateFluidOverlay();
-  overlay.setPointerEvents(true);
-
-  try {
-    sessionStorage.setItem(STORAGE_PENDING_KEY, "true");
-  } catch {}
+  getAudioSystem().playTactileFeedback("click", 0.85);
+  const cursor = getCursorController();
+  cursor.setExpanded(false);
+  cursor.setPressed(false);
+  cursor.setInverted(false);
 
   const prefersReduced =
     typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   if (prefersReduced) {
-    if (onBeforeNavigate) onBeforeNavigate();
+    isTransitioning = false;
+    onBeforeNavigate?.();
     void navigate(targetUrl);
     return;
   }
 
+  const overlay = getOrCreateFluidOverlay();
+  overlay.setPointerEvents(true);
+  setPendingFlag(true);
+
   const tl = gsap.timeline({
     onComplete: () => {
-      if (onBeforeNavigate) onBeforeNavigate();
+      onBeforeNavigate?.();
       void navigate(targetUrl);
     },
   });
 
   if (canvas) {
-    tl.to(
-      canvas,
-      {
-        scale: 0.9,
-        opacity: 0.2,
-        duration: 0.55,
-        ease: "power3.inOut",
-      },
-      0,
-    );
+    tl.to(canvas, { scale: 0.9, opacity: 0.2, duration: 0.55, ease: "power3.inOut" }, 0);
   }
-
   if (titleElement) {
-    tl.to(
-      titleElement,
-      {
-        y: -32,
-        opacity: 0,
-        duration: 0.42,
-        ease: "power2.in",
-      },
-      0,
-    );
+    tl.to(titleElement, { y: -32, opacity: 0, duration: 0.42, ease: "power2.in" }, 0);
   }
 
   const leadState = { progress: 0 };
   const bodyState = { progress: 0 };
-
   overlay.setLeadPath(getHiddenBottomPath());
   overlay.setBodyPath(getHiddenBottomPath());
 
@@ -171,9 +156,7 @@ export const navigateWithFluidWipe = ({
       progress: 1,
       duration: 0.68,
       ease: "power4.inOut",
-      onUpdate: () => {
-        overlay.setLeadPath(calculateSweepInPath(leadState.progress, 1.25));
-      },
+      onUpdate: () => overlay.setLeadPath(calculateSweepInPath(leadState.progress, 1.25)),
     },
     0.02,
   );
@@ -184,23 +167,16 @@ export const navigateWithFluidWipe = ({
       progress: 1,
       duration: 0.68,
       ease: "power4.inOut",
-      onUpdate: () => {
-        overlay.setBodyPath(calculateSweepInPath(bodyState.progress, 0.95));
-      },
+      onUpdate: () => overlay.setBodyPath(calculateSweepInPath(bodyState.progress, 0.95)),
     },
     0.08,
   );
 };
 
 export const initIncomingFluidWipe = (): void => {
-  try {
-    if (sessionStorage.getItem(STORAGE_PENDING_KEY) === "true") {
-      sessionStorage.removeItem(STORAGE_PENDING_KEY);
-      void playFluidSweepOut();
-    } else {
-      isTransitioning = false;
-    }
-  } catch {
+  if (consumePendingFlag()) {
+    void playFluidSweepOut();
+  } else {
     isTransitioning = false;
   }
 };
@@ -211,7 +187,8 @@ if (typeof document !== "undefined") {
       if (sessionStorage.getItem(STORAGE_PENDING_KEY) !== "true") {
         isTransitioning = false;
       }
-    } catch {
+    } catch (err) {
+      console.warn("[FluidTransition] SessionStorage check failed:", err);
       isTransitioning = false;
     }
   });
