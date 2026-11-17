@@ -1,55 +1,54 @@
 # Andrey Rondón — Creative Engineering Portfolio
 
-Portafolio de ingeniería de software y desarrollo creativo. Construido con una arquitectura modular sin dependencias de frameworks reactivos en el cliente, combinando renderizado estático con Astro 7, computación gráfica en WebGL con Three.js, simulación física bidimensional con Matter.js y síntesis de audio procedural en tiempo real mediante la Web Audio API.
-
-Diseñado bajo principios de tipografía editorial en blanco y negro (`#000000` / `#ffffff`), rendimiento extremo en Core Web Vitals y cumplimiento riguroso de accesibilidad universal (WCAG 2.1 AA).
+Portafolio personal de ingeniería de software y desarrollo creativo. Construido sobre Astro 7 y TypeScript 6 sin dependencias de frameworks de componentes en el cliente, combinando renderizado estático, gráficos 3D en WebGL con Three.js, simulación física 2D con Matter.js y síntesis de audio en tiempo real mediante la Web Audio API.
 
 ---
 
-## Arquitectura y Módulos Técnicos
+## Arquitectura Técnica
 
-### 1. WebGL & Creative Coding (`src/features/projects/`)
+### 1. Escena 3D y Shaders GLSL (`src/features/projects/`, `src/features/consent/`)
 
-- **Cilindro 3D Interactivo (Lens Drum):** Carrusel cilíndrico en espacio tridimensional desarrollado sobre Three.js puro, con física de inercia, arrastre elástico y snap determinista.
-- **Shader de Refracción Vítrea (GLSL):** Shader de fragmentos y vértices personalizado (`drum-glass-shader.ts`) para proyectar distorsión óptica, reflexión interna y aberración cromática en la tarjeta activa.
-- **Code-Splitting Inteligente:** El chunk de Three.js (~530 kB) se carga de forma asíncrona mediante `requestIdleCallback` durante la pantalla de bienvenida, manteniendo el bundle inicial de la ruta principal en ~25 kB.
-- **Resiliencia de Renderizado:** Detección y manejo del ciclo de vida de GPU (`webglcontextlost`), inicialización segura sin doble antialias innecesario y fallback automático a tarjetas semánticas DOM (`.drum-fallback-cards`) ante hardware no compatible.
+- **Tambor Lenticular Vertical (Three.js):** carrusel cilíndrico de 9 ranuras en espacio tridimensional con física de amortiguación exponencial independiente del framerate, arrastre con proyección de inercia y bucle de renderizado bajo demanda (se detiene automáticamente en reposo).
+- **Post-procesado Óptico (`drum-glass-shader.ts`):** shader GLSL en segunda pasada sobre `WebGLRenderTarget` (`HalfFloatType`, 4 muestras MSAA) que aplica curvatura sagital en los extremos superior e inferior, dispersión cromática de 16 muestras con pesos espectrales tipo Cauchy y dithering para evitar banding.
+- **Fondo Atmosférico con Bayer Dithering (`cloud-shader.ts`):** shader WebGL2 en la pantalla de bienvenida con ruido Simplex tridimensional, movimiento fractal browniano (fBm), cuantización por matriz de Bayer 8×8 y repulsión elástica alrededor del puntero.
+- **Carga Diferida y Fallback Semántico:** el módulo de Three.js se precarga en segundo plano mediante `requestIdleCallback` durante la pantalla de bienvenida y conmuta automáticamente a tarjetas HTML estáticas ante pérdida o ausencia de contexto WebGL (`webglcontextlost`).
 
-### 2. Motor de Audio Procedural (`src/core/audio.ts`)
+### 2. Síntesis de Audio Procedural (`src/core/audio.ts`)
 
-- **Síntesis Aditiva y Sustractiva en Tiempo Real:** 100% sintetizado mediante osciladores matemáticos, nodos de ganancia y filtros convolucionales de la Web Audio API nativa. Sin archivos ni muestras estáticas (`.mp3` o `.wav`).
-- **Resonancia Táctil & Chimes Armónicos:** Micro-feedback acústico sincronizado con gestos del ratón, paradas del tambor e interacciones de navegación.
-- **Gobernanza de Autoplay:** Inicialización diferida vinculada al gesto explícito de consentimiento del usuario y persistencia local de estado de silencio con sincronización ARIA.
+- **Generación en Vivo sin Archivos de Audio:** todos los sonidos se sintetizan en memoria mediante osciladores senoidales, buffers de ruido filtrado con filtros biquad IIR, nodos `BiquadFilterNode` (`highpass` bloqueador DC a 30 Hz y `lowpass` dinámico), `StereoPannerNode` y un limitador `DynamicsCompressorNode` en el bus maestro.
+- **Capas Acústicas:**
+  - *Drone orgánico y aura de proximidad (`audio-synthesis.ts`):* textura continua en Mi (82.41 Hz) con LFO de paneo estéreo y apertura armónica al acercar el cursor al logotipo o a la tarjeta activa.
+  - *Campanas generativas (`audio-chime.ts`):* intervalos consonantes disparados en ventanas estocásticas.
+  - *Feedback táctil (`audio-wheel-tick.ts`, `audio-tactile.ts`, `audio-arrival.ts`):* detentes mecánicos sincronizados con los pasos del tambor, clics de selección y acorde de llegada.
+- **Ciclo de Vida y Consentimiento:** el `AudioContext` se instancia exclusivamente tras la acción explícita del visitante, suspendiendo el procesamiento al ocultar la pestaña (`visibilitychange`) o silenciar el sistema.
 
-### 3. Simulación Física y Cinemática (`src/features/project-detail/`, `src/features/about/`)
+### 3. Física Interactiva y Transiciones (`src/features/project-detail/`, `src/features/about/`, `src/features/transitions/`)
 
-- **TechGravity (Matter.js):** Escenario de física bidimensional con cuerpos rígidos, detección de colisiones elásticas y respuesta interactiva al puntero para los tokens de stack tecnológico.
-- **Mascota Interactiva 2D con Eye-Tracking:** Renderizado vectorial y trigonometría en tiempo real para el seguimiento de la pupila hacia las coordenadas del cursor, complementado con un ciclo de parpadeo estocástico y física de flotación.
-- **Transición Fluida entre Páginas:** Efecto de barrido líquido ("fluid wipe") generado mediante interpolación paramétrica de curvas Bézier cúbicas sobre SVG proyectado.
+- **TechGravity (`tech-gravity-engine.ts`):** simulación 2D con Matter.js en las vistas de estudio de caso, donde los tokens del stack tecnológico caen por gravedad y colisionan con el vector de velocidad del cursor.
+- **Escultura Vectorial y Partículas (`mascot-eyes.ts`, `particle-text.ts`):** mascota 2D con seguimiento ocular trigonométrico, parpadeo procedural y banner inferior en Canvas 2D con miles de partículas reactivas que conforman el rótulo `"ANDREY"`.
+- **Transición de Barrido Líquido (`fluid-transition-controller.ts`):** navegación entre rutas coordinada con `ClientRouter` de Astro mediante superposición SVG de doble capa y curvas Bézier animadas con GSAP.
 
-### 4. Accesibilidad e Inclusión (WCAG 2.1 AA)
+### 4. Accesibilidad (WCAG 2.1 AA) y SEO
 
-- **Estructura Semántica Completa:** Jerarquía de encabezados estricta (`<h1>` a `<h3>`), landmarks HTML5 (`<main>`, `<nav>`, `<header>`, `<footer>`) y navegación clara.
-- **Lista de Proyectos para Crawlers y Lectores de Pantalla:** Estructura `<nav class="sr-only">` con lista numerada indexable que expone el contenido a lectores de pantalla y motores de búsqueda independientemente del canvas WebGL.
-- **Navegación Total por Teclado:** Foco coordinado en el viewport 3D (`ArrowUp`, `ArrowDown`, `Home`, `End`, `Space`, `Enter`).
-- **Control de Audio WAI-ARIA 1.2:** Atributo `aria-label="Silenciar sonido"` constante sincronizado con `aria-pressed`, aislando las etiquetas visuales del árbol de accesibilidad.
+- **Navegación Completa por Teclado:** soporte en el carrusel 3D para `ArrowUp`, `ArrowDown`, `Home`, `End`, `Enter` y `Space`, con anuncios en vivo (`aria-live="polite"`) al cambiar de proyecto y árbol de navegación indexable (`<nav class="sr-only">`).
+- **Respeto a `prefers-reduced-motion`:** desactivación de desplazamientos inerciales, bucles de flotación, simulaciones de partículas y filtros de desenfoque cuando el sistema operativo solicita reducir el movimiento.
+- **Datos Estructurados y Metadatos:** esquemas JSON-LD (`WebSite`, `Person` y `SoftwareSourceCode`), OpenGraph, Twitter Cards, `sitemap-index.xml` y `manifest.webmanifest`.
 
 ---
 
 ## Stack Tecnológico
 
-| Dominio              | Tecnología                                                       | Propósito                                                                       |
-| :------------------- | :--------------------------------------------------------------- | :------------------------------------------------------------------------------ |
-| **Framework Base**   | [Astro 7](https://astro.build/)                                  | Generación estática (SSG), View Transitions e isla de componentes               |
-| **Lenguaje**         | [TypeScript 5](https://www.typescriptlang.org/)                  | Tipado estricto, unión de contratos de dominio y cero `any`                     |
-| **Gráficos 3D**      | [Three.js](https://threejs.org/)                                 | Escena tridimensional, cámara en perspectiva y render targets                   |
-| **Física 2D**        | [Matter.js](https://brm.io/matter-js/)                           | Simulación de cuerpos rígidos y gravedad interactiva en estudios de caso        |
-| **Animación**        | [GSAP 3](https://greensock.com/gsap/)                            | Timelines de precisión, interpolación de curvas y morphing tipográfico          |
-| **Smooth Scroll**    | [Lenis](https://lenis.darkroom.engineering/)                     | Desplazamiento inercial suave exclusivo para rutas editoriales con scroll largo |
-| **Audio**            | Web Audio API                                                    | Síntesis procedural determinista en tiempo real                                 |
-| **Estilos**          | CSS Nativo (Moderno)                                             | Variables CSS, `@layer`, clamp fluido, grid y flexbox sin preprocesadores       |
-| **Auditoría & Lint** | [Biome](https://biomejs.dev/) + [Prettier](https://prettier.io/) | Análisis estático, ordenamiento de imports y formateo determinista              |
-| **Git Hooks**        | [Husky](https://typicode.github.io/husky/)                       | Pipeline pre-commit para garantizar cero errores en control de versiones        |
+| Capa | Tecnología | Uso en el proyecto |
+| :--- | :--- | :--- |
+| **Framework** | [Astro 7](https://astro.build/) | Generación estática (SSG) y enrutamiento con `ClientRouter` |
+| **Lenguaje** | [TypeScript 6](https://www.typescriptlang.org/) | Tipado estricto (`strict`, `noUncheckedIndexedAccess`, cero `any`) |
+| **Gráficos 3D** | [Three.js](https://threejs.org/) | Carrusel cilíndrico WebGL y post-procesado con shaders GLSL |
+| **Física 2D** | [Matter.js](https://brm.io/matter-js/) | Escenario gravitacional interactivo en estudios de caso |
+| **Animación** | [GSAP 3](https://greensock.com/gsap/) | Timelines de interfaz, filtros SVG mórficos y transiciones |
+| **Scroll Suave** | [Lenis](https://lenis.darkroom.engineering/) | Scroll inercial de documento en vistas de estudio de caso y perfil |
+| **Audio** | Web Audio API | Síntesis procedural en tiempo real sin muestras externas |
+| **Estilos** | CSS Nativo | Custom properties, CSS Grid, `mix-blend-mode` y diseño fluido |
+| **Calidad y Formato** | [Biome](https://biomejs.dev/) + [Prettier](https://prettier.io/) + [Husky](https://typicode.github.io/husky/) | Linting estático, formateo de `.astro` y verificación pre-commit |
 
 ---
 
@@ -57,70 +56,53 @@ Diseñado bajo principios de tipografía editorial en blanco y negro (`#000000` 
 
 ```text
 src/
-├── core/                        # Utilidades del sistema central
-│   ├── audio.ts                 # Orquestador del subsistema Web Audio
-│   ├── audio-synthesis.ts       # Nodos osciladores y curvas de envolvente (ADSR)
-│   ├── profile.ts               # Fuente única de datos de perfil, redes y metadatos
-│   └── smooth-scroll.ts         # Adaptador y ciclo de vida de Lenis
-├── design-system/               # Fundaciones visuales y tokens de diseño
-│   ├── components/              # Cursor reactivo, filtros SVG y morphic text
-│   ├── tokens/                  # Variables CSS de color, tipografía, espacio y layout
-│   └── reset.css                # Normalización estándar y barra de desplazamiento estilizada
-├── features/                    # Módulos desacoplados por funcionalidad
-│   ├── about/                   # Mascota interactiva, showcase editorial y partículas
-│   ├── consent/                 # Pantalla de bienvenida, audio gateway y storage
-│   ├── project-detail/          # Estudio de caso, specimens y motor TechGravity
-│   ├── projects/                # Escena 3D WebGL, shaders de refracción y controlador
-│   └── transitions/             # Orquestación de transición fluida SVG entre vistas
-├── layouts/                     # Plantillas base HTML5, SEO y metadatos estructurados
-│   └── BaseLayout.astro         # Inyección de ClientRouter y Schema.org JSON-LD
-└── pages/                       # Rutas estáticas de la aplicación
-    ├── index.astro              # Experiencia principal (Consentimiento + Tambor 3D)
-    ├── sobre-mi.astro           # Manifiesto profesional, experiencia y competencias
-    ├── 404.astro                # Página de error accesible y navegable
-    └── proyectos/[slug].astro   # Rutas dinámicas de estudios de caso
+├── core/                        # Subsistemas transversales
+│   ├── audio.ts                 # Motor singleton Web Audio API y bus maestro
+│   ├── audio-arrival.ts         # Síntesis de acorde armónico de entrada
+│   ├── audio-chime.ts           # Campanas generativas con paneo estéreo
+│   ├── audio-lifecycle.ts       # Suspensión, visibilidad y silenciamiento gradual
+│   ├── audio-synthesis.ts       # Drone ambiental y aura de proximidad
+│   ├── audio-tactile.ts         # Clics táctiles y vibración háptica
+│   ├── audio-wheel-tick.ts      # Síntesis IIR del detente de rotación del tambor
+│   ├── audio.types.ts           # Contratos del motor de audio
+│   ├── profile.ts               # Datos de perfil, contacto y metadatos
+│   └── smooth-scroll.ts         # Inicialización y limpieza de Lenis + GSAP ticker
+├── design-system/               # Tokens CSS y componentes base
+│   ├── components/              # Cursor elástico (spring 2D) y tipografía mórfica SVG
+│   ├── tokens/                  # Variables CSS de color, tipografía, espacio y movimiento
+│   ├── fonts.css                # Declaraciones @font-face (Author, Karrik y fuentes display)
+│   └── reset.css                # Reset CSS y utilidades de accesibilidad
+├── features/                    # Módulos por dominio funcional
+│   ├── about/                   # Vista Sobre mí, mascota interactiva y canvas de partículas
+│   ├── consent/                 # Pantalla de bienvenida, shader WebGL2 de nubes y persistencia
+│   ├── project-detail/          # Estudios de caso, especímenes con tilt 3D y TechGravity
+│   ├── projects/                # Tambor 3D WebGL, física de scroll, shader de lente y UI
+│   └── transitions/             # Transición SVG de barrido líquido entre páginas
+├── layouts/
+│   └── BaseLayout.astro         # Documento base, metadatos OpenGraph, JSON-LD y cabeceras
+└── pages/
+    ├── index.astro              # Ruta principal (Bienvenida + Tambor de proyectos)
+    ├── sobre-mi.astro           # Perfil profesional y stack técnico
+    ├── 404.astro                # Página 404 integrada al sistema de diseño
+    └── proyectos/[slug].astro   # Estudios de caso generados estáticamente
 ```
 
 ---
 
-## Comandos de Desarrollo
+## Scripts de Desarrollo
 
-El proyecto utiliza [`pnpm`](https://pnpm.io/) como gestor de paquetes.
+Requisitos: **Node.js >= 22.12.0** y **pnpm**.
 
 ```bash
-# Instalación de dependencias
-pnpm install
-
-# Iniciar servidor local de desarrollo
-pnpm dev
-
-# Comprobación de tipos de Astro y TypeScript
-pnpm check
-
-# Análisis estático y formateo con Biome
-pnpm lint
-
-# Formatear archivos del proyecto
-pnpm format
-
-# Compilación estática de producción
-pnpm build
-
-# Previsualizar el build generado
-pnpm preview
-
-# Pipeline de verificación completa (Tipo + Lint + Build)
-pnpm verify
+pnpm install   # Instalar dependencias
+pnpm dev       # Iniciar servidor de desarrollo
+pnpm check     # Verificar tipos de Astro y TypeScript
+pnpm lint      # Ejecutar análisis estático con Biome
+pnpm format    # Formatear código con Biome y Prettier (.astro)
+pnpm build     # Generar compilación estática en dist/
+pnpm preview   # Previsualizar el build de producción
+pnpm verify    # Ejecutar pipeline completo (check + lint + build)
 ```
-
----
-
-## Rendimiento y Optimización en Producción
-
-- **Sin dependencias pesadas en el cliente:** Cero librerías de componentes UI de terceros (sin React, Vue ni Tailwind CSS).
-- **Tipografías Optimizadas:** Tipografías en formato `.woff2` moderno (`Author Variable` y `Karrik`) con subconjuntos optimizados para latencia mínima.
-- **Estrategia PWA:** Archivo de manifiesto web válido (`/manifest.webmanifest`) con soporte de iconos responsivos en resolución completa (`192x192`, `512x512` e icono con máscara).
-- **SEO Técnico:** Generación automática de `sitemap-index.xml`, archivo `robots.txt` explícito y datos estructurados Schema.org (`Person` y `SoftwareSourceCode`).
 
 ---
 
@@ -131,7 +113,7 @@ Desarrollador de Software Fullstack & Creativo
 Tecnólogo en Análisis y Desarrollo de Software (ADSO — SENA)  
 Duitama, Boyacá, Colombia
 
-- **Sitio Web:** [andreyrondon.dev](https://andreyrondon.dev)
+- **Web:** [www.andreyrondon.dev](https://www.andreyrondon.dev)
 - **GitHub:** [@Andreycho-B](https://github.com/Andreycho-B)
 - **LinkedIn:** [Andrey Rondón](https://linkedin.com/in/andrey-rond%C3%B3n-980345426)
-- **Correo Electrónico:** rondonandrey42@gmail.com
+- **Contacto:** rondonandrey42@gmail.com
