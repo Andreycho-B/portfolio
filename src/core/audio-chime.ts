@@ -45,12 +45,10 @@ export const playGenerativeChime = (ctx: AudioContext, destination: GainNode): v
   const cleanup = () => {
     if (isCleaned) return;
     isCleaned = true;
-    try {
-      osc1.disconnect();
-      osc2.disconnect();
-      chimeGain.disconnect();
-      panner.disconnect();
-    } catch {}
+    osc1.disconnect();
+    osc2.disconnect();
+    chimeGain.disconnect();
+    panner.disconnect();
   };
   osc1.onended = cleanup;
   osc2.onended = cleanup;

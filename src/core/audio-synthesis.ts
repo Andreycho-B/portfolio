@@ -133,29 +133,22 @@ export const startOrganicDrone = (
     droneGain.gain.linearRampToValueAtTime(0.0001, stopTime);
 
     window.setTimeout(() => {
-      try {
-        for (const node of [
-          oscRoot,
-          oscRootDetune,
-          oscFifth,
-          oscNinth,
-          ...auraOscillators,
-          panLfo,
-        ]) {
+      for (const node of [oscRoot, oscRootDetune, oscFifth, oscNinth, ...auraOscillators, panLfo]) {
+        if (ctx.state !== "closed") {
           node.stop();
-          node.disconnect();
         }
-        for (const gain of auraMixGains) gain.disconnect();
-        rootGain.disconnect();
-        detuneGain.disconnect();
-        fifthGain.disconnect();
-        ninthGain.disconnect();
-        auraGain.disconnect();
-        filter.disconnect();
-        panner.disconnect();
-        panGain.disconnect();
-        droneGain.disconnect();
-      } catch {}
+        node.disconnect();
+      }
+      for (const gain of auraMixGains) gain.disconnect();
+      rootGain.disconnect();
+      detuneGain.disconnect();
+      fifthGain.disconnect();
+      ninthGain.disconnect();
+      auraGain.disconnect();
+      filter.disconnect();
+      panner.disconnect();
+      panGain.disconnect();
+      droneGain.disconnect();
     }, 180);
   };
 

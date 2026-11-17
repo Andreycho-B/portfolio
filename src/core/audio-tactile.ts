@@ -71,10 +71,8 @@ const getSelectClickBuffer = (ctx: AudioContext): AudioBuffer => {
 };
 
 export const triggerHapticDetent = (durationMs = 5): void => {
-  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-    try {
-      navigator.vibrate(durationMs);
-    } catch {}
+  if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+    navigator.vibrate(durationMs);
   }
 };
 
@@ -95,11 +93,9 @@ export const synthesizeIosSelectionClick = (ctx: AudioContext, destination: Gain
   gain.connect(destination);
   src.start();
   src.onended = () => {
-    try {
-      src.disconnect();
-      filter.disconnect();
-      gain.disconnect();
-    } catch {}
+    src.disconnect();
+    filter.disconnect();
+    gain.disconnect();
   };
 };
 
@@ -127,10 +123,8 @@ export const synthesizeJellyPop = (ctx: AudioContext, destination: GainNode): vo
   osc.start(now);
   osc.stop(now + 0.085);
   osc.onended = () => {
-    try {
-      osc.disconnect();
-      filter.disconnect();
-      gain.disconnect();
-    } catch {}
+    osc.disconnect();
+    filter.disconnect();
+    gain.disconnect();
   };
 };

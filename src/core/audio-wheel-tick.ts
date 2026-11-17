@@ -117,9 +117,7 @@ export const synthesizeWheelTick = (
   gain.connect(destination);
   src.start();
   src.onended = () => {
-    try {
-      src.disconnect();
-      gain.disconnect();
-    } catch {}
+    src.disconnect();
+    gain.disconnect();
   };
 };

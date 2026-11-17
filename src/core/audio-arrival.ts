@@ -54,9 +54,7 @@ export const synthesizeProjectArrival = (
   if (rootOsc) {
     rootOsc.onended = () => {
       for (const node of nodesToClean) {
-        try {
-          node.disconnect();
-        } catch {}
+        node.disconnect();
       }
       masterGain.disconnect();
       filter.disconnect();

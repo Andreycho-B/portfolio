@@ -7,6 +7,28 @@ export const cancelPendingSuspend = (): void => {
   }
 };
 
+export const createMasterGainChain = (ctx: AudioContext): GainNode => {
+  const now = ctx.currentTime;
+  const dcBlocker = ctx.createBiquadFilter();
+  dcBlocker.type = "highpass";
+  dcBlocker.frequency.setValueAtTime(30, now);
+  dcBlocker.Q.setValueAtTime(Math.SQRT1_2, now);
+
+  const limiter = ctx.createDynamicsCompressor();
+  limiter.threshold.setValueAtTime(-2.5, now);
+  limiter.knee.setValueAtTime(0, now);
+  limiter.ratio.setValueAtTime(20, now);
+  limiter.attack.setValueAtTime(0.0005, now);
+  limiter.release.setValueAtTime(0.04, now);
+
+  const masterGain = ctx.createGain();
+  masterGain.gain.setValueAtTime(0.7, now);
+  masterGain.connect(dcBlocker);
+  dcBlocker.connect(limiter);
+  limiter.connect(ctx.destination);
+  return masterGain;
+};
+
 export const gracefulMute = (
   audioContext: AudioContext | null,
   masterGain: GainNode | null,
@@ -24,7 +46,9 @@ export const gracefulMute = (
     () => {
       pendingSuspendTimer = null;
       if (audioContext.state === "running") {
-        void audioContext.suspend().catch(() => {});
+        void audioContext.suspend().catch((err: unknown) => {
+          console.warn("[AudioLifecycle] Suspend failed:", err);
+        });
       }
     },
     Math.floor(durationSec * 1000) + 15,
