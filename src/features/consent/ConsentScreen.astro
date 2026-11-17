@@ -12,9 +12,7 @@ import "./consent-screen.css";
       if (stored && Date.now() - Number(stored) < CONSENT_TTL) {
         document.documentElement.classList.add("skip-consent");
       }
-    } catch {
-      // Storage restricted
-    }
+    } catch {}
   })();
 </script>
 

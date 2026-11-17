@@ -88,16 +88,14 @@ html.skip-consent .consent-container {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(26, 23, 20, 0.06);
+  border: 1px solid rgba(26, 23, 20, 0.24);
   border-radius: var(--radius-pill);
   box-shadow: none;
   font-family: var(--font-text);
   font-size: 13px;
   font-weight: 500;
-  color: #ffffff;
+  color: var(--color-fg);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   cursor: pointer;
@@ -120,14 +118,11 @@ html.skip-consent .consent-container {
 }
 .btn-mute-entry:hover,
 .btn-mute-entry:focus-visible {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.24);
-  border-color: rgba(255, 255, 255, 0.52);
-  box-shadow: none;
+  background: rgba(26, 23, 20, 0.12);
+  border-color: rgba(26, 23, 20, 0.45);
   transform: scale(1.02);
 }
 .btn-mute-entry:active {
-  background: rgba(255, 255, 255, 0.18);
   transform: scale(0.97);
   transition: transform 0.1s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -137,15 +132,13 @@ html.has-custom-cursor .btn-mute-entry::before {
 }
 .consent-container[data-backdrop-active="true"] .btn-mute-entry {
   background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.28);
-  box-shadow: none;
+  border-color: rgba(255, 255, 255, 0.34);
   color: #ffffff;
 }
 .consent-container[data-backdrop-active="true"] .btn-mute-entry:hover,
 .consent-container[data-backdrop-active="true"] .btn-mute-entry:focus-visible {
   background: rgba(255, 255, 255, 0.24);
-  border-color: rgba(255, 255, 255, 0.52);
-  box-shadow: none;
+  border-color: rgba(255, 255, 255, 0.56);
   color: #ffffff;
 }
 @media (prefers-reduced-motion: reduce) {

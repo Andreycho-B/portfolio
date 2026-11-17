@@ -1,11 +1,11 @@
 import { createSpring2D } from "../../design-system/components/spring-physics";
-import type { CloudControllerHandle, CloudCursorState, TextClearZone } from "./cloud.types";
+import type {
+  CloudClearZoneTargets,
+  CloudControllerHandle,
+  CloudCursorState,
+  TextClearZone,
+} from "./cloud.types";
 import { createCloudRenderer } from "./cloud-renderer";
-
-interface CloudClearZoneTargets {
-  readonly contentEl: HTMLElement | null;
-  readonly actionsEl: HTMLElement | null;
-}
 
 export const initCloudCanvas = (
   canvas: HTMLCanvasElement,
@@ -14,8 +14,7 @@ export const initCloudCanvas = (
   const renderer = createCloudRenderer(canvas);
   if (!renderer) return null;
 
-  const contentEl = clearZones.contentEl;
-  const actionsEl = clearZones.actionsEl;
+  const { contentEl, actionsEl } = clearZones;
 
   let animationFrameId: number | null = null;
   let isRevealed = false;
@@ -30,6 +29,9 @@ export const initCloudCanvas = (
 
   let hasPointer = false;
   let cursorStrength = 0;
+  let currentRenderScale = 0.85;
+  let pixelScale = 2.4;
+  let canvasRect = canvas.getBoundingClientRect();
   const cursor: CloudCursorState = { x: 0, y: 0, strength: 0 };
 
   let textClearZone: TextClearZone = [
@@ -38,42 +40,39 @@ export const initCloudCanvas = (
     canvas.width * 0.32,
     canvas.height * 0.24,
   ];
-
   let actionZone: TextClearZone = [canvas.width * 0.5, 48, 120, 32];
 
   const updateZones = () => {
     if (contentEl) {
       const rect = contentEl.getBoundingClientRect();
-      const cx = rect.left + rect.width * 0.5;
-      const cy = canvas.height - (rect.top + rect.height * 0.5);
-      const rx = rect.width * 0.5 + 64;
-      const ry = rect.height * 0.5 + 56;
+      const cx = (rect.left - canvasRect.left + rect.width * 0.5) * currentRenderScale;
+      const cy =
+        canvas.height - (rect.top - canvasRect.top + rect.height * 0.5) * currentRenderScale;
+      const rx = (rect.width * 0.5 + 64) * currentRenderScale;
+      const ry = (rect.height * 0.5 + 56) * currentRenderScale;
       textClearZone = [cx, cy, rx, ry];
     }
     if (actionsEl) {
       const rect = actionsEl.getBoundingClientRect();
-      const cx = rect.left + rect.width * 0.5;
-      const cy = canvas.height - (rect.top + rect.height * 0.5);
-      const rx = Math.max(rect.width * 0.5, 60);
-      const ry = Math.max(rect.height * 0.5, 20);
+      const cx = (rect.left - canvasRect.left + rect.width * 0.5) * currentRenderScale;
+      const cy =
+        canvas.height - (rect.top - canvasRect.top + rect.height * 0.5) * currentRenderScale;
+      const rx = Math.max(rect.width * 0.5, 60) * currentRenderScale;
+      const ry = Math.max(rect.height * 0.5, 20) * currentRenderScale;
       actionZone = [cx, cy, rx, ry];
     }
   };
-
-  let pixelScale = 2.4;
-  let canvasRect = canvas.getBoundingClientRect();
 
   const resize = () => {
     const width = canvas.parentElement?.clientWidth ?? window.innerWidth;
     const height = canvas.parentElement?.clientHeight ?? window.innerHeight;
     const isMobile = width < 768;
-    const renderScale = isMobile ? 0.75 : 0.85;
-    canvas.width = Math.floor(width * renderScale);
-    canvas.height = Math.floor(height * renderScale);
+    currentRenderScale = isMobile ? 0.75 : 0.85;
+    canvas.width = Math.floor(width * currentRenderScale);
+    canvas.height = Math.floor(height * currentRenderScale);
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
     canvasRect = canvas.getBoundingClientRect();
-
     pixelScale = isMobile ? 2.4 : 1.9;
 
     renderer.resize(canvas.width, canvas.height);
@@ -82,9 +81,8 @@ export const initCloudCanvas = (
   resize();
 
   const handlePointerCoord = (e: PointerEvent) => {
-    const targetX = e.clientX - canvasRect.left;
-    const targetY = e.clientY - canvasRect.top;
-
+    const targetX = (e.clientX - canvasRect.left) * currentRenderScale;
+    const targetY = (e.clientY - canvasRect.top) * currentRenderScale;
     spring.targetX = targetX;
     spring.targetY = targetY;
 
@@ -94,20 +92,12 @@ export const initCloudCanvas = (
     }
   };
 
-  const onPointerDown = (e: PointerEvent) => {
-    handlePointerCoord(e);
-  };
-
-  const onPointerMove = (e: PointerEvent) => {
-    handlePointerCoord(e);
-  };
-
   const onPointerEnd = () => {
     hasPointer = false;
   };
 
-  window.addEventListener("pointerdown", onPointerDown, { passive: true });
-  window.addEventListener("pointermove", onPointerMove, { passive: true });
+  window.addEventListener("pointerdown", handlePointerCoord, { passive: true });
+  window.addEventListener("pointermove", handlePointerCoord, { passive: true });
   window.addEventListener("pointerup", onPointerEnd, { passive: true });
   window.addEventListener("pointercancel", onPointerEnd, { passive: true });
   window.addEventListener("pointerleave", onPointerEnd, { passive: true });
@@ -131,12 +121,9 @@ export const initCloudCanvas = (
         : 1 - (-2 * cloudProgress + 2) ** 2 / 2;
 
     spring.step(dt);
-
-    if (hasPointer) {
-      cursorStrength = Math.min(1.0, cursorStrength + dt * 4.0);
-    } else {
-      cursorStrength = Math.max(0.0, cursorStrength - dt * 2.5);
-    }
+    cursorStrength = hasPointer
+      ? Math.min(1.0, cursorStrength + dt * 4.0)
+      : Math.max(0.0, cursorStrength - dt * 2.5);
 
     cursor.x = spring.currentX;
     cursor.y = spring.currentY;
@@ -158,10 +145,7 @@ export const initCloudCanvas = (
     animationFrameId = requestAnimationFrame(loop);
   };
 
-  const onCovered = () => {
-    reveal();
-  };
-  document.addEventListener("welcome:backdrop-covered", onCovered, { once: true });
+  document.addEventListener("welcome:backdrop-covered", reveal, { once: true });
 
   const destroy = () => {
     if (animationFrameId !== null) {
@@ -169,13 +153,13 @@ export const initCloudCanvas = (
       animationFrameId = null;
     }
     canvas.classList.remove("is-revealed");
-    window.removeEventListener("pointerdown", onPointerDown);
-    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerdown", handlePointerCoord);
+    window.removeEventListener("pointermove", handlePointerCoord);
     window.removeEventListener("pointerup", onPointerEnd);
     window.removeEventListener("pointercancel", onPointerEnd);
     window.removeEventListener("pointerleave", onPointerEnd);
     window.removeEventListener("resize", resize);
-    document.removeEventListener("welcome:backdrop-covered", onCovered);
+    document.removeEventListener("welcome:backdrop-covered", reveal);
     document.removeEventListener("morphic:phrase-start", updateZones);
     renderer.destroy();
   };

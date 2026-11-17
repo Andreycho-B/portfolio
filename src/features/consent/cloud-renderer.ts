@@ -1,18 +1,5 @@
-import type { CloudCursorState, TextClearZone } from "./cloud.types";
+import type { CloudCursorState, CloudWebGLRenderer, TextClearZone } from "./cloud.types";
 import { FRAGMENT_SHADER_SOURCE, VERTEX_SHADER_SOURCE } from "./cloud-shader";
-
-interface CloudWebGLRenderer {
-  render: (
-    time: number,
-    opacity: number,
-    cursor: CloudCursorState,
-    textClearZone: TextClearZone,
-    actionZone: TextClearZone,
-    pixelScale: number,
-  ) => void;
-  resize: (width: number, height: number) => void;
-  destroy: () => void;
-}
 
 const compileShader = (
   gl: WebGL2RenderingContext,

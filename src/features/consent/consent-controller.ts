@@ -164,7 +164,18 @@ export const initConsentScreen = (): void => {
     cursor.setExpanded(true, CURSOR_LABEL_CONSENT);
   };
 
-  screenElement.addEventListener("morphic:complete", revealControls, { once: true });
+  const prefersReducedMotion =
+    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const morphicEl = screenElement.querySelector<HTMLElement>("[data-morphic]");
+
+  if (prefersReducedMotion) {
+    backdrop?.expand();
+    revealControls();
+  } else if (morphicEl?.dataset.morphicComplete === "true") {
+    revealControls();
+  } else {
+    screenElement.addEventListener("morphic:complete", revealControls, { once: true });
+  }
   window.addEventListener("pointermove", handlePointerMove, { passive: true });
   window.addEventListener("pointerdown", handlePointerDown);
   window.addEventListener("pointerup", handlePointerUp);
