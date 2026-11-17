@@ -1,10 +1,12 @@
 import { getAudioSystem } from "../../core/audio";
 import { destroySmoothScroll, initSmoothScroll } from "../../core/smooth-scroll";
 import { getCursorController } from "../../design-system/components/cursor-controller";
+import { bindCursorExpandTriggers } from "../../design-system/components/cursor-events";
 import { getStoredSoundPreference } from "../consent/consent-storage";
 import { initSoundToggle } from "../projects/sound-toggle";
 import {
   initIncomingFluidWipe,
+  isModifiedClick,
   navigateWithFluidWipe,
 } from "../transitions/fluid-transition-controller";
 import { initAboutHeroEntrance } from "./about-hero-entrance";
@@ -17,23 +19,23 @@ export const initAboutPage = (): void => {
   stage.dataset.pageInit = "true";
 
   initIncomingFluidWipe();
-
   const lenis = initSmoothScroll();
 
   const audio = getAudioSystem();
-  const soundEnabled = getStoredSoundPreference();
-  void audio.initialize(soundEnabled);
+  void audio.initialize(getStoredSoundPreference());
 
   const cursor = getCursorController();
   cursor.enable();
 
   const cleanupSoundToggle = initSoundToggle(document.body);
+  const cleanupCursorExpand = bindCursorExpandTriggers(document.body, cursor);
 
   const backTriggers = document.querySelectorAll<HTMLAnchorElement>(
     "[data-back-trigger], .back-nav-arrow, .footer-back-link",
   );
   backTriggers.forEach((trigger) => {
     trigger.addEventListener("click", (e) => {
+      if (isModifiedClick(e)) return;
       e.preventDefault();
       cursor.setExpanded(false);
       cursor.setPressed(false);
@@ -41,34 +43,12 @@ export const initAboutPage = (): void => {
     });
   });
 
-  const cursorExpandEls = document.querySelectorAll<HTMLElement>("[data-cursor-expand]");
-  cursorExpandEls.forEach((el) => {
-    const label = el.dataset.cursorExpand;
-    el.addEventListener("mouseenter", () => {
-      cursor.setExpanded(true, label);
-    });
-    el.addEventListener("mouseleave", () => {
-      cursor.setExpanded(false);
-    });
-    el.addEventListener("pointerleave", () => {
-      cursor.setExpanded(false);
-    });
-    el.addEventListener("click", () => {
-      cursor.setExpanded(false);
-      cursor.setPressed(false);
-    });
-  });
-
   const interactiveEls = document.querySelectorAll<HTMLElement>(
-    ".nav-pill-btn, .footer-inline-link, .sound-toggle-btn, .back-nav-arrow, .footer-back-link",
+    ".footer-inline-link, .sound-toggle-btn, .back-nav-arrow, .footer-back-link",
   );
   interactiveEls.forEach((el) => {
-    el.addEventListener("mouseenter", () => {
-      audio.playTactileFeedback("tick", 0.35);
-    });
-    el.addEventListener("click", () => {
-      audio.playTactileFeedback("click", 0.65);
-    });
+    el.addEventListener("mouseenter", () => audio.playTactileFeedback("tick", 0.35));
+    el.addEventListener("click", () => audio.playTactileFeedback("click", 0.65));
   });
 
   const revealTargets = document.querySelectorAll<HTMLElement>("[data-reveal]");
@@ -79,6 +59,7 @@ export const initAboutPage = (): void => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add("is-revealed");
+            observer?.unobserve(entry.target);
           }
         });
       },
@@ -107,7 +88,8 @@ export const initAboutPage = (): void => {
       cursor.setPressed(false);
       destroySmoothScroll();
       cleanupSoundToggle();
-      if (mascotHandle) mascotHandle.cleanup();
+      cleanupCursorExpand();
+      mascotHandle?.cleanup();
       cleanupHeroEntrance();
       cleanupStackMorph();
       observer?.disconnect();

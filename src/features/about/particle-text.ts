@@ -2,6 +2,9 @@ export function initParticleText(canvas: HTMLCanvasElement): () => void {
   const ctx = canvas.getContext("2d");
   if (!ctx) return () => {};
 
+  const prefersReduced =
+    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   let particleData = new Float32Array(0);
   let particleCount = 0;
   let particleSize = 1.4;
@@ -27,16 +30,12 @@ export function initParticleText(canvas: HTMLCanvasElement): () => void {
     const maxTextWidth = canvas.width * 0.9;
     const maxTextHeight = canvas.height * 0.9;
     let fontSize = Math.floor(maxTextHeight);
-    if ("letterSpacing" in offCtx) {
-      offCtx.letterSpacing = "-0.04em";
-    }
-    offCtx.font = `900 ${fontSize}px "Author", "Cabinet Grotesk", system-ui, sans-serif`;
+    if ("letterSpacing" in offCtx) offCtx.letterSpacing = "-0.04em";
+    offCtx.font = `900 ${fontSize}px "Author", system-ui, sans-serif`;
     const measured = offCtx.measureText("ANDREY").width;
     if (measured > 0) {
-      const scaleW = maxTextWidth / measured;
-      const scaleH = maxTextHeight / fontSize;
-      fontSize = Math.floor(fontSize * Math.min(scaleW, scaleH));
-      offCtx.font = `900 ${fontSize}px "Author", "Cabinet Grotesk", system-ui, sans-serif`;
+      fontSize = Math.floor(fontSize * Math.min(maxTextWidth / measured, maxTextHeight / fontSize));
+      offCtx.font = `900 ${fontSize}px "Author", system-ui, sans-serif`;
     }
 
     offCtx.fillStyle = "#000000";
@@ -61,8 +60,9 @@ export function initParticleText(canvas: HTMLCanvasElement): () => void {
       const s = i * 6;
       const ox = coords[i * 2] ?? 0;
       const oy = coords[i * 2 + 1] ?? 0;
-      particleData[s + 0] = ox + (Math.random() - 0.5) * 4;
-      particleData[s + 1] = oy + (Math.random() - 0.5) * 4;
+      const jitter = prefersReduced ? 0 : (Math.random() - 0.5) * 4;
+      particleData[s + 0] = ox + jitter;
+      particleData[s + 1] = oy + jitter;
       particleData[s + 2] = ox;
       particleData[s + 3] = oy;
     }
@@ -146,6 +146,7 @@ export function initParticleText(canvas: HTMLCanvasElement): () => void {
   }
 
   const handlePointer = (e: PointerEvent) => {
+    if (prefersReduced) return;
     const rect = canvas.getBoundingClientRect();
     mouse.x = e.clientX - rect.left;
     mouse.y = e.clientY - rect.top;
@@ -171,13 +172,12 @@ export function initParticleText(canvas: HTMLCanvasElement): () => void {
   const io = new IntersectionObserver(
     (entries) => {
       const first = entries[0];
-      if (first) {
-        isVisible = first.isIntersecting;
-        if (isVisible) wake();
-        else if (animId) {
-          cancelAnimationFrame(animId);
-          animId = 0;
-        }
+      if (!first) return;
+      isVisible = first.isIntersecting;
+      if (isVisible) wake();
+      else if (animId) {
+        cancelAnimationFrame(animId);
+        animId = 0;
       }
     },
     { threshold: 0.05 },

@@ -162,12 +162,13 @@ export const initMascotEyes = (options: MascotEyesOptions): MascotEyesController
   const handleZoneClick = (): void => {
     wink(Math.random() > 0.5 ? "left" : "right");
   };
+  const handleZonePointerDown = (): void => {
+    audio.playTactileFeedback("tick", 0.3);
+  };
 
   window.addEventListener("pointermove", handlePointerMove, { passive: true });
   interactiveZone?.addEventListener("click", handleZoneClick);
-  interactiveZone?.addEventListener("pointerdown", () => {
-    audio.playTactileFeedback("tick", 0.3);
-  });
+  interactiveZone?.addEventListener("pointerdown", handleZonePointerDown);
 
   scheduleNextBlink();
   scheduleNextSaccade();
@@ -179,6 +180,7 @@ export const initMascotEyes = (options: MascotEyesOptions): MascotEyesController
     squintTween?.kill();
     window.removeEventListener("pointermove", handlePointerMove);
     interactiveZone?.removeEventListener("click", handleZoneClick);
+    interactiveZone?.removeEventListener("pointerdown", handleZonePointerDown);
     gsap.killTweensOf(eyes);
     gsap.killTweensOf(pupils);
   };

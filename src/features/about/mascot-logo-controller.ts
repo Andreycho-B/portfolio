@@ -11,6 +11,9 @@ export const initMascotLogo = (lenis: Lenis | null): MascotLogoHandle | null => 
   const logoEl = document.getElementById("center-brand-logo");
   if (!logoEl) return null;
 
+  const prefersReduced =
+    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   let eyesController: MascotEyesController | undefined;
   const leftEye = document.querySelector<SVGElement>("#mascot-eye-left");
   const rightEye = document.querySelector<SVGElement>("#mascot-eye-right");
@@ -20,6 +23,15 @@ export const initMascotLogo = (lenis: Lenis | null): MascotLogoHandle | null => 
       rightEye,
       interactiveZone: logoEl,
     });
+  }
+
+  if (prefersReduced) {
+    return {
+      cleanup: () => {
+        eyesController?.destroy();
+      },
+      triggerBlink: () => {},
+    };
   }
 
   const floatRig = document.getElementById("mascot-float-rig");
@@ -101,9 +113,7 @@ export const initMascotLogo = (lenis: Lenis | null): MascotLogoHandle | null => 
       eyesController?.setScrollVelocity(velocity);
     };
     lenis.on("scroll", onLenisScroll);
-    unbindScroll = () => {
-      lenis.off("scroll", onLenisScroll);
-    };
+    unbindScroll = () => lenis.off("scroll", onLenisScroll);
   } else {
     const onNativeScroll = () => {
       const delta = window.scrollY - lastScrollY;
@@ -112,9 +122,7 @@ export const initMascotLogo = (lenis: Lenis | null): MascotLogoHandle | null => 
       eyesController?.setScrollVelocity(delta);
     };
     window.addEventListener("scroll", onNativeScroll, { passive: true });
-    unbindScroll = () => {
-      window.removeEventListener("scroll", onNativeScroll);
-    };
+    unbindScroll = () => window.removeEventListener("scroll", onNativeScroll);
   }
 
   return {
@@ -122,6 +130,7 @@ export const initMascotLogo = (lenis: Lenis | null): MascotLogoHandle | null => 
       window.removeEventListener("pointermove", handlePointerMove);
       unbindScroll();
       floatTween.kill();
+      gsap.killTweensOf(logoEl);
       eyesController?.destroy();
     },
     triggerBlink: (double = true) => {
