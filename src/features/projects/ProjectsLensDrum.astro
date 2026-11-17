@@ -12,16 +12,14 @@ const initialProject = PROJECTS[0];
   hidden
   aria-label="Proyectos seleccionados"
 >
-  <!-- Lista accesible e indexable por SEO y lectores de pantalla -->
   <nav class="sr-only projects-accessible-nav" aria-label="Proyectos de Andrey">
     <ol>
-      {PROJECTS.map((project, index) => (
+      {PROJECTS.map((project) => (
         <li>
           <a
             href={project.externalUrl ?? `/proyectos/${project.slug}`}
             target={project.externalUrl ? "_blank" : undefined}
             rel={project.externalUrl ? "noopener noreferrer" : undefined}
-            data-project-nav-link={index}
           >
             {project.title} ({project.year}) — {project.subtitle ?? project.role ?? ""}
           </a>
@@ -85,7 +83,7 @@ const initialProject = PROJECTS[0];
     data-drum-viewport
     tabindex="0"
     role="region"
-    aria-label="Carrete interactivo de proyectos. Usa las flechas arriba y abajo para rotar y Enter para abrir"
+    aria-label="Carrete interactivo de proyectos. Usa las flechas arriba y abajo, Inicio o Fin para rotar, y Enter o Espacio para abrir"
   >
     <canvas class="drum-webgl-canvas" data-drum-canvas aria-hidden="true"></canvas>
     <div class="drum-fallback-cards" data-drum-fallback aria-hidden="true">
@@ -99,6 +97,10 @@ const initialProject = PROJECTS[0];
             src={project.imageSrc}
             alt={`Captura del proyecto ${project.title}`}
             class="fallback-card-img"
+            width="1917"
+            height="912"
+            loading="lazy"
+            decoding="async"
           />
           <span class="fallback-card-title">{project.title}</span>
         </a>
@@ -107,7 +109,7 @@ const initialProject = PROJECTS[0];
   </div>
 
   <div class="projects-stage">
-    <div class="project-info-column">
+    <div class="project-info-column" aria-live="polite" aria-atomic="true">
       <h2 class="project-morphic-title" data-project-title>
         {initialProject.title}
       </h2>

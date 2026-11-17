@@ -1,29 +1,36 @@
-import * as THREE from "three";
+import {
+  Color,
+  Group,
+  HalfFloatType,
+  MathUtils,
+  Mesh,
+  MeshBasicMaterial,
+  PerspectiveCamera,
+  PlaneGeometry,
+  Scene,
+  SRGBColorSpace,
+  type Texture,
+  TextureLoader,
+  WebGLRenderer,
+  WebGLRenderTarget,
+} from "three";
 import type { DrumWebGLHandle, FrontCardBounds } from "./drum.types";
-import { DRUM_GLASS_FRAGMENT_SHADER, DRUM_GLASS_VERTEX_SHADER } from "./drum-glass-shader";
+import { createDrumLensPostPass } from "./drum-glass-shader";
 import { DRUM_SLOTS, PROJECTS } from "./project-data";
 
 export type { DrumWebGLHandle, FrontCardBounds };
 
 const BACKGROUND_HEX = 0xffffff;
-const CARD_WIDTH = 2.8,
-  CARD_GAP = 0.04,
-  CARD_HEIGHT_PER_VIEW_HALF = 0.85;
+const CARD_WIDTH = 2.8;
+const CARD_GAP = 0.04;
+const CARD_HEIGHT_PER_VIEW_HALF = 0.85;
 const CAMERA_FOV_DEG = 36;
-const TAN_HALF_FOV = Math.tan(THREE.MathUtils.degToRad(CAMERA_FOV_DEG / 2));
-const CARD_WIDTH_RATIO_MAX = 0.84,
-  CARD_WIDTH_RATIO_MIN = 0.34;
-const LENS_STRENGTH_BASE = 0.85,
-  LENS_STRENGTH_GAIN = 0.12;
-const CHROMATIC_BASE = 0.01,
-  CHROMATIC_GAIN = 0.003,
-  LENS_VELOCITY_CAP = 3;
-const LENS_BAND_BASE = 0.1,
-  LENS_BAND_GAIN = 0.012;
-
+const TAN_HALF_FOV = Math.tan(MathUtils.degToRad(CAMERA_FOV_DEG / 2));
+const CARD_WIDTH_RATIO_MAX = 0.84;
+const CARD_WIDTH_RATIO_MIN = 0.34;
 const SLOT_ANGLE = (2 * Math.PI) / DRUM_SLOTS;
 
-const fitTextureCover = (tex: THREE.Texture, cardAspect: number): void => {
+const fitTextureCover = (tex: Texture, cardAspect: number): void => {
   const img = tex.image as { width: number; height: number } | undefined;
   if (!img?.width || !img.height) return;
   const isWider = img.width / img.height > cardAspect;
@@ -38,9 +45,9 @@ export const createDrumWebGLScene = (
   onError?: (error: unknown) => void,
 ): DrumWebGLHandle | null => {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  let renderer: THREE.WebGLRenderer;
+  let renderer: WebGLRenderer;
   try {
-    renderer = new THREE.WebGLRenderer({
+    renderer = new WebGLRenderer({
       canvas,
       antialias: false,
       powerPreference: "high-performance",
@@ -59,14 +66,14 @@ export const createDrumWebGLScene = (
   };
   canvas.addEventListener("webglcontextlost", handleContextLost);
 
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(BACKGROUND_HEX);
-  const camera = new THREE.PerspectiveCamera(CAMERA_FOV_DEG, 1, 0.1, 100);
-  const drumGroup = new THREE.Group();
+  const scene = new Scene();
+  scene.background = new Color(BACKGROUND_HEX);
+  const camera = new PerspectiveCamera(CAMERA_FOV_DEG, 1, 0.1, 100);
+  const drumGroup = new Group();
   scene.add(drumGroup);
   let cardAspect = 1;
 
-  const texLoader = new THREE.TextureLoader();
+  const texLoader = new TextureLoader();
   const projectTextures = PROJECTS.map((project) => {
     const tex = texLoader.load(
       project.imageSrc,
@@ -75,56 +82,29 @@ export const createDrumWebGLScene = (
         onTextureReady();
       },
       undefined,
-      (err) => {
-        console.warn(`[DrumWebGLScene] Texture load failed: ${project.imageSrc}`, err);
-      },
+      (err) => console.warn(`[DrumWebGLScene] Texture load failed: ${project.imageSrc}`, err),
     );
-    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.colorSpace = SRGBColorSpace;
     tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
     return tex;
   });
 
-  const cardGeometry = new THREE.PlaneGeometry(CARD_WIDTH, 1);
+  const cardGeometry = new PlaneGeometry(CARD_WIDTH, 1);
   const cardMaterials = projectTextures.map(
-    (tex) => new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }),
+    (tex) => new MeshBasicMaterial({ map: tex, toneMapped: false }),
   );
-  const cardMeshes: THREE.Mesh[] = [];
+  const cardMeshes: Mesh[] = [];
   for (let i = 0; i < DRUM_SLOTS; i++) {
     const material = cardMaterials[i % cardMaterials.length];
     if (!material) continue;
-    const mesh = new THREE.Mesh(cardGeometry, material);
+    const mesh = new Mesh(cardGeometry, material);
     mesh.rotation.x = i * SLOT_ANGLE;
     drumGroup.add(mesh);
     cardMeshes.push(mesh);
   }
 
-  const layoutDrum = (radius: number): void => {
-    drumGroup.position.z = -radius;
-    cardMeshes.forEach((mesh, i) => {
-      const angle = i * SLOT_ANGLE;
-      mesh.position.set(0, -radius * Math.sin(angle), radius * Math.cos(angle));
-    });
-  };
-
-  const renderTarget = new THREE.WebGLRenderTarget(1, 1, { samples: 4, type: THREE.HalfFloatType });
-  const postScene = new THREE.Scene();
-  const postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-  const postMaterial = new THREE.ShaderMaterial({
-    uniforms: {
-      tDiffuse: { value: renderTarget.texture },
-      uBandTop: { value: LENS_BAND_BASE },
-      uBandBot: { value: LENS_BAND_BASE },
-      uStrength: { value: LENS_STRENGTH_BASE },
-      uCurve: { value: 1.0 },
-      uChromaticAberration: { value: CHROMATIC_BASE },
-    },
-    vertexShader: DRUM_GLASS_VERTEX_SHADER,
-    fragmentShader: DRUM_GLASS_FRAGMENT_SHADER,
-    depthTest: false,
-    depthWrite: false,
-  });
-  const postQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMaterial);
-  postScene.add(postQuad);
+  const renderTarget = new WebGLRenderTarget(1, 1, { samples: 4, type: HalfFloatType });
+  const postPass = createDrumLensPostPass(renderTarget);
 
   let frontBounds: FrontCardBounds = { widthRatio: 0, heightRatio: 0 };
   let scrollVelocity = 0;
@@ -132,9 +112,8 @@ export const createDrumWebGLScene = (
   let introProgress = 1;
 
   const setIntroProgress = (progress: number): void => {
-    introProgress = THREE.MathUtils.clamp(progress, 0, 1);
-    const cameraFactor = (1 - introProgress) * 0.22;
-    if (baseCameraZ > 0) camera.position.z = baseCameraZ * (1 + cameraFactor);
+    introProgress = MathUtils.clamp(progress, 0, 1);
+    if (baseCameraZ > 0) camera.position.z = baseCameraZ * (1 + (1 - introProgress) * 0.22);
   };
 
   const resize = (widthPx: number, heightPx: number): void => {
@@ -144,7 +123,7 @@ export const createDrumWebGLScene = (
     renderer.setSize(width, height, false);
     renderTarget.setSize(width * dpr, height * dpr);
 
-    const widthRatio = THREE.MathUtils.clamp(
+    const widthRatio = MathUtils.clamp(
       CARD_WIDTH_RATIO_MAX - (aspect - 0.5) * 0.4,
       CARD_WIDTH_RATIO_MIN,
       CARD_WIDTH_RATIO_MAX,
@@ -152,54 +131,31 @@ export const createDrumWebGLScene = (
     const halfHeight = CARD_WIDTH / widthRatio / 2 / aspect;
     const cardHeight = CARD_HEIGHT_PER_VIEW_HALF * halfHeight;
     cardAspect = CARD_WIDTH / cardHeight;
-    const tangentRadius = (cardHeight + CARD_GAP) / (2 * Math.sin(SLOT_ANGLE / 2));
+    const radius = (cardHeight + CARD_GAP) / (2 * Math.sin(SLOT_ANGLE / 2));
 
     camera.aspect = aspect;
     baseCameraZ = halfHeight / TAN_HALF_FOV;
-    const cameraFactor = (1 - introProgress) * 0.22;
-    camera.position.z = baseCameraZ * (1 + cameraFactor);
+    camera.position.z = baseCameraZ * (1 + (1 - introProgress) * 0.22);
     camera.updateProjectionMatrix();
 
-    cardMeshes.forEach((mesh) => {
+    drumGroup.position.z = -radius;
+    cardMeshes.forEach((mesh, i) => {
       mesh.scale.set(1, cardHeight, 1);
+      mesh.position.set(0, -radius * Math.sin(i * SLOT_ANGLE), radius * Math.cos(i * SLOT_ANGLE));
     });
-    projectTextures.forEach((tex) => {
-      fitTextureCover(tex, cardAspect);
-    });
-    layoutDrum(tangentRadius);
+    for (const tex of projectTextures) fitTextureCover(tex, cardAspect);
     frontBounds = {
       widthRatio: CARD_WIDTH / (2 * halfHeight * aspect),
       heightRatio: cardHeight / (2 * halfHeight),
     };
   };
 
-  const setRotation = (slotPosition: number): void => {
-    drumGroup.rotation.x = -slotPosition * SLOT_ANGLE;
-  };
-
-  const setScrollVelocity = (velocitySlotsPerSecond: number): void => {
-    scrollVelocity = velocitySlotsPerSecond;
-  };
-
   const render = (): void => {
-    const strengthUniform = postMaterial.uniforms.uStrength;
-    const chromaticUniform = postMaterial.uniforms.uChromaticAberration;
-    const bandTopUniform = postMaterial.uniforms.uBandTop;
-    const bandBotUniform = postMaterial.uniforms.uBandBot;
-    if (strengthUniform && chromaticUniform && bandTopUniform && bandBotUniform) {
-      const spinSpeed = Math.min(Math.abs(scrollVelocity), LENS_VELOCITY_CAP);
-      const opticalFactor = 1 - introProgress;
-      const dynamicBand = LENS_BAND_BASE + spinSpeed * LENS_BAND_GAIN + opticalFactor * 0.02;
-      bandTopUniform.value = dynamicBand;
-      bandBotUniform.value = dynamicBand;
-      strengthUniform.value =
-        LENS_STRENGTH_BASE + spinSpeed * LENS_STRENGTH_GAIN + opticalFactor * 0.11;
-      chromaticUniform.value = CHROMATIC_BASE + spinSpeed * CHROMATIC_GAIN + opticalFactor * 0.012;
-    }
+    postPass.updateUniforms(scrollVelocity, introProgress);
     renderer.setRenderTarget(renderTarget);
     renderer.render(scene, camera);
     renderer.setRenderTarget(null);
-    renderer.render(postScene, postCamera);
+    renderer.render(postPass.scene, postPass.camera);
   };
 
   const dispose = (): void => {
@@ -207,21 +163,22 @@ export const createDrumWebGLScene = (
     for (const material of cardMaterials) material.dispose();
     for (const tex of projectTextures) tex.dispose();
     cardGeometry.dispose();
-    postMaterial.dispose();
-    postQuad.geometry.dispose();
+    postPass.dispose();
     renderTarget.dispose();
     renderer.dispose();
   };
 
-  const getFrontCardBounds = (): FrontCardBounds => frontBounds;
-
   return {
-    setRotation,
-    setScrollVelocity,
+    setRotation: (slotPosition: number) => {
+      drumGroup.rotation.x = -slotPosition * SLOT_ANGLE;
+    },
+    setScrollVelocity: (vel: number) => {
+      scrollVelocity = vel;
+    },
     setIntroProgress,
     render,
     resize,
-    getFrontCardBounds,
+    getFrontCardBounds: () => frontBounds,
     dispose,
   };
 };

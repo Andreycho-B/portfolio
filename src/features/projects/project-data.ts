@@ -1,7 +1,7 @@
-type ProjectTheme = "dark" | "light";
+export type ProjectTheme = "dark" | "light";
 
-type ProjectId = "mias" | "tusuper" | "estandar";
-type ProjectSlug = "mias-hamburguesas-de-lujo" | "tu-super" | "estandar-gobernanza-agentes";
+export type ProjectId = "mias" | "tusuper" | "estandar";
+export type ProjectSlug = "mias-hamburguesas-de-lujo" | "tu-super" | "estandar-gobernanza-agentes";
 
 export interface ProjectItem {
   readonly id: ProjectId;
@@ -109,7 +109,7 @@ export const PROJECTS: readonly [ProjectItem, ...ProjectItem[]] = [
   {
     id: "estandar",
     title: "Estándar",
-    subtitle: "AI Agent Engineering Standard",
+    subtitle: "Especificación de Ingeniería y Arquitectura de Software",
     role: "Autor y Mantenedor (Especificación Open Source)",
     period: "2026 – Actualidad",
     year: "2026",
@@ -119,16 +119,16 @@ export const PROJECTS: readonly [ProjectItem, ...ProjectItem[]] = [
     theme: "dark",
     externalUrl: "https://github.com/Andreycho-B/ai-agent-engineering-standard",
     repoUrl: "https://github.com/Andreycho-B/ai-agent-engineering-standard",
-    tags: ["AI Agents", "RFC Standard", "Auditorías", "CC BY 4.0", "Zero AI-Slop"],
+    tags: ["Arquitectura", "RFC Standard", "TypeScript", "Go", "CC BY 4.0"],
     highlights: [
-      "Norma técnica abierta de 32 documentos en 7 niveles jerárquicos para erradicar el código defectuoso en flujos con IA.",
-      "Sistema formal de propuestas de cambio (RFC) bajo licencia CC BY 4.0 y protocolos de auditoría de cumplimiento.",
+      "Especificación técnica abierta de 32 documentos en 7 niveles jerárquicos para estandarizar arquitectura, seguridad y calidad en sistemas de producción.",
+      "Sistema formal de propuestas de cambio (RFC) bajo licencia CC BY 4.0 con protocolos deterministas de revisión y entrega.",
     ],
-    statementTitle: "Gobernanza Rigurosa para Ingeniería Asistida por IA",
+    statementTitle: "Estandarización Arquitectónica y Gobernanza Técnica",
     statementChallenge:
-      "Mitigar la degradación de código, alucinaciones arquitectónicas y acumulación de deuda técnica generada por agentes LLM en entornos de producción sin estándares formales.",
+      "Prevenir la degradación arquitectónica, inconsistencia entre capas y acumulación de deuda técnica en el desarrollo de sistemas fullstack de alta exigencia.",
     statementSolution:
-      "Constitución técnica estructurada en 32 documentos distribuidos en 7 niveles de autoridad, integrando protocolos de convergencia estricta, RFC-2026 y matrices de auditoría deterministas bajo licencia abierta CC BY 4.0.",
+      "Marco normativo estructurado en 32 documentos distribuidos en 7 niveles de autoridad, integrando contratos estrictos, especificaciones RFC y matrices de verificación previas a producción bajo licencia abierta CC BY 4.0.",
   },
 ] as const;
 

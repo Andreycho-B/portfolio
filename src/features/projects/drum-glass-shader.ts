@@ -1,3 +1,20 @@
+import {
+  Mesh,
+  OrthographicCamera,
+  PlaneGeometry,
+  Scene,
+  ShaderMaterial,
+  type WebGLRenderTarget,
+} from "three";
+
+const LENS_STRENGTH_BASE = 0.85;
+const LENS_STRENGTH_GAIN = 0.12;
+const CHROMATIC_BASE = 0.01;
+const CHROMATIC_GAIN = 0.003;
+const LENS_VELOCITY_CAP = 3;
+const LENS_BAND_BASE = 0.1;
+const LENS_BAND_GAIN = 0.012;
+
 export const DRUM_GLASS_VERTEX_SHADER = `
   varying vec2 vUv;
   void main() {
@@ -79,3 +96,51 @@ export const DRUM_GLASS_FRAGMENT_SHADER = `
     #include <colorspace_fragment>
   }
 `;
+
+export interface DrumLensPostPass {
+  readonly scene: Scene;
+  readonly camera: OrthographicCamera;
+  readonly updateUniforms: (scrollVelocity: number, introProgress: number) => void;
+  readonly dispose: () => void;
+}
+
+export const createDrumLensPostPass = (renderTarget: WebGLRenderTarget): DrumLensPostPass => {
+  const scene = new Scene();
+  const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  const material = new ShaderMaterial({
+    uniforms: {
+      tDiffuse: { value: renderTarget.texture },
+      uBandTop: { value: LENS_BAND_BASE },
+      uBandBot: { value: LENS_BAND_BASE },
+      uStrength: { value: LENS_STRENGTH_BASE },
+      uCurve: { value: 1.0 },
+      uChromaticAberration: { value: CHROMATIC_BASE },
+    },
+    vertexShader: DRUM_GLASS_VERTEX_SHADER,
+    fragmentShader: DRUM_GLASS_FRAGMENT_SHADER,
+    depthTest: false,
+    depthWrite: false,
+  });
+  const quad = new Mesh(new PlaneGeometry(2, 2), material);
+  scene.add(quad);
+
+  const updateUniforms = (scrollVelocity: number, introProgress: number): void => {
+    const { uStrength, uChromaticAberration, uBandTop, uBandBot } = material.uniforms;
+    if (!uStrength || !uChromaticAberration || !uBandTop || !uBandBot) return;
+    const spinSpeed = Math.min(Math.abs(scrollVelocity), LENS_VELOCITY_CAP);
+    const opticalFactor = 1 - introProgress;
+    const dynamicBand = LENS_BAND_BASE + spinSpeed * LENS_BAND_GAIN + opticalFactor * 0.02;
+    uBandTop.value = dynamicBand;
+    uBandBot.value = dynamicBand;
+    uStrength.value = LENS_STRENGTH_BASE + spinSpeed * LENS_STRENGTH_GAIN + opticalFactor * 0.11;
+    uChromaticAberration.value =
+      CHROMATIC_BASE + spinSpeed * CHROMATIC_GAIN + opticalFactor * 0.012;
+  };
+
+  const dispose = (): void => {
+    material.dispose();
+    quad.geometry.dispose();
+  };
+
+  return { scene, camera, updateUniforms, dispose };
+};

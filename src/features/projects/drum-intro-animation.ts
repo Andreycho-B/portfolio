@@ -3,11 +3,7 @@ import { gsap } from "gsap";
 interface DrumIntroElements {
   readonly root: HTMLElement;
   readonly canvas: HTMLCanvasElement;
-  readonly metaBar: HTMLElement | null;
   readonly titleElement: HTMLElement | null;
-  readonly detailsRow: HTMLElement | null;
-  readonly pagination: HTMLElement | null;
-  readonly actionColumn: HTMLElement | null;
   readonly blurNode: SVGFEGaussianBlurElement | null;
   readonly onSettleDrum: () => void;
   readonly onUpdateIntroProgress: (progress: number) => void;
@@ -21,16 +17,16 @@ export const playDrumIntroAnimation = (
   const {
     root,
     canvas,
-    metaBar,
     titleElement,
-    detailsRow,
-    pagination,
-    actionColumn,
     blurNode,
     onSettleDrum,
     onUpdateIntroProgress,
     onPlayArrivalSound,
   } = elements;
+  const metaBar = root.querySelector<HTMLElement>(".projects-meta-bar");
+  const detailsRow = root.querySelector<HTMLElement>(".project-details-row");
+  const pagination = root.querySelector<HTMLElement>(".drum-pagination");
+  const actionColumn = root.querySelector<HTMLElement>(".project-action-column");
 
   const prefersReduced =
     typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;

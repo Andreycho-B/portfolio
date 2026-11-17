@@ -59,6 +59,21 @@ export class DrumScrollPhysics {
     this.targetSlot = Math.round(this.targetSlot) + step;
   }
 
+  public applyKeyNavigation(key: string, projectCount: number): 1 | -1 | 0 {
+    if (key === "ArrowDown" || key === "ArrowUp") {
+      const step = key === "ArrowDown" ? 1 : -1;
+      this.stepSlots(step);
+      return step;
+    }
+    if (key === "Home" || key === "End") {
+      const idx = key === "Home" ? 0 : projectCount - 1;
+      const base = Math.floor(Math.round(this.targetSlot) / projectCount);
+      this.targetSlot = base * projectCount + idx;
+      return key === "Home" ? -1 : 1;
+    }
+    return 0;
+  }
+
   public snapToNearestSlot(): void {
     const projectedOffset = Math.max(
       -SNAP_PROJECTION_MAX_SLOTS,

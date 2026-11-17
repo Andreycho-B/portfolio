@@ -1,11 +1,12 @@
 import { gsap } from "gsap";
+import { PROFILE } from "../../core/profile";
 
 export const initEmailCopy = (root: HTMLElement): (() => void) => {
   const link = root.querySelector<HTMLElement>("[data-email-link]");
   const textEl = root.querySelector<HTMLElement>("[data-email-text]");
   if (!link || !textEl) return () => {};
 
-  const defaultText = textEl.textContent || "RONDONANDREY42@GMAIL.COM";
+  const defaultText = textEl.textContent || PROFILE.email.toUpperCase();
   let timeoutId: number | null = null;
   const prefersReduced =
     typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -13,7 +14,9 @@ export const initEmailCopy = (root: HTMLElement): (() => void) => {
   const handleClick = (e: MouseEvent): void => {
     e.preventDefault();
     if (typeof navigator === "undefined" || !navigator.clipboard) return;
-    void navigator.clipboard.writeText("rondonandrey42@gmail.com");
+    void navigator.clipboard.writeText(PROFILE.email).catch((err: unknown) => {
+      console.warn("[EmailCopy] Clipboard write failed:", err);
+    });
 
     if (timeoutId !== null) window.clearTimeout(timeoutId);
 

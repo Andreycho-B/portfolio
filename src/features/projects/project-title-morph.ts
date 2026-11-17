@@ -1,5 +1,5 @@
 import { gsap } from "gsap";
-import type { ProjectItem } from "./project-data";
+import type { ProjectId, ProjectItem, ProjectSlug } from "./project-data";
 
 interface TitleMorphNodes {
   readonly titleElement: HTMLElement;
@@ -12,11 +12,29 @@ interface TitleMorphNodes {
 
 export class ProjectTitleMorphController {
   private activeTimeline: gsap.core.Timeline | null = null;
-  private currentId = "";
-  private currentSlug = "";
+  private currentId: ProjectId | null = null;
+  private currentSlug: ProjectSlug = "mias-hamburguesas-de-lujo";
 
-  public get activeSlug(): string {
-    return this.currentSlug || "mias-hamburguesas-de-lujo";
+  public get activeSlug(): ProjectSlug {
+    return this.currentSlug;
+  }
+
+  public static fromRoot(root: HTMLElement): ProjectTitleMorphController | null {
+    const titleElement = root.querySelector<HTMLElement>("[data-project-title]");
+    const yearElement = root.querySelector<HTMLElement>("[data-project-year]");
+    const currentIdxElement = root.querySelector<HTMLElement>("[data-project-index]");
+    if (!titleElement || !yearElement || !currentIdxElement) return null;
+    const thumbBarElement = root.querySelector<HTMLElement>("[data-drum-thumb]");
+    const blurNode = document.getElementById(
+      "project-title-blur-node",
+    ) as SVGFEGaussianBlurElement | null;
+    return new ProjectTitleMorphController({
+      titleElement,
+      yearElement,
+      currentIdxElement,
+      thumbBarElement,
+      blurNode,
+    });
   }
 
   constructor(private readonly nodes: TitleMorphNodes) {}

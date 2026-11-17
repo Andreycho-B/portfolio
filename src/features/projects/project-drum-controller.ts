@@ -1,6 +1,12 @@
 import { getAudioSystem } from "../../core/audio";
 import { getCursorController } from "../../design-system/components/cursor-controller";
-import type { DrumControllerElements } from "./drum.types";
+import {
+  bindDrumEvents,
+  consumeDetentStep,
+  type DrumControllerElements,
+  isPointOverCard,
+  observeCanvasResize,
+} from "./drum.types";
 import { DrumAutoplayController } from "./drum-autoplay";
 import { DrumScrollPhysics } from "./drum-scroll-physics";
 import { PROJECT_COUNT, PROJECTS } from "./project-data";
@@ -16,41 +22,31 @@ export class ProjectDrumController {
   private activeIndex = -1;
   private tickState = { prevPos: 0, lastDetentPos: 0 };
   private rafId: number | null = null;
-  private resizeFrameId: number | null = null;
   private lastFrameTime = 0;
   private needsRender = true;
-  private readonly resizeObserver: ResizeObserver;
+  private canvasRect: DOMRect;
+  private readonly unbindEvents: () => void;
+  private readonly unbindResize: () => void;
   private readonly audio = getAudioSystem();
   private readonly cursor = getCursorController();
+
   constructor(private readonly els: DrumControllerElements) {
-    this.bindListeners(true);
+    this.canvasRect = els.canvas.getBoundingClientRect();
+    this.unbindEvents = bindDrumEvents(els.root, els.viewport, {
+      onWheel: this.handleWheel,
+      onKeyDown: this.handleKeyDown,
+      onPointerDown: this.handlePointerDown,
+      onPointerMove: this.handlePointerMove,
+      onPointerUp: this.handlePointerUp,
+      onPointerLeave: this.handlePointerLeave,
+    });
     this.els.webglScene?.resize(this.els.canvas.clientWidth, this.els.canvas.clientHeight);
-    this.resizeObserver = new ResizeObserver(() => this.handleViewportResize());
-    this.resizeObserver.observe(els.canvas);
-    window.addEventListener("resize", this.handleViewportResize);
-    this.syncActiveProject();
-    this.requestFrame();
-  }
-  private readonly handleViewportResize = (): void => {
-    if (this.resizeFrameId !== null) return;
-    this.resizeFrameId = requestAnimationFrame(() => {
-      this.resizeFrameId = null;
+    this.unbindResize = observeCanvasResize(els.canvas, (rect) => {
+      this.canvasRect = rect;
       this.els.webglScene?.resize(this.els.canvas.clientWidth, this.els.canvas.clientHeight);
       this.requestFrame();
     });
-  };
-  private bindListeners(attach: boolean): void {
-    const fn = attach ? "addEventListener" : "removeEventListener";
-    const { root, viewport } = this.els;
-    root[fn]("wheel", this.handleWheel as EventListener, { passive: false });
-    window[fn]("keydown", this.handleKeyDown as EventListener);
-    viewport[fn]("pointerdown", this.handlePointerDown as EventListener);
-    viewport[fn]("pointermove", this.handlePointerMove as EventListener);
-    viewport[fn]("pointerup", this.handlePointerUp as EventListener);
-    viewport[fn]("pointercancel", this.handlePointerUp as EventListener);
-    viewport[fn]("pointerleave", this.handlePointerLeave as EventListener);
-  }
-  public invalidate(): void {
+    this.syncActiveProject();
     this.requestFrame();
   }
   public playIntroSettling(offsetSlots = -1.2): void {
@@ -61,8 +57,8 @@ export class ProjectDrumController {
   }
   private readonly handleWheel = (e: WheelEvent): void => {
     e.preventDefault();
-    const delta =
-      (e.deltaMode === WheelEvent.DOM_DELTA_LINE ? e.deltaY * CFG.lineH : e.deltaY) / CFG.wheel;
+    const raw = e.deltaMode === WheelEvent.DOM_DELTA_LINE ? e.deltaY * CFG.lineH : e.deltaY;
+    const delta = raw / CFG.wheel;
     this.autoplay.notifyUserInteraction(delta);
     this.physics.addDeltaSlots(delta);
     if (this.wheelSnapTimer !== null) window.clearTimeout(this.wheelSnapTimer);
@@ -73,15 +69,6 @@ export class ProjectDrumController {
     }, CFG.snapIdle);
     this.requestFrame();
   };
-
-  private isOverFrontCard(e: PointerEvent): boolean {
-    if (!this.els.webglScene) return false;
-    const { widthRatio, heightRatio } = this.els.webglScene.getFrontCardBounds();
-    const r = this.els.canvas.getBoundingClientRect();
-    const dx = Math.abs(e.clientX - (r.left + r.width / 2));
-    const dy = Math.abs(e.clientY - (r.top + r.height / 2));
-    return dx <= (r.width * widthRatio) / 2 && dy <= (r.height * heightRatio) / 2;
-  }
   private setCardHover(hover: boolean): void {
     if (hover === this.isHoveringCard) return;
     this.isHoveringCard = hover;
@@ -107,7 +94,11 @@ export class ProjectDrumController {
   };
   private readonly handlePointerMove = (e: PointerEvent): void => {
     if (e.pointerId !== this.drag.id) {
-      if (e.pointerType === "mouse") this.setCardHover(this.isOverFrontCard(e));
+      if (e.pointerType === "mouse") {
+        this.setCardHover(
+          isPointOverCard(e.clientX, e.clientY, this.canvasRect, this.els.webglScene),
+        );
+      }
       return;
     }
     const deltaY = e.clientY - this.drag.startY;
@@ -126,69 +117,48 @@ export class ProjectDrumController {
       this.autoplay.setDirection(this.physics.scrollVelocity > 0 ? 1 : -1);
     }
     const gap = Math.abs(this.physics.targetPosition - this.physics.currentPosition);
+    const overCard = isPointOverCard(e.clientX, e.clientY, this.canvasRect, this.els.webglScene);
     if (isClick && gap < 0.25) {
-      if (this.isOverFrontCard(e)) {
+      if (overCard) {
         this.els.onOpenActive();
-        return;
+      } else {
+        const step = e.clientY < this.canvasRect.top + this.canvasRect.height / 2 ? -1 : 1;
+        this.autoplay.notifyUserInteraction(step);
+        this.physics.stepSlots(step);
+        this.requestFrame();
       }
-      const r = this.els.canvas.getBoundingClientRect();
-      const step = e.clientY < r.top + r.height / 2 ? -1 : 1;
-      this.autoplay.notifyUserInteraction(step);
-      this.physics.stepSlots(step);
-      this.requestFrame();
       return;
     }
     this.physics.snapToNearestSlot();
-    if (e.pointerType === "mouse") this.setCardHover(this.isOverFrontCard(e));
+    if (e.pointerType === "mouse") this.setCardHover(overCard);
     this.requestFrame();
   };
-
   private readonly handleKeyDown = (e: KeyboardEvent): void => {
-    const isFocused =
-      document.activeElement === this.els.viewport ||
-      this.els.root.contains(document.activeElement);
-    if (!isFocused) return;
-
+    const active = document.activeElement;
+    if (active !== this.els.viewport && !this.els.root.contains(active)) return;
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       this.els.onOpenActive();
       return;
     }
-    const step = e.key === "ArrowDown" ? 1 : e.key === "ArrowUp" ? -1 : 0;
-    if (step === 0) return;
-    e.preventDefault();
-    this.autoplay.notifyUserInteraction(step);
-    this.physics.stepSlots(step);
-    this.requestFrame();
+    const dir = this.physics.applyKeyNavigation(e.key, PROJECT_COUNT);
+    if (dir !== 0) {
+      e.preventDefault();
+      this.autoplay.notifyUserInteraction(dir);
+      this.requestFrame();
+    }
   };
-
   private syncActiveProject(): void {
-    const slot = Math.round(this.physics.currentPosition);
-    const index = ((slot % PROJECT_COUNT) + PROJECT_COUNT) % PROJECT_COUNT;
+    const index =
+      ((Math.round(this.physics.currentPosition) % PROJECT_COUNT) + PROJECT_COUNT) % PROJECT_COUNT;
     if (index === this.activeIndex) return;
     this.activeIndex = index;
     const project = PROJECTS[index];
-    if (project) {
-      this.els.morphController.transitionTo(project, index, PROJECT_COUNT);
-      if (this.isHoveringCard) this.cursor.setInverted(project.theme === "dark");
-    }
+    if (!project) return;
+    this.els.morphController.transitionTo(project, index, PROJECT_COUNT);
+    if (this.isHoveringCard) this.cursor.setInverted(project.theme === "dark");
   }
-  private syncAudioTick(): void {
-    const curr = this.physics.currentPosition;
-    const prev = this.tickState.prevPos;
-    this.tickState.prevPos = curr;
-    if (curr === prev) return;
-    const detentStep = 0.5;
-    const diff = curr - this.tickState.lastDetentPos;
-    if (Math.abs(diff) >= detentStep) {
-      const steps = Math.trunc(diff / detentStep);
-      this.tickState.lastDetentPos += steps * detentStep;
-      if (this.autoplay.isUserInteracting()) {
-        this.audio.playTactileFeedback("wheel_tick", this.physics.scrollVelocity);
-      }
-    }
-  }
-  private requestFrame(): void {
+  public requestFrame(): void {
     this.needsRender = true;
     if (this.rafId !== null) return;
     this.lastFrameTime = performance.now();
@@ -200,26 +170,27 @@ export class ProjectDrumController {
     this.lastFrameTime = now;
     const driftSlots = this.autoplay.update(dt, this.isHoveringCard);
     if (driftSlots !== 0) this.physics.addContinuousDrift(driftSlots);
-    const isSettled = this.physics.update(dt);
-    const isAtRest = isSettled && this.drag.id === null && !this.autoplay.isDrifting();
+    const isAtRest =
+      this.physics.update(dt) && this.drag.id === null && !this.autoplay.isDrifting();
     this.syncActiveProject();
-    this.syncAudioTick();
-    if (this.els.webglScene) {
-      this.els.webglScene.setRotation(this.physics.currentPosition);
-      this.els.webglScene.setScrollVelocity(this.physics.scrollVelocity);
-      this.els.webglScene.render();
+    if (
+      consumeDetentStep(this.physics.currentPosition, this.tickState) &&
+      this.autoplay.isUserInteracting()
+    ) {
+      this.audio.playTactileFeedback("wheel_tick", this.physics.scrollVelocity);
     }
+    this.els.webglScene?.setRotation(this.physics.currentPosition);
+    this.els.webglScene?.setScrollVelocity(this.physics.scrollVelocity);
+    this.els.webglScene?.render();
     this.needsRender = false;
     this.rafId = isAtRest && !this.needsRender ? null : requestAnimationFrame(this.tick);
   };
   public destroy(): void {
     if (this.isHoveringCard) this.setCardHover(false);
     if (this.rafId !== null) cancelAnimationFrame(this.rafId);
-    if (this.resizeFrameId !== null) cancelAnimationFrame(this.resizeFrameId);
     if (this.wheelSnapTimer !== null) window.clearTimeout(this.wheelSnapTimer);
-    this.bindListeners(false);
-    window.removeEventListener("resize", this.handleViewportResize);
-    this.resizeObserver.disconnect();
+    this.unbindEvents();
+    this.unbindResize();
     this.autoplay.dispose();
     this.els.morphController.destroy();
     this.els.webglScene?.dispose();
