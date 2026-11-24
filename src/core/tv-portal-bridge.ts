@@ -7,6 +7,7 @@ export interface StudioTvPortalBridge {
   readonly closeToDrum: () => void;
   readonly exitTvFocus: () => void;
   readonly navigateInTv: (targetUrl: string) => void;
+  readonly handleChannelKey?: (key: string) => void;
   readonly syncPointer?: (clientX: number, clientY: number) => void;
 }
 
@@ -154,9 +155,18 @@ export const attachTvIframeBridge = (bridge: StudioTvPortalBridge): void => {
     bridge.cursor.setPressed(false);
   };
   const onKeyDown = (event: KeyboardEvent): void => {
-    if (event.key !== "Escape") return;
-    event.preventDefault();
-    bridge.exitTvFocus();
+    if (event.key === "Escape") {
+      event.preventDefault();
+      bridge.closeToDrum();
+      return;
+    }
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    const tag = (event.target instanceof Element ? event.target.tagName : "").toUpperCase();
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+    if (/^[0-9dDmMpP]$/.test(event.key) && bridge.handleChannelKey) {
+      event.preventDefault();
+      bridge.handleChannelKey(event.key);
+    }
   };
 
   window.addEventListener("pointermove", forwardPointer, { passive: true });

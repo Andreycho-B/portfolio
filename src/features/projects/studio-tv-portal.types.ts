@@ -11,6 +11,7 @@ export interface StudioTvPortalDeps {
   readonly isTvFocused: () => boolean;
   readonly captureSnapshot: (iframe: HTMLIFrameElement) => boolean;
   readonly onExitTvFocus: () => void;
+  readonly onChannelKey?: (key: string) => void;
   readonly onPortalChange: (syncRender?: boolean) => void;
   readonly onPointerEnter?: () => void;
   readonly onPointerMove?: (nx: number, ny: number) => void;

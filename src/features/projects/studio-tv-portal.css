@@ -31,11 +31,18 @@
   pointer-events: none;
 }
 
+.studio-tv-portal.is-mobile-sheet {
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  z-index: 40;
+  clip-path: none;
+}
+
 .studio-tv-portal-frame {
   display: block;
-  width: 1280px;
-  height: 1068px;
-  transform-origin: 0 0;
+  width: 100%;
+  height: 100%;
   border: 0;
   background: var(--color-bg);
 }
@@ -45,4 +52,39 @@
   inset: 0;
   pointer-events: none;
   z-index: 2;
+}
+
+.studio-back-btn {
+  display: none;
+}
+
+@media (hover: none) and (pointer: coarse), (max-width: 900px) {
+  .projects-lens-section[data-stage-mode="studio"] .studio-back-btn:not([hidden]) {
+    position: fixed;
+    top: max(20px, env(safe-area-inset-top));
+    left: max(20px, env(safe-area-inset-left));
+    z-index: 30;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.42);
+    background: rgba(16, 18, 26, 0.56);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: #ffffff;
+    font-family: var(--font-text);
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .projects-lens-section[data-stage-mode="studio"].has-live-portal .studio-back-btn {
+    display: none;
+  }
 }

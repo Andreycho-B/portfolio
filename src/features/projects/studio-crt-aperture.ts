@@ -134,8 +134,6 @@ export const createCrtPortalDom = (container: HTMLElement): CrtPortalDom => {
   const iframeEl = document.createElement("iframe");
   iframeEl.className = "studio-tv-portal-frame";
   iframeEl.title = "Contenido interactivo del portafolio en el televisor";
-  iframeEl.style.width = `${CRT_VIRTUAL_W}px`;
-  iframeEl.style.height = `${CRT_VIRTUAL_H}px`;
   iframeEl.src = "about:blank";
   const glassEl = document.createElement("div");
   glassEl.className = "studio-tv-portal-glass";
@@ -153,6 +151,14 @@ export const createCrtPortalAperture = (): CrtPortalApertureSync => {
   const sync = (portalEl: HTMLElement, camera: PerspectiveCamera): void => {
     const [viewW, viewH] = [window.innerWidth, window.innerHeight];
     if (viewW <= 0 || viewH <= 0) return;
+    if (viewW < 768) {
+      if (lastKey === "mobile-sheet") return;
+      lastKey = "mobile-sheet";
+      portalEl.classList.add("is-mobile-sheet");
+      portalEl.style.cssText = "";
+      return;
+    }
+    portalEl.classList.remove("is-mobile-sheet");
     camera.updateMatrixWorld();
     let [minX, minY] = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
     let [maxX, maxY] = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY];
@@ -178,10 +184,6 @@ export const createCrtPortalAperture = (): CrtPortalApertureSync => {
     portalEl.style.top = `${minY.toFixed(1)}px`;
     portalEl.style.width = `${width.toFixed(1)}px`;
     portalEl.style.height = `${height.toFixed(1)}px`;
-    const frame = portalEl.firstElementChild as HTMLElement | null;
-    if (frame) {
-      frame.style.transform = `scale(${(width / CRT_VIRTUAL_W).toFixed(5)}, ${(height / CRT_VIRTUAL_H).toFixed(5)})`;
-    }
 
     const polyParts: string[] = [];
     for (let i = 0; i < APERTURE_RING_3D.length; i++) {

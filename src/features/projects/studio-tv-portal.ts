@@ -48,7 +48,7 @@ export const createStudioTvPortal = (deps: StudioTvPortalDeps): StudioTvPortalHa
     resetPortalCursor(deps.cursor);
     replacePortalFrameUrl(iframeEl, "about:blank");
     const vp = deps.container.querySelector<HTMLElement>("[data-drum-viewport]");
-    vp?.focus({ preventScroll: true });
+    requestAnimationFrame(() => vp?.focus({ preventScroll: true }));
     deps.onPortalChange(!sweepOut);
     if (sweepOut) wipe.startSweepOut();
     else wipe.cancel();
@@ -168,12 +168,12 @@ export const createStudioTvPortal = (deps: StudioTvPortalDeps): StudioTvPortalHa
     closeToDrum,
     exitTvFocus: deps.onExitTvFocus,
     navigateInTv: open,
-    syncPointer: (x, y) => {
+    handleChannelKey: deps.onChannelKey,
+    syncPointer: (x, y) =>
       deps.onPointerMove?.(
         (x / Math.max(1, innerWidth)) * 2 - 1,
         -((y / Math.max(1, innerHeight)) * 2 - 1),
-      );
-    },
+      ),
   });
   return {
     open,
