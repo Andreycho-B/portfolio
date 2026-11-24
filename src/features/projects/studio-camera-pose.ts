@@ -11,22 +11,14 @@ import type { StudioFocusCameraPose } from "./studio-prop-focus";
 
 export const SHOWCASE_ANGLES: readonly number[] = [-0.2, 2.45, -2.38, 0.46, 0];
 
-export const makeSpring = (value = 0): StudioSpringAxis => ({
-  position: value,
-  velocity: 0,
-  target: value,
-});
+export const makeSpring = (v = 0): StudioSpringAxis => ({ position: v, velocity: 0, target: v });
 
 export const snapSpringAxes = (axes: readonly StudioSpringAxis[]): void => {
-  for (const axis of axes) {
-    axis.position = axis.target;
-    axis.velocity = 0;
-  }
+  for (const a of axes) [a.position, a.velocity] = [a.target, 0];
 };
 
-export const resetSpringAxis = (axis: StudioSpringAxis, value = 0): void => {
-  axis.position = axis.target = value;
-  axis.velocity = 0;
+export const resetSpringAxis = (a: StudioSpringAxis, v = 0): void => {
+  [a.position, a.target, a.velocity] = [v, v, 0];
 };
 
 export const wrapAngle = (angle: number): number => Math.atan2(Math.sin(angle), Math.cos(angle));
@@ -104,7 +96,21 @@ export interface StudioPoseApplyInput {
   readonly halfFovFactor: number;
   readonly aspectRatio: number;
   readonly chairBreath?: StudioChairBreathHandle;
+  readonly vel?: readonly [number, number, number, number];
 }
+
+const applyOpticalMotion = (
+  v: StudioCameraView,
+  vel?: readonly [number, number, number, number],
+): StudioCameraView => {
+  if (!vel) return v;
+  const [zv, swv, yv, fyv] = vel;
+  const df = Math.min(3.6, Math.abs(zv) * 2.1 + Math.abs(swv) * 1.9 + Math.abs(yv) * 0.45);
+  const dr = MathUtils.clamp(-yv * 0.0085 - fyv * 0.006, -0.022, 0.022);
+  return df < 0.005 && Math.abs(dr) < 0.0002
+    ? v
+    : { ...v, fovDeg: MathUtils.clamp(v.fovDeg + df, 38, 98), rollRad: v.rollRad + dr };
+};
 
 const fitPoseRadius = (p: StudioFocusCameraPose, halfFov: number, aspect: number): number =>
   Math.max(p.frameHeight * halfFov, (p.frameWidth * halfFov) / aspect);
@@ -169,7 +175,7 @@ export const applyStudioCameraPose = (inp: StudioPoseApplyInput): StudioCameraVi
         ? blendStudioCameraViews(inp.prevView, next, swSmooth)
         : next;
     const view = zSmooth < 0.9999 ? blendStudioCameraViews(studio, focus, zSmooth) : focus;
-    return applyCameraView(camera, lookTarget, view);
+    return applyCameraView(camera, lookTarget, applyOpticalMotion(view, inp.vel));
   }
   const fR0 = fitPoseRadius(prevPose, halfFovFactor, aspectRatio);
   const fR1 = fitPoseRadius(nextPose, halfFovFactor, aspectRatio);
@@ -190,5 +196,5 @@ export const applyStudioCameraPose = (inp: StudioPoseApplyInput): StudioCameraVi
     py,
     lerp(1, 0.14, zSmooth),
   );
-  return applyCameraView(camera, lookTarget, view);
+  return applyCameraView(camera, lookTarget, applyOpticalMotion(view, inp.vel));
 };

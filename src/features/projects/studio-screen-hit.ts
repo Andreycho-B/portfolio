@@ -6,7 +6,11 @@ import type { StudioInputDeps, StudioSceneHandle, StudioScreenZone } from "./stu
 import type { StudioHotspotId } from "./studio-hotspots-shader";
 import { classifyNokiaHoverZone } from "./studio-nokia-input";
 import type { StudioFocusTarget } from "./studio-prop-focus";
-import { executeTvButtonAction, TV_BUTTON_LABELS } from "./studio-tv-button-action";
+import {
+  executeTvButtonAction,
+  handleTvShortcutKey,
+  TV_BUTTON_LABELS,
+} from "./studio-tv-button-action";
 import type { TvButtonId } from "./studio-tv-buttons";
 
 const [FBO_W, FBO_H] = [1600, 1120];
@@ -82,7 +86,6 @@ export const resolveHoveredFocusTarget = (
   if (zone === "screen_zoom") return "tv";
   return zone === "prop_zoom" || zone === "chair_sit" ? scene.pickFocusProp(nx, ny) : null;
 };
-
 const ZONE_LABELS: Partial<Record<StudioScreenZone, string>> = {
   screen_zoom: "Acercar",
   prop_zoom: "Acercar",
@@ -99,7 +102,6 @@ const ZONE_LABELS: Partial<Record<StudioScreenZone, string>> = {
   nokia_back: "Volver",
   nokia_key: "Pulsar",
 };
-
 export const applyZoneCursorState = (
   cursor: CursorController,
   zone: StudioScreenZone,
@@ -117,12 +119,10 @@ export const applyZoneCursorState = (
   const label = zone === "power" ? powerLabel : tvLabel;
   cursor.setExpanded(Boolean(label), label);
 };
-
 export const openActiveProject = (idx: number, onOpenInTv: (url: string) => void): void => {
   const project = PROJECTS[idx];
   if (project) onOpenInTv(`/proyectos/${project.slug}`);
 };
-
 export const executeZoomedZoneAction = (zone: StudioScreenZone, ctx: ZoomedActionContext): void => {
   if (zone === "card") openActiveProject(ctx.activeIndex, ctx.onOpenInTv);
   else if (zone === "about") ctx.onOpenInTv("/sobre-mi");
@@ -145,8 +145,7 @@ export const executeZoomedZoneAction = (zone: StudioScreenZone, ctx: ZoomedActio
   }
 };
 
-export const isDarkProjectCard = (activeIndex: number): boolean =>
-  PROJECTS[activeIndex]?.theme === "dark";
+export const isDarkProjectCard = (idx: number): boolean => PROJECTS[idx]?.theme === "dark";
 
 export const executeStudioCanvasClick = (
   zone: StudioScreenZone,
@@ -169,30 +168,30 @@ export const executeStudioCanvasClick = (
 };
 
 export const handleStudioKeyDown = (event: KeyboardEvent, deps: StudioInputDeps): void => {
-  const focusTarget = deps.getFocusTarget();
-  if (focusTarget === null) return;
+  const focus = deps.getFocusTarget();
+  if (focus === null) return;
   if (event.key === "Escape") {
     event.preventDefault();
     deps.setFocusTarget(null);
     return;
   }
-  if (focusTarget === "phone") {
+  if (focus === "phone") {
     if (deps.scene.handleNokiaKey(event.key, !deps.audio.isMuted())) {
       event.preventDefault();
       deps.requestFrame();
     }
     return;
   }
-  if (focusTarget !== "tv" || deps.isTvPortalOpen()) return;
+  if (focus === "chair" && handleTvShortcutKey(event, deps)) return;
+  if (focus !== "tv" || deps.isTvPortalOpen() || handleTvShortcutKey(event, deps)) return;
   if (event.key === "Enter" || event.key === " ") {
     event.preventDefault();
     openActiveProject(deps.getActiveIndex(), deps.openInTv);
     return;
   }
   const dir = deps.physics.applyKeyNavigation(event.key, PROJECT_COUNT);
-  if (dir !== 0) {
-    event.preventDefault();
-    deps.autoplay.notifyUserInteraction(dir);
-    deps.requestFrame();
-  }
+  if (dir === 0) return;
+  event.preventDefault();
+  deps.autoplay.notifyUserInteraction(dir);
+  deps.requestFrame();
 };

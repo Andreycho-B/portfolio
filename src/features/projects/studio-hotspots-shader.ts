@@ -16,6 +16,7 @@ export const HOTSPOT_SPECS: readonly HotspotSpec[] = [
   { target: "bust", pos: [2.18, 0.56, -0.28], phase: 1.25 },
   { target: "thermos", pos: [2.28, 0.26, 1.05], phase: 2.5 },
   { target: "phone", pos: [1.42, -0.94, 1.36], phase: 3.75 },
+  { target: "computer", pos: [-2.32, 0.08, -0.26], phase: 4.35 },
   { target: "clock", pos: [-1.77, -0.84, 0.69], phase: 5.0 },
   { target: "chair", pos: [-2.08, -0.55, 4.65], phase: 5.65 },
 ];

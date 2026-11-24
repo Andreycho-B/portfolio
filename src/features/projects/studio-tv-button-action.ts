@@ -83,6 +83,39 @@ export const handleTvSpecialClick = (
   return false;
 };
 
+const KEY_TO_TV_BTN: Readonly<Record<string, TvButtonId>> = {
+  "0": "ch0",
+  "1": "ch1",
+  "2": "ch2",
+  "3": "ch3",
+  "4": "ch4",
+  "5": "ch5",
+  "6": "ch6",
+  "7": "ch7",
+  "8": "ch8",
+  "9": "ch9",
+  d: "dvd",
+  D: "dvd",
+  m: "mute",
+  M: "mute",
+};
+
+export const handleTvShortcutKey = (event: KeyboardEvent, deps: StudioInputDeps): boolean => {
+  if (event.ctrlKey || event.metaKey || event.altKey) return false;
+  if ((event.key === "Enter" || event.key === " ") && deps.scene.getTvChannel() !== "portfolio") {
+    event.preventDefault();
+    deps.scene.setTvChannel("portfolio");
+    deps.audio.playTactileFeedback("tv_zap");
+    deps.refreshHud();
+    return true;
+  }
+  const btn = KEY_TO_TV_BTN[event.key];
+  if (!btn) return false;
+  event.preventDefault();
+  executeTvButtonAction(btn, deps, deps.closeTvPortal);
+  return true;
+};
+
 export const executeTvButtonAction = (
   id: TvButtonId,
   deps: StudioInputDeps,

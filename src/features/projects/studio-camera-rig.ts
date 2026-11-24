@@ -66,6 +66,9 @@ export const createStudioCameraRig = (): StudioCameraState => {
       halfFovFactor,
       aspectRatio: st.aspect,
       chairBreath: breath,
+      vel: prefersReduced
+        ? undefined
+        : [sZoom.velocity, sSwap.velocity, sYaw.velocity, fYaw.velocity],
     });
   };
   const snapSprings = (): void => {
@@ -82,8 +85,7 @@ export const createStudioCameraRig = (): StudioCameraState => {
   };
   motionQuery?.addEventListener("change", onMotionChange);
   const resize = (widthPx: number, heightPx: number): void => {
-    st.aspect = Math.max(1, widthPx) / Math.max(1, heightPx);
-    camera.aspect = st.aspect;
+    st.aspect = camera.aspect = Math.max(1, widthPx) / Math.max(1, heightPx);
     st.radius = halfFovFactor * Math.max(w.frameHeightUnits, w.frameWidthUnits / st.aspect);
     applyPose();
     camera.updateProjectionMatrix();
@@ -123,13 +125,11 @@ export const createStudioCameraRig = (): StudioCameraState => {
     if (prefersReduced) snapSprings();
   };
   const playIntroOrbit = (): void => {
-    st.idx = st.elapsed = 0;
-    activeFocus = null;
+    [st.idx, st.elapsed, activeFocus, st.intro] = [0, 0, null, !prefersReduced];
     breath.reset();
     resetSpringAxis(sDist, 1);
     resetSpringAxis(sPitch, prefersReduced ? elev0 : w.introElevationRad);
     resetSpringAxis(sYaw, prefersReduced ? yaw0 : w.introOrbitYawRad);
-    st.intro = !prefersReduced;
     applyPose();
   };
   const isFocusSettled = (): boolean =>
@@ -151,10 +151,9 @@ export const createStudioCameraRig = (): StudioCameraState => {
     prevView = alreadyFocused && (prevPose.firstPerson || resolved.firstPerson) ? lastView : null;
     nextPose = resolved;
     resetSpringAxis(sSwap, alreadyFocused ? 0 : 1);
-    sSwap.target = 1;
     for (const ax of [fYaw, fPitch]) resetSpringAxis(ax);
     resetSpringAxis(fDist, 1);
-    sZoom.target = 1;
+    [sSwap.target, sZoom.target] = [1, 1];
     if (prefersReduced) snapSprings();
   };
   const update = (dtSeconds: number): boolean => {
