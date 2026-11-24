@@ -7,7 +7,6 @@ import {
   resetSpringAxis,
   SHOWCASE_ANGLES,
   snapSpringAxes,
-  stepSpringAxis,
   stepSpringGroup,
   wrapAngle,
 } from "./studio-camera-pose";
@@ -127,7 +126,7 @@ export const createStudioCameraRig = (): StudioCameraState => {
   const playIntroOrbit = (): void => {
     [st.idx, st.elapsed, activeFocus, st.intro] = [0, 0, null, !prefersReduced];
     breath.reset();
-    resetSpringAxis(sDist, 1);
+    resetSpringAxis(sDist, prefersReduced ? 1 : STUDIO_CAM.introDistScale);
     resetSpringAxis(sPitch, prefersReduced ? elev0 : w.introElevationRad);
     resetSpringAxis(sYaw, prefersReduced ? yaw0 : w.introOrbitYawRad);
     applyPose();
@@ -135,7 +134,7 @@ export const createStudioCameraRig = (): StudioCameraState => {
   const isFocusSettled = (): boolean =>
     activeFocus !== null && sZoom.position >= 0.985 && sSwap.position >= 0.985;
   const setFocusTarget = (target: StudioFocusTarget | null): void => {
-    if (st.intro && target) [sYaw.target, sPitch.target] = [yaw0, elev0];
+    if (st.intro && target) [sYaw.target, sPitch.target, sDist.target] = [yaw0, elev0, 1];
     st.intro = false;
     activeFocus = target;
     breath.reset();
@@ -162,15 +161,15 @@ export const createStudioCameraRig = (): StudioCameraState => {
     const { orbitOmega: ow, zoomOmega: zw } = STUDIO_CAM;
     let moved =
       stepSpringGroup([sx, sy], dt) +
-      stepSpringGroup([sPitch, sDist, fYaw, fPitch, fDist], dt, ow) +
+      stepSpringGroup([fYaw, fPitch, fDist], dt, ow) +
       stepSpringGroup([sZoom, sSwap], dt, zw) +
       Number(breath.step(dt, activeFocus === "chair", isFocusSettled()));
     if (st.intro) {
       const prevElapsed = st.elapsed;
       st.elapsed += dt;
-      st.intro = applyIntroOrbitStep(sYaw, sPitch, st.elapsed);
+      st.intro = applyIntroOrbitStep(sYaw, sPitch, sDist, st.elapsed);
       if (st.elapsed >= STUDIO_CAM.introHoldSec || prevElapsed === 0) moved += 1;
-    } else moved += Number(stepSpringAxis(sYaw, dt, ow));
+    } else moved += stepSpringGroup([sYaw, sPitch, sDist], dt, ow);
     if (moved > 0) applyPose();
     return moved > 0 || st.intro;
   };

@@ -9,7 +9,7 @@ import {
 } from "./studio-chair-view";
 import type { StudioFocusCameraPose } from "./studio-prop-focus";
 
-export const SHOWCASE_ANGLES: readonly number[] = [-0.2, 2.45, -2.38, 0.46, 0];
+export const SHOWCASE_ANGLES: readonly number[] = [0.34, 2.45, -2.38, -0.2, 0];
 
 export const makeSpring = (v = 0): StudioSpringAxis => ({ position: v, velocity: 0, target: v });
 
@@ -23,28 +23,27 @@ export const resetSpringAxis = (a: StudioSpringAxis, v = 0): void => {
 
 export const wrapAngle = (angle: number): number => Math.atan2(Math.sin(angle), Math.cos(angle));
 
-export const easeInOutCubic = (t: number): number =>
-  t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 * 0.5;
+const easeIntroArc = (t: number): number => {
+  const q = 1 - t;
+  return 1 - q * q * q * (1 + 3 * t);
+};
 
 export const applyIntroOrbitStep = (
   sYaw: StudioSpringAxis,
   sPitch: StudioSpringAxis,
+  sDist: StudioSpringAxis,
   elapsedSec: number,
 ): boolean => {
-  const t = MathUtils.clamp(
-    (elapsedSec - STUDIO_CAM.introHoldSec) / STUDIO_CAM.introSweepSec,
-    0,
-    1,
-  );
-  const ease = easeInOutCubic(t);
-  resetSpringAxis(
-    sYaw,
-    MathUtils.lerp(STUDIO_WORLD.introOrbitYawRad, STUDIO_WORLD.initialOrbitYawRad, ease),
-  );
+  const { clamp, lerp } = MathUtils;
+  const t = clamp((elapsedSec - STUDIO_CAM.introHoldSec) / STUDIO_CAM.introSweepSec, 0, 1);
+  const ease = easeIntroArc(t);
+  const settle = t * t * t * (t * (t * 6 - 15) + 10);
+  resetSpringAxis(sYaw, lerp(STUDIO_WORLD.introOrbitYawRad, STUDIO_WORLD.initialOrbitYawRad, ease));
   resetSpringAxis(
     sPitch,
-    MathUtils.lerp(STUDIO_WORLD.introElevationRad, STUDIO_WORLD.baseElevationRad, ease),
+    lerp(STUDIO_WORLD.introElevationRad, STUDIO_WORLD.baseElevationRad, settle),
   );
+  resetSpringAxis(sDist, lerp(STUDIO_CAM.introDistScale, 1, ease));
   return t < 1;
 };
 
@@ -55,8 +54,7 @@ export const stepSpringAxis = (
 ): boolean => {
   const disp = axis.position - axis.target;
   if (Math.abs(disp) < STUDIO_CAM.restEps && Math.abs(axis.velocity) < STUDIO_CAM.restEps) {
-    axis.position = axis.target;
-    axis.velocity = 0;
+    [axis.position, axis.velocity] = [axis.target, 0];
     return false;
   }
   const decay = Math.exp(-omega * dt);

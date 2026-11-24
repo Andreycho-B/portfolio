@@ -89,14 +89,14 @@ export const createStudioPreloader = (root: HTMLElement | null): StudioPreloader
     }
     const morphState = { bx: 0, by: 0, wght: 880 };
     revealTl = gsap.timeline({ onComplete: done });
-    revealTl.to({}, { duration: 0.1 });
+    revealTl.to({}, { duration: 0.06 });
     revealTl.to(
       morphState,
       {
         bx: 15,
         by: 7.5,
         wght: 240,
-        duration: 0.36,
+        duration: 0.28,
         ease: "power2.inOut",
         onUpdate: () => {
           setBlur(morphState.bx, morphState.by);
@@ -110,7 +110,7 @@ export const createStudioPreloader = (root: HTMLElement | null): StudioPreloader
       {
         opacity: 0,
         scale: 1.07,
-        duration: 0.34,
+        duration: 0.28,
         ease: "power3.inOut",
         force3D: true,
         onComplete: () => {
@@ -120,8 +120,8 @@ export const createStudioPreloader = (root: HTMLElement | null): StudioPreloader
       },
       "<",
     );
-    revealTl.to(root, { opacity: 0, duration: 0.48, ease: "power2.inOut" }, "<0.16");
-    revealTl.call(() => revealCallback?.(), [], "<0.2");
+    revealTl.call(() => revealCallback?.(), [], ">");
+    revealTl.to(root, { opacity: 0, duration: 0.56, ease: "power2.out" }, "<");
   };
 
   const tick = (now: number): void => {
