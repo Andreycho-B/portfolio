@@ -115,56 +115,28 @@
   }
 }
 
-html.in-tv-portal .sound-toggle-btn {
-  display: none;
+@media (max-width: 720px) {
+  html.in-tv-portal .sound-toggle-btn {
+    display: none;
+  }
 }
 
 @media (min-width: 721px) {
   html.in-tv-portal .project-detail-stage {
-    --margin: 56px;
-    --space-section: 60px;
+    --margin: 84px;
+    --space-section: 84px;
   }
 
   html.in-tv-portal .detail-header {
-    padding: 28px var(--margin) 14px;
+    padding: 62px var(--margin) 24px;
   }
 
   html.in-tv-portal .hero-row {
-    min-height: 100vh;
-    flex-direction: row;
-    align-items: center;
-    gap: 18px;
-    padding: 76px var(--margin) 64px;
-  }
-
-  html.in-tv-portal .hero-col-title,
-  html.in-tv-portal .hero-col-year {
-    width: 22%;
-    order: 0;
-  }
-
-  html.in-tv-portal .hero-col-specimen {
-    order: 0;
-  }
-
-  html.in-tv-portal .hero-year-line {
-    font-size: 0.82rem;
-    text-align: right;
-  }
-
-  html.in-tv-portal .hero-scroll-cue {
-    bottom: 44px;
-  }
-
-  html.in-tv-portal .project-morphic-title {
-    font-size: clamp(2rem, 4vw, 3rem);
-  }
-
-  html.in-tv-portal .hero-specimen-card {
-    width: min(340px, 44vw);
+    height: 100vh;
+    padding: 112px var(--margin) 64px;
   }
 
   html.in-tv-portal .next-project-section {
-    padding-bottom: 56px;
+    padding-bottom: 84px;
   }
 }

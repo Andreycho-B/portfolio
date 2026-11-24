@@ -41,10 +41,17 @@
 
 .studio-tv-portal-frame {
   display: block;
-  width: 100%;
-  height: 100%;
+  width: 1280px;
+  height: 1068px;
+  transform-origin: 0 0;
   border: 0;
   background: var(--color-bg);
+}
+
+.studio-tv-portal.is-mobile-sheet .studio-tv-portal-frame {
+  width: 100%;
+  height: 100%;
+  transform: none;
 }
 
 .studio-tv-portal-glass {

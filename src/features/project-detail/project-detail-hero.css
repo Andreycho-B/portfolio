@@ -160,20 +160,6 @@
   text-transform: uppercase;
 }
 
-.hero-scroll-cue {
-  position: absolute;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-family: var(--font-text);
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-muted);
-  opacity: 0.72;
-  pointer-events: none;
-}
-
 .info-grid-section {
   display: grid;
   grid-template-columns: repeat(12, 1fr);

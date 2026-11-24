@@ -54,24 +54,27 @@ export const createStudioHotspots = (targetScene: Scene): StudioHotspotsHandle =
     typeof window !== "undefined" ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
   let prefersReduced = motionQuery?.matches ?? false;
   let hoveredTarget: StudioHotspotId | null = null;
-  let elapsed = 0;
-  let seatedCue = 0;
-  let propsReveal = 0;
-  let chairLead = true;
-  let powerCueUnlocked = false;
-  let propsUnlocked = false;
-  let anyVisible = true;
-
+  const st = {
+    elapsed: 0,
+    seatedCue: 0,
+    propsReveal: 0,
+    chairLead: true,
+    wasSeated: false,
+    powerCueUnlocked: false,
+    propsUnlocked: false,
+    anyVisible: true,
+  };
   for (const spec of HOTSPOT_SPECS) {
+    const uniforms = {
+      uTime: { value: 0 },
+      uHover: { value: 0 },
+      uOpacity: { value: 1 },
+      uPhase: { value: spec.phase },
+      uReduced: { value: prefersReduced ? 1 : 0 },
+      uWarm: { value: spec.warm ? 1 : 0 },
+    };
     const mat = new ShaderMaterial({
-      uniforms: {
-        uTime: { value: 0 },
-        uHover: { value: 0 },
-        uOpacity: { value: 1 },
-        uPhase: { value: spec.phase },
-        uReduced: { value: prefersReduced ? 1 : 0 },
-        uWarm: { value: spec.warm ? 1 : 0 },
-      },
+      uniforms,
       vertexShader: HOTSPOT_VS,
       fragmentShader: HOTSPOT_FS,
       transparent: true,
@@ -88,15 +91,15 @@ export const createStudioHotspots = (targetScene: Scene): StudioHotspotsHandle =
     items.push({ spec, mesh, mat, worldPos: new Vector3(...spec.pos), hover: 0 });
   }
   targetScene.add(group);
-
   const onMotionChange = (): void => {
     prefersReduced = motionQuery?.matches ?? false;
     for (const item of items) {
-      const u = item.mat.uniforms.uReduced;
-      if (u) u.value = prefersReduced ? 1 : 0;
+      if (item.mat.uniforms.uReduced) item.mat.uniforms.uReduced.value = prefersReduced ? 1 : 0;
     }
   };
   motionQuery?.addEventListener("change", onMotionChange);
+  const isDocVisible = (): boolean =>
+    typeof document === "undefined" || document.visibilityState !== "hidden";
 
   const update = (
     dtSeconds: number,
@@ -108,35 +111,34 @@ export const createStudioHotspots = (targetScene: Scene): StudioHotspotsHandle =
     isRetroChannel: boolean,
   ): boolean => {
     const dt = Math.min(Math.max(dtSeconds, 0), 0.05);
-    if (!prefersReduced) elapsed += dt;
-    if (chairLead && (activeFocus !== null || powerProgress > 0.15)) chairLead = false;
-    if (!powerCueUnlocked && (chairCueReady || powerProgress > 0.15 || activeFocus === "tv")) {
-      powerCueUnlocked = true;
+    if (!prefersReduced) st.elapsed += dt;
+    if (st.chairLead && (activeFocus !== null || powerProgress > 0.15)) st.chairLead = false;
+    if (activeFocus === "chair") st.wasSeated = true;
+    const stoodUp = st.wasSeated && activeFocus === null;
+    if (chairCueReady || powerProgress > 0.15 || activeFocus === "tv" || stoodUp) {
+      st.powerCueUnlocked = true;
     }
-    if (!propsUnlocked && activeFocus === "tv") propsUnlocked = true;
+    if (activeFocus === "tv" || powerProgress > 0.5 || stoodUp) st.propsUnlocked = true;
 
     const zoomVis = 1 - MathUtils.smoothstep(zoomProgress, 0.02, 0.28);
     const cueTarget = activeFocus === "chair" && chairCueReady ? 1 : 0;
-    const propsTarget = propsUnlocked ? 1 : 0;
-    if (prefersReduced) {
-      seatedCue = cueTarget;
-      propsReveal = propsTarget;
-    } else {
-      const cueRate = cueTarget > seatedCue ? 3.2 : 10;
-      seatedCue += (cueTarget - seatedCue) * (1 - Math.exp(-cueRate * dt));
-      if (Math.abs(cueTarget - seatedCue) < 0.004) seatedCue = cueTarget;
-      propsReveal += (propsTarget - propsReveal) * (1 - Math.exp(-4.5 * dt));
-      if (Math.abs(propsTarget - propsReveal) < 0.004) propsReveal = propsTarget;
+    const propsTarget = st.propsUnlocked ? 1 : 0;
+    if (prefersReduced) [st.seatedCue, st.propsReveal] = [cueTarget, propsTarget];
+    else {
+      const cueRate = cueTarget > st.seatedCue ? 3.2 : 10;
+      st.seatedCue += (cueTarget - st.seatedCue) * (1 - Math.exp(-cueRate * dt));
+      if (Math.abs(cueTarget - st.seatedCue) < 0.004) st.seatedCue = cueTarget;
+      st.propsReveal += (propsTarget - st.propsReveal) * (1 - Math.exp(-4.5 * dt));
+      if (Math.abs(propsTarget - st.propsReveal) < 0.004) st.propsReveal = propsTarget;
     }
     const cueAnimating =
-      Math.abs(cueTarget - seatedCue) > 0.004 || Math.abs(propsTarget - propsReveal) > 0.004;
+      Math.abs(cueTarget - st.seatedCue) > 0.004 || Math.abs(propsTarget - st.propsReveal) > 0.004;
     const onFade = MathUtils.smoothstep(powerProgress, 0.35, 0.85);
     const offFade = 1 - MathUtils.smoothstep(powerProgress, 0.12, 0.55);
     const frontFade = MathUtils.smoothstep(camera.position.z, 0.35, 1.35);
     const hoverLerp = prefersReduced ? 1 : 1 - Math.exp(-12 * dt);
-
     let animatingHover = false;
-    anyVisible = false;
+    st.anyVisible = false;
 
     for (const item of items) {
       const { target, frontOnly } = item.spec;
@@ -147,34 +149,33 @@ export const createStudioHotspots = (targetScene: Scene): StudioHotspotsHandle =
 
       let localVis = zoomVis;
       if (target === "tv") {
-        const cleanScreen = isRetroChannel || (activeFocus === "chair" && propsUnlocked);
-        localVis = cleanScreen ? 0 : Math.max(zoomVis, seatedCue) * onFade;
+        const cleanScreen = isRetroChannel || (activeFocus === "chair" && st.propsUnlocked);
+        localVis = cleanScreen ? 0 : Math.max(zoomVis, st.seatedCue) * onFade;
       } else if (target === "tv_power") {
-        localVis = powerCueUnlocked ? Math.max(zoomVis, seatedCue) * offFade : 0;
-      } else if (target !== "chair") localVis *= propsReveal;
+        localVis = st.powerCueUnlocked ? Math.max(zoomVis, st.seatedCue) * offFade : 0;
+      } else if (target !== "chair") localVis *= st.propsReveal;
       if (frontOnly) localVis *= frontFade;
 
       const isVisible = localVis > 0.004;
       item.mesh.visible = isVisible;
       if (!isVisible) continue;
-      anyVisible = true;
+      st.anyVisible = true;
 
       const dist = camera.position.distanceTo(item.worldPos);
-      const baseScale =
-        target === "tv_power"
-          ? MathUtils.clamp(dist * 0.044, 0.2, 0.52)
-          : MathUtils.clamp(dist * 0.048, 0.2, 0.72);
-      const leadScale = chairLead && target === "chair" ? 1.18 : 1;
-      item.mesh.scale.setScalar(baseScale * leadScale);
+      const isPower = target === "tv_power";
+      const baseScale = MathUtils.clamp(
+        dist * (isPower ? 0.044 : 0.048),
+        0.2,
+        isPower ? 0.52 : 0.72,
+      );
+      item.mesh.scale.setScalar(baseScale * (st.chairLead && target === "chair" ? 1.18 : 1));
       item.mesh.quaternion.copy(camera.quaternion);
       const u = item.mat.uniforms;
-      if (u.uTime) u.uTime.value = elapsed;
+      if (u.uTime) u.uTime.value = st.elapsed;
       if (u.uHover) u.uHover.value = item.hover;
       if (u.uOpacity) u.uOpacity.value = localVis;
     }
-
-    const hiddenTab = typeof document !== "undefined" && document.visibilityState === "hidden";
-    return animatingHover || cueAnimating || (anyVisible && !prefersReduced && !hiddenTab);
+    return animatingHover || cueAnimating || (st.anyVisible && !prefersReduced && isDocVisible());
   };
 
   return {
@@ -184,10 +185,7 @@ export const createStudioHotspots = (targetScene: Scene): StudioHotspotsHandle =
       hoveredTarget = target;
     },
     update,
-    isActive: () =>
-      anyVisible &&
-      !prefersReduced &&
-      (typeof document === "undefined" || document.visibilityState !== "hidden"),
+    isActive: () => st.anyVisible && !prefersReduced && isDocVisible(),
     dispose: () => {
       motionQuery?.removeEventListener("change", onMotionChange);
       targetScene.remove(group);

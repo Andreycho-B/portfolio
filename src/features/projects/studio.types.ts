@@ -189,9 +189,9 @@ export const STUDIO_WORLD = {
   introOrbitYawRad: 2.45,
   frameHeightUnits: 8.6,
   frameWidthUnits: 9.2,
-  zoomedFrameHeightUnits: 2.22,
-  zoomedFrameWidthUnits: 2.52,
-  zoomedTargetY: 0.06,
+  zoomedFrameHeightUnits: 1.98,
+  zoomedFrameWidthUnits: 2.38,
+  zoomedTargetY: 0.165,
   zoomedTargetZ: 1.1,
   zoomedElevationRad: 0.015,
 } as const;

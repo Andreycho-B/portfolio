@@ -1,7 +1,7 @@
 import { BoxGeometry, Group, Mesh, MeshBasicMaterial, type Object3D, type Scene } from "three";
 import { STUDIO_WORLD } from "./studio.types";
 
-export type StudioFocusPropId = "bust" | "phone" | "thermos" | "clock" | "computer" | "chair";
+export type StudioFocusPropId = "bust" | "phone" | "thermos" | "clock" | "chair";
 export type StudioFocusTarget = "tv" | StudioFocusPropId;
 export type StudioChairZone = "chair_sit" | "chair_exit";
 
@@ -100,21 +100,6 @@ const PROP_PRESETS: readonly PropFocusPreset[] = [
     hitRotY: 0.28,
   },
   {
-    id: "computer",
-    targetX: -2.3,
-    targetY: -0.7,
-    targetZ: -0.3,
-    yawRad: -0.46,
-    elevRad: 0.24,
-    frameHeight: 1.68,
-    frameWidth: 1.9,
-    allowOrbit: true,
-    hitCenter: [-2.32, -0.68, -0.32],
-    hitSize: [1.18, 1.18, 0.92],
-    hitRotX: 0,
-    hitRotY: 0.28,
-  },
-  {
     id: "chair",
     targetX: -1.98,
     targetY: 0.72,
@@ -139,8 +124,7 @@ const PRESET_BY_ID: Readonly<Record<StudioFocusPropId, PropFocusPreset>> = {
   thermos: PROP_PRESETS[1] as PropFocusPreset,
   phone: PROP_PRESETS[2] as PropFocusPreset,
   clock: PROP_PRESETS[3] as PropFocusPreset,
-  computer: PROP_PRESETS[4] as PropFocusPreset,
-  chair: PROP_PRESETS[5] as PropFocusPreset,
+  chair: PROP_PRESETS[4] as PropFocusPreset,
 };
 
 export const resolveStudioFocusPose = (target: StudioFocusTarget): StudioFocusCameraPose =>

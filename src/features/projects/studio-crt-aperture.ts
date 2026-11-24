@@ -2,14 +2,8 @@ import { type PerspectiveCamera, Vector3 } from "three";
 import type { CursorController } from "../../design-system/components/cursor.types";
 import type { StudioFluidWaveVec } from "./studio-crt-fluid-wipe";
 
-const CRT_MID_Y = 0.165;
-const CRT_HALF_W = 1.026;
-const CRT_HALF_H = 0.8557;
-const APERTURE_HALF_W = 1.026;
-const APERTURE_TOP_Y = 1.0207;
-const APERTURE_BOT_Y = -0.6907;
-const SIDE_STEPS = 8;
-const CUTOUT_RATE = 18;
+const [CRT_MID_Y, CRT_HALF_W, CRT_HALF_H, SIDE_STEPS, CUTOUT_RATE] = [0.165, 1.026, 0.8557, 8, 18];
+const [APERTURE_TOP_Y, APERTURE_BOT_Y] = [1.0207, -0.6907];
 export const CRT_VIRTUAL_W = 1280;
 export const CRT_VIRTUAL_H = 1068;
 
@@ -21,7 +15,7 @@ const buildApertureRing3D = (): readonly Vector3[] => {
       pts2d.push([x0 + (x1 - x0) * t, y0 + (y1 - y0) * t]);
     }
   };
-  const [w, top, bot] = [APERTURE_HALF_W, APERTURE_TOP_Y, APERTURE_BOT_Y];
+  const [w, top, bot] = [CRT_HALF_W, APERTURE_TOP_Y, APERTURE_BOT_Y];
   pushLin(-w, top, w, top, SIDE_STEPS);
   pushLin(w, top, w, bot, SIDE_STEPS);
   pushLin(w, bot, -w, bot, SIDE_STEPS);
@@ -156,6 +150,8 @@ export const createCrtPortalAperture = (): CrtPortalApertureSync => {
       lastKey = "mobile-sheet";
       portalEl.classList.add("is-mobile-sheet");
       portalEl.style.cssText = "";
+      const frame = portalEl.firstElementChild as HTMLElement | null;
+      if (frame) frame.style.transform = "";
       return;
     }
     portalEl.classList.remove("is-mobile-sheet");
@@ -184,6 +180,10 @@ export const createCrtPortalAperture = (): CrtPortalApertureSync => {
     portalEl.style.top = `${minY.toFixed(1)}px`;
     portalEl.style.width = `${width.toFixed(1)}px`;
     portalEl.style.height = `${height.toFixed(1)}px`;
+    const frame = portalEl.firstElementChild as HTMLElement | null;
+    if (frame) {
+      frame.style.transform = `scale(${(width / CRT_VIRTUAL_W).toFixed(5)}, ${(height / CRT_VIRTUAL_H).toFixed(5)})`;
+    }
 
     const polyParts: string[] = [];
     for (let i = 0; i < APERTURE_RING_3D.length; i++) {

@@ -22,7 +22,6 @@ const FOCUS_ORDER: readonly (StudioFocusTarget | null)[] = [
   null,
   "chair",
   "tv",
-  "computer",
   "clock",
   "bust",
   "thermos",
@@ -33,7 +32,6 @@ const FOCUS_LABELS: Readonly<Record<StudioFocusTarget, string>> = {
   tv: "Televisor CRT. Flechas arriba y abajo para proyectos, izquierda o derecha para otros objetos, teclas 0 a 9 para canales, P para encender o apagar, Enter para abrir o Escape para volver.",
   chair:
     "Sentado en la silla Monobloc. Pulsa 0 a 9 para cambiar canales, P para encender el televisor, flechas izquierda o derecha para recorrer el estudio o Escape para levantarte.",
-  computer: "Computador retro blanco. Hola Mundo.",
   clock: "Reloj analógico en hora local real.",
   bust: "Escultura de mármol.",
   thermos: "Termo de estudio.",
@@ -51,7 +49,7 @@ const CHANNEL_LABELS: Readonly<Record<TvChannelMode, string>> = {
 };
 
 const STUDIO_ARIA_LABEL =
-  "Estudio 3D interactivo de Andrey Rondón. Usa flechas izquierda o derecha para recorrer silla, televisor, computador, reloj, busto, termo y Nokia; teclas 0 a 9 para canales; Escape para vista general.";
+  "Estudio 3D interactivo de Andrey Rondón. Usa flechas izquierda o derecha para recorrer silla, televisor, reloj, busto, termo y Nokia; teclas 0 a 9 para canales; Escape para vista general.";
 
 export const stepKeyboardFocusTarget = (
   current: StudioFocusTarget | null,

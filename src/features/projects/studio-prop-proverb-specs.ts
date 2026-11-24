@@ -109,24 +109,6 @@ export const PROP_PROVERB_GROUPS: readonly PropProverbGroupSpec[] = [
     ],
   },
   {
-    propId: "computer",
-    name: "studioComputerProverbs3D",
-    anchor: [-2.3, -0.7, -0.3],
-    yawRad: -0.46,
-    planeWidth: 0.82,
-    desktopFontPx: 76,
-    mobileFontPx: 68,
-    joinOnMobile: false,
-    entries: [
-      {
-        lines: ["Hola Mundo"],
-        desktopPos: [-0.94, 0.14, 0.06],
-        mobilePos: [0, 0.86, 0.06],
-        align: "right",
-      },
-    ],
-  },
-  {
     propId: "chair",
     name: "studioChairProverbs3D",
     anchor: [0.16, 2.1, 0.08],
