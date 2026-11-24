@@ -1,49 +1,75 @@
+.cursor-dot,
 .interactive-cursor {
   position: fixed;
   top: 0;
   left: 0;
   pointer-events: none;
   opacity: 0;
-  z-index: var(--z-cursor);
-  transform: translate(-50%, -50%);
   will-change: transform, opacity;
   transition: opacity var(--dur-fast) var(--ease-fast);
 }
 
+.cursor-dot.is-visible,
 .interactive-cursor.is-visible {
   opacity: 1;
 }
 
-.cursor-ring {
+.cursor-dot {
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  z-index: calc(var(--z-cursor) + 1);
+  background: #141414;
+  transition:
+    opacity 0.14s ease,
+    background-color 0.12s ease,
+    scale 0.1s ease;
+}
+
+.cursor-dot.is-inverted {
+  background: #ffffff;
+}
+
+.cursor-dot.is-pressed {
+  scale: 0.78;
+}
+
+.interactive-cursor {
+  z-index: var(--z-cursor);
+}
+
+.cursor-ring,
+.cursor-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   transform-origin: center center;
+}
+
+.cursor-ring {
+  margin: -10px 0 0 -10px;
   will-change: transform;
 }
 
 .cursor-pill {
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   width: 32px;
   height: 32px;
   border-radius: var(--radius-pill);
   background: transparent;
   color: var(--color-fg);
-  border: 1px solid rgba(26, 23, 20, 0.55);
-  box-shadow: none;
+  border: 1px solid rgba(20, 20, 20, 0.72);
   overflow: hidden;
-  transform-origin: center center;
-  will-change: width, height, transform, border-color;
+  translate: 0 0;
+  will-change: width, height, transform, translate;
   transition:
-    width 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-    height 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-    padding 0.3s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.18s cubic-bezier(0.25, 1, 0.5, 1),
-    border-color 0.25s ease,
-    color 0.25s ease;
+    width 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    translate 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.12s ease-out,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .cursor-backdrop {
@@ -51,38 +77,35 @@
   inset: 0;
   border-radius: inherit;
   background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: none;
   opacity: 0;
   pointer-events: none;
-  will-change: opacity;
   transition:
-    opacity 0.12s ease-out,
-    background 0.25s ease;
+    opacity 0.1s ease-out,
+    background 0.15s ease;
 }
 
 .interactive-cursor.is-inverted .cursor-pill {
   color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.7);
+  border-color: rgba(255, 255, 255, 0.85);
 }
 
 .interactive-cursor.is-inverted .cursor-backdrop {
-  background: rgba(255, 255, 255, 0.14);
-  box-shadow: none;
+  background: rgba(255, 255, 255, 0.16);
 }
 
 .interactive-cursor.is-expanded .cursor-pill {
-  width: 132px;
-  height: 40px;
+  width: 140px;
+  height: 42px;
   padding: 0 18px;
+  translate: var(--pill-tx, 14px) var(--pill-ty, 14px);
   border-color: rgba(26, 23, 20, 0.16);
 }
 
 .interactive-cursor.is-muted .cursor-pill {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   padding: 0;
+  translate: var(--pill-tx, 12px) var(--pill-ty, 12px);
   border-color: rgba(26, 23, 20, 0.16);
 }
 
@@ -93,90 +116,80 @@
 .interactive-cursor.is-expanded .cursor-backdrop,
 .interactive-cursor.is-muted .cursor-backdrop {
   opacity: 1;
-  transition:
-    opacity 0.2s ease-in,
-    background 0.25s ease;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
-.interactive-cursor.is-inverted.is-expanded .cursor-pill {
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
+.interactive-cursor.is-inverted.is-expanded .cursor-pill,
 .interactive-cursor.is-inverted.is-muted .cursor-pill {
-  border-color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.32);
+}
+
+.cursor-content,
+.cursor-mute-icon {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  color: inherit;
+  transition:
+    opacity 0.08s ease-out,
+    transform 0.1s ease-in;
 }
 
 .cursor-content {
-  position: absolute;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   white-space: nowrap;
-  opacity: 0;
-  transform: scale(0.7);
-  transform-origin: center center;
-  will-change: opacity, transform;
-  pointer-events: none;
-  transition:
-    opacity 0.08s ease-out,
-    transform 0.12s ease-in;
+  transform: scale(0.8);
 }
 
 .interactive-cursor.is-expanded .cursor-content {
   opacity: 1;
   transform: scale(1);
   transition:
-    opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1) 0.05s,
-    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1) 0.05s;
+    opacity 0.14s cubic-bezier(0.16, 1, 0.3, 1) 0.02s,
+    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1) 0.02s;
 }
 
 .cursor-text {
   font-family: var(--font-text);
-  font-size: 12px;
-  letter-spacing: 0.08em;
+  font-size: 11.5px;
+  letter-spacing: 0.085em;
   text-transform: uppercase;
   font-weight: 500;
   line-height: 1;
-  color: inherit;
 }
 
 .cursor-icon {
-  width: 8px;
-  height: 11px;
+  width: 8.5px;
+  height: 11.5px;
   flex-shrink: 0;
-  color: inherit;
 }
 
 .cursor-mute-icon {
-  position: absolute;
   width: 18px;
   height: 18px;
-  color: inherit;
-  opacity: 0;
-  transform: scale(0.35) rotate(-12deg);
-  transform-origin: center center;
-  pointer-events: none;
-  will-change: opacity, transform;
-  transition:
-    opacity 0.08s ease-out,
-    transform 0.12s ease-in;
+  transform: scale(0.45) rotate(-10deg);
 }
 
 .interactive-cursor.is-muted .cursor-mute-icon {
   opacity: 1;
   transform: scale(1) rotate(0deg);
   transition:
-    opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1) 0.07s,
-    transform 0.34s cubic-bezier(0.32, 1.25, 0.32, 1) 0.07s;
+    opacity 0.14s cubic-bezier(0.16, 1, 0.3, 1) 0.03s,
+    transform 0.22s cubic-bezier(0.32, 1.2, 0.32, 1) 0.03s;
 }
 
 @media (hover: none) or (pointer: coarse) {
+  .cursor-dot,
   .interactive-cursor {
     display: none;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .cursor-dot,
   .cursor-pill,
   .cursor-content,
   .cursor-backdrop {

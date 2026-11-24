@@ -15,10 +15,11 @@ interface Spring2D {
   step: (dt: number) => boolean;
 }
 
+// Snappy yet elastic underdamped spring (omega = 53.2 rad/s, zeta = 0.78) chasing the 0-lag dot
 const DEFAULT_SPRING_CONFIG: SpringConfig = {
-  stiffness: 340,
-  damping: 18,
-  mass: 0.35,
+  stiffness: 680,
+  damping: 20,
+  mass: 0.24,
 };
 
 interface VelocityDeformation {
@@ -33,13 +34,13 @@ const calculateVelocityDeformation = (
   lastAngle = 0,
 ): VelocityDeformation => {
   const speed = Math.hypot(vx, vy);
-  if (speed < 12) {
+  if (speed < 10) {
     return { angle: lastAngle, scaleX: 1, scaleY: 1 };
   }
   const angle = (Math.atan2(vy, vx) * 180) / Math.PI;
-  const stretch = Math.min(speed * 0.00028, 0.28);
+  const stretch = Math.min(speed * 0.00032, 0.34);
   const scaleX = 1 + stretch;
-  const scaleY = 1 / (1 + stretch * 0.75);
+  const scaleY = 1 / (1 + stretch * 0.78);
   return { angle, scaleX, scaleY };
 };
 
@@ -97,8 +98,8 @@ export const createSpring2D = (config: SpringConfig = DEFAULT_SPRING_CONFIG): Sp
       spring.vy = 0;
     },
     step: (dt: number): boolean => {
-      const subDt = dt * 0.5;
-      for (let i = 0; i < 2; i++) {
+      const subDt = dt * 0.25;
+      for (let i = 0; i < 4; i++) {
         const dx = spring.targetX - spring.currentX;
         const dy = spring.targetY - spring.currentY;
         const ax = (dx * config.stiffness - config.damping * spring.vx) / config.mass;
@@ -114,7 +115,7 @@ export const createSpring2D = (config: SpringConfig = DEFAULT_SPRING_CONFIG): Sp
       const distSq =
         (spring.targetX - spring.currentX) ** 2 + (spring.targetY - spring.currentY) ** 2;
       const velSq = spring.vx ** 2 + spring.vy ** 2;
-      const isResting = distSq < 0.001 && velSq < 0.01;
+      const isResting = distSq < 0.04 && velSq < 0.25;
 
       if (isResting) {
         spring.currentX = spring.targetX;

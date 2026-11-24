@@ -109,6 +109,7 @@ export const startMutationLoop = (nodes: MorphicNodes): void => {
 
   let waveIndex = 0;
   let active = false;
+  let isCleanedUp = false;
   let currentMaster: gsap.core.Timeline | null = null;
   let intervalId: number | null = null;
   let initialTimeoutId: number | null = null;
@@ -175,20 +176,24 @@ export const startMutationLoop = (nodes: MorphicNodes): void => {
 
   void fontsReady.then(async () => {
     await preloadMutantFonts();
+    if (isCleanedUp) return;
     initialTimeoutId = window.setTimeout(() => {
+      if (isCleanedUp) return;
       runWave("start");
       resetInterval();
     }, 850);
   });
 
+  const STOP_EVENTS = ["astro:before-swap", "consent:collapse-start", "consent:completed"] as const;
   const cleanup = () => {
+    if (isCleanedUp) return;
+    isCleanedUp = true;
+    for (const evt of STOP_EVENTS) document.removeEventListener(evt, cleanup);
     if (initialTimeoutId !== null) window.clearTimeout(initialTimeoutId);
     if (intervalId !== null) window.clearInterval(intervalId);
     mutantWordEl?.removeEventListener("mouseenter", onHover);
     currentMaster?.kill();
     for (const charEl of charEls) gsap.killTweensOf(charEl);
   };
-
-  document.addEventListener("astro:before-swap", cleanup, { once: true });
-  document.addEventListener("consent:completed", cleanup, { once: true });
+  for (const evt of STOP_EVENTS) document.addEventListener(evt, cleanup, { once: true });
 };

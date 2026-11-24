@@ -75,6 +75,16 @@ select {
   color: var(--color-bg);
 }
 
+html.in-tv-portal,
+html.in-tv-portal body {
+  scrollbar-width: none;
+}
+
+html.in-tv-portal::-webkit-scrollbar,
+html.in-tv-portal body::-webkit-scrollbar {
+  display: none;
+}
+
 html.has-custom-cursor,
 html.has-custom-cursor * {
   cursor: none;
