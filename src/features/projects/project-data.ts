@@ -12,8 +12,13 @@ export interface ProjectItem {
   readonly year: string;
   readonly location?: string;
   readonly imageSrc: string;
+  readonly coverWidth: number;
+  readonly coverHeight: number;
   readonly slug: ProjectSlug;
   readonly theme: ProjectTheme;
+  readonly seoDescription: string;
+  readonly programmingLanguages: readonly string[];
+  readonly licenseUrl?: string;
   readonly liveUrl?: string;
   readonly repoUrl?: string;
   readonly externalUrl?: string;
@@ -35,8 +40,13 @@ export const PROJECTS: readonly [ProjectItem, ...ProjectItem[]] = [
     year: "2026",
     location: "Remoto, Duitama",
     imageSrc: "/projects/mias/cover.webp",
+    coverWidth: 1917,
+    coverHeight: 912,
     slug: "mias-hamburguesas-de-lujo",
     theme: "dark",
+    seoDescription:
+      "Estudio de caso de Mías (Hamburguesas de Lujo) por Andrey Rondón: sistema de pedidos y fidelización con Go, PostgreSQL 16, SQLC, Svelte 5, PWA y SSE.",
+    programmingLanguages: ["Go", "TypeScript", "SQL"],
     liveUrl: "https://mias-hamburguesas-de-lujo.pages.dev",
     repoUrl: "https://github.com/Andreycho-B/mias-hamburguesas-de-lujo",
     tags: [
@@ -75,8 +85,13 @@ export const PROJECTS: readonly [ProjectItem, ...ProjectItem[]] = [
     year: "2025",
     location: "Remoto, Colombia",
     imageSrc: "/projects/tusuper/cover.webp",
+    coverWidth: 1917,
+    coverHeight: 915,
     slug: "tu-super",
     theme: "light",
+    seoDescription:
+      "Estudio de caso de Tu Súper por Andrey Rondón: e-commerce local de comestibles y PWA con Angular 21 Signals, NestJS 11, PostgreSQL y WebSockets.",
+    programmingLanguages: ["TypeScript", "SQL"],
     liveUrl: "https://tusuperfront.onrender.com",
     repoUrl: "https://github.com/Andreycho-B/tusuper-backend",
     tags: [
@@ -115,9 +130,14 @@ export const PROJECTS: readonly [ProjectItem, ...ProjectItem[]] = [
     year: "2026",
     location: "Remoto, Colombia",
     imageSrc: "/projects/estandar/cover.webp",
+    coverWidth: 1890,
+    coverHeight: 915,
     slug: "estandar-gobernanza-agentes",
     theme: "dark",
-    externalUrl: "https://github.com/Andreycho-B/ai-agent-engineering-standard",
+    seoDescription:
+      "Estudio de caso del Estándar de Ingeniería para Agentes IA por Andrey Rondón: especificación open source de 32 documentos en 7 niveles bajo CC BY 4.0.",
+    programmingLanguages: ["TypeScript", "Go"],
+    licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
     repoUrl: "https://github.com/Andreycho-B/ai-agent-engineering-standard",
     tags: ["Arquitectura", "RFC Standard", "TypeScript", "Go", "CC BY 4.0"],
     highlights: [

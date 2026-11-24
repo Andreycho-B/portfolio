@@ -1,5 +1,6 @@
 @import "./projects-drum-stage.css";
 @import "./projects-drum-responsive.css";
+@import "./studio-stage.css";
 
 .projects-lens-section[hidden] {
   visibility: hidden;

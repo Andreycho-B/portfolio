@@ -1,5 +1,6 @@
 import { getAudioSystem } from "../../core/audio";
 import { getCursorController } from "../../design-system/components/cursor-controller";
+import { notifyStudioAudioSync, STUDIO_AUDIO_SYNC_EVENT } from "./studio-sound-toggle";
 
 export const initSoundToggle = (root: HTMLElement): (() => void) => {
   const button = root.querySelector<HTMLButtonElement>("[data-sound-toggle]");
@@ -34,6 +35,7 @@ export const initSoundToggle = (root: HTMLElement): (() => void) => {
     const isMuted = audio.toggleMute();
     syncUI(isMuted);
     updateCursorState(isMuted);
+    notifyStudioAudioSync();
   };
 
   const handlePointerEnter = () => {
@@ -47,14 +49,22 @@ export const initSoundToggle = (root: HTMLElement): (() => void) => {
     cursor.setExpanded(false);
   };
 
+  const onExternalSync = () => {
+    const isMuted = audio.isMuted();
+    syncUI(isMuted);
+    updateCursorState(isMuted);
+  };
+
   button.addEventListener("click", handleClick);
   button.addEventListener("pointerenter", handlePointerEnter);
   button.addEventListener("pointerleave", handlePointerLeave);
+  window.addEventListener(STUDIO_AUDIO_SYNC_EVENT, onExternalSync);
 
   return () => {
     button.removeEventListener("click", handleClick);
     button.removeEventListener("pointerenter", handlePointerEnter);
     button.removeEventListener("pointerleave", handlePointerLeave);
+    window.removeEventListener(STUDIO_AUDIO_SYNC_EVENT, onExternalSync);
     if (isHovered) {
       cursor.setMuted(false);
       cursor.setExpanded(false);

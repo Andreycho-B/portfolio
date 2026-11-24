@@ -7,13 +7,13 @@ import {
   type WebGLRenderTarget,
 } from "three";
 
-const LENS_STRENGTH_BASE = 0.85;
-const LENS_STRENGTH_GAIN = 0.12;
-const CHROMATIC_BASE = 0.01;
-const CHROMATIC_GAIN = 0.003;
+const LENS_STRENGTH_BASE = 0.95;
+const LENS_STRENGTH_GAIN = 0.14;
+const CHROMATIC_BASE = 0.016;
+const CHROMATIC_GAIN = 0.004;
 const LENS_VELOCITY_CAP = 3;
-const LENS_BAND_BASE = 0.1;
-const LENS_BAND_GAIN = 0.012;
+const LENS_BAND_BASE = 0.165;
+const LENS_BAND_GAIN = 0.014;
 
 export const DRUM_GLASS_VERTEX_SHADER = `
   varying vec2 vUv;
@@ -30,11 +30,17 @@ export const DRUM_GLASS_FRAGMENT_SHADER = `
   uniform float uStrength;
   uniform float uCurve;
   uniform float uChromaticAberration;
+  uniform float uUvScale;
   varying vec2 vUv;
 
   float sag(float t) {
     t = clamp(pow(t, uCurve), 0.0, 1.0);
     return 1.0 - sqrt(1.0 - t * t);
+  }
+
+  vec2 toSubUv(vec2 unitUv) {
+    float hi = max(0.002, uUvScale - 0.0015);
+    return clamp(unitUv * uUvScale, vec2(0.001), vec2(hi));
   }
 
   void main() {
@@ -61,34 +67,25 @@ export const DRUM_GLASS_FRAGMENT_SHADER = `
     uv = clamp(uv, vec2(0.0), vec2(1.0));
 
     if (dist == 0.0 || uChromaticAberration == 0.0) {
-      gl_FragColor = texture2D(tDiffuse, uv);
+      gl_FragColor = texture2D(tDiffuse, toSubUv(uv));
       #include <colorspace_fragment>
       return;
     }
 
-    vec3 finalColor = vec3(0.0);
-    vec3 weightSum = vec3(0.0);
-    vec3 sourceColor = texture2D(tDiffuse, uv).rgb;
     vec2 dispDir = vec2(0.0, uv.y > 0.5 ? -1.0 : 1.0);
-
-    for (int i = 0; i < 16; i++) {
-      float t = float(i) / 15.0;
-
-      vec3 w = vec3(
-        clamp(1.0 - 4.5 * (t - 0.18) * (t - 0.18), 0.0, 1.0),
-        clamp(1.0 - 5.5 * (t - 0.50) * (t - 0.50), 0.0, 1.0),
-        clamp(1.0 - 4.5 * (t - 0.82) * (t - 0.82), 0.0, 1.0)
-      );
-
-      float cauchyShift = (t - 0.5) * uChromaticAberration * dist * 30.0;
-      vec2 sampleUv = clamp(uv + dispDir * cauchyShift, vec2(0.0), vec2(1.0));
-
-      finalColor += texture2D(tDiffuse, sampleUv).rgb * w;
-      weightSum += w;
-    }
-
-    finalColor /= weightSum;
-    float whiteMask = smoothstep(0.98, 1.0, min(min(sourceColor.r, sourceColor.g), sourceColor.b));
+    vec2 stepUv = dispDir * (uChromaticAberration * dist * 30.0);
+    vec3 s0 = texture2D(tDiffuse, toSubUv(uv - stepUv * 0.50)).rgb;
+    vec3 s1 = texture2D(tDiffuse, toSubUv(uv - stepUv * 0.25)).rgb;
+    vec3 s2 = texture2D(tDiffuse, toSubUv(uv)).rgb;
+    vec3 s3 = texture2D(tDiffuse, toSubUv(uv + stepUv * 0.25)).rgb;
+    vec3 s4 = texture2D(tDiffuse, toSubUv(uv + stepUv * 0.50)).rgb;
+    vec3 w0 = vec3(0.8542, 0.0, 0.0);
+    vec3 w1 = vec3(0.9780, 0.6562, 0.0);
+    vec3 w2 = vec3(0.5392, 1.0, 0.5392);
+    vec3 w3 = vec3(0.0, 0.6562, 0.9780);
+    vec3 w4 = vec3(0.0, 0.0, 0.8542);
+    vec3 finalColor = (s0 * w0 + s1 * w1 + s2 * w2 + s3 * w3 + s4 * w4) / (w0 + w1 + w2 + w3 + w4);
+    float whiteMask = smoothstep(0.98, 1.0, min(min(s2.r, s2.g), s2.b));
     finalColor *= mix(exp(-dist * 1.5), 1.0, whiteMask);
     float dither = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
     finalColor += dither / 255.0;
@@ -101,6 +98,7 @@ export interface DrumLensPostPass {
   readonly scene: Scene;
   readonly camera: OrthographicCamera;
   readonly updateUniforms: (scrollVelocity: number, introProgress: number) => void;
+  readonly setUvScale: (scale: number) => void;
   readonly dispose: () => void;
 }
 
@@ -115,6 +113,7 @@ export const createDrumLensPostPass = (renderTarget: WebGLRenderTarget): DrumLen
       uStrength: { value: LENS_STRENGTH_BASE },
       uCurve: { value: 1.0 },
       uChromaticAberration: { value: CHROMATIC_BASE },
+      uUvScale: { value: 1.0 },
     },
     vertexShader: DRUM_GLASS_VERTEX_SHADER,
     fragmentShader: DRUM_GLASS_FRAGMENT_SHADER,
@@ -137,10 +136,14 @@ export const createDrumLensPostPass = (renderTarget: WebGLRenderTarget): DrumLen
       CHROMATIC_BASE + spinSpeed * CHROMATIC_GAIN + opticalFactor * 0.012;
   };
 
+  const setUvScale = (scale: number): void => {
+    if (material.uniforms.uUvScale) material.uniforms.uUvScale.value = scale;
+  };
+
   const dispose = (): void => {
     material.dispose();
     quad.geometry.dispose();
   };
 
-  return { scene, camera, updateUniforms, dispose };
+  return { scene, camera, updateUniforms, setUvScale, dispose };
 };
