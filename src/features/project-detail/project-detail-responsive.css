@@ -64,20 +64,17 @@
     gap: 40px;
   }
 
-  .sticky-meta-rail {
+  .sticky-meta-rail,
+  .editorial-column,
+  .statement-col {
     grid-column: 1 / -1;
+  }
+
+  .sticky-meta-rail {
     position: static;
     padding-right: 0;
     border-bottom: 1px solid var(--color-border);
     padding-bottom: 32px;
-  }
-
-  .editorial-column {
-    grid-column: 1 / -1;
-  }
-
-  .statement-col {
-    grid-column: 1 / -1;
   }
 
   .duo-specimens-container {
@@ -110,12 +107,28 @@
   .next-badge-col {
     order: 1;
   }
-
   .next-title-col {
     order: 2;
   }
-
   .next-specimen-col {
     order: 3;
   }
+}
+
+html.in-tv-portal .project-detail-stage {
+  --margin: 84px;
+  --space-section: 84px;
+}
+
+html.in-tv-portal .detail-header {
+  padding: 62px var(--margin) 24px;
+}
+
+html.in-tv-portal .hero-row {
+  height: 100vh;
+  padding: 112px var(--margin) 64px;
+}
+
+html.in-tv-portal .next-project-section {
+  padding-bottom: 84px;
 }

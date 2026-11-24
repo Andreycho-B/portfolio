@@ -64,57 +64,63 @@ export function initTechGravity(container: HTMLElement): TechGravityHandle | nul
     bindings.push({ body, el, halfW, halfH, active: false });
   });
 
-  let mouseX = -9999;
-  let mouseY = -9999;
-  let prevX = -9999;
-  let prevY = -9999;
+  let [mouseX, mouseY, prevX, prevY] = [-9999, -9999, -9999, -9999];
+  let containerRect = container.getBoundingClientRect();
+  const refreshRect = () => {
+    containerRect = container.getBoundingClientRect();
+  };
   const onMouseMove = (e: MouseEvent) => {
-    const r = container.getBoundingClientRect();
-    mouseX = e.clientX - r.left;
-    mouseY = e.clientY - r.top;
+    mouseX = e.clientX - containerRect.left;
+    mouseY = e.clientY - containerRect.top;
   };
   const onMouseLeave = () => {
-    mouseX = -9999;
-    mouseY = -9999;
-    prevX = -9999;
-    prevY = -9999;
+    mouseX = mouseY = prevX = prevY = -9999;
     Matter.Body.setPosition(cursorBall, { x: -9999, y: -9999 });
   };
+  container.addEventListener("mouseenter", refreshRect, { passive: true });
   container.addEventListener("mousemove", onMouseMove, { passive: true });
   container.addEventListener("mouseleave", onMouseLeave, { passive: true });
 
   let animId = 0;
   let isRunning = false;
+  let lastFrameMs = 0;
   const timeouts: ReturnType<typeof setTimeout>[] = [];
-  let hasSpawned = false;
+  let spawnedBatches = 0;
 
+  const clearPendingSpawns = () => {
+    for (const timer of timeouts) clearTimeout(timer);
+    timeouts.length = 0;
+  };
   const spawnStaggeredWaves = () => {
-    if (hasSpawned) return;
-    hasSpawned = true;
     const bSize = 6;
     const totalBatches = Math.ceil(bindings.length / bSize);
-
-    for (let b = 0; b < totalBatches; b++) {
+    const startBatch = spawnedBatches;
+    if (startBatch >= totalBatches) return;
+    clearPendingSpawns();
+    for (let b = startBatch; b < totalBatches; b++) {
+      const delay = (b - startBatch) * 150;
       const timer = setTimeout(() => {
         if (!isRunning) return;
+        spawnedBatches = Math.max(spawnedBatches, b + 1);
         const startIdx = b * bSize;
         const endIdx = Math.min(bindings.length, startIdx + bSize);
         const bodiesToAdd: Matter.Body[] = [];
-
         for (let i = startIdx; i < endIdx; i++) {
           const item = bindings[i];
-          if (!item) continue;
+          if (!item || item.active) continue;
           item.active = true;
           bodiesToAdd.push(item.body);
           gsap.to(item.el, { opacity: 1, scale: 1, duration: 0.38, ease: "back.out(1.4)" });
         }
-        Matter.Composite.add(engine.world, bodiesToAdd);
-      }, b * 150);
+        if (bodiesToAdd.length > 0) Matter.Composite.add(engine.world, bodiesToAdd);
+      }, delay);
       timeouts.push(timer);
     }
   };
 
-  const updateLoop = () => {
+  const updateLoop = (now: number) => {
+    const dtMs = lastFrameMs > 0 ? Math.min(Math.max(now - lastFrameMs, 4), 24) : 16.667;
+    lastFrameMs = now;
     if (mouseX > -500 && mouseY > -500) {
       const vx = prevX > -500 ? (mouseX - prevX) * 0.85 : 0;
       const vy = prevY > -500 ? (mouseY - prevY) * 0.85 : 0;
@@ -127,7 +133,7 @@ export function initTechGravity(container: HTMLElement): TechGravityHandle | nul
       prevY = mouseY;
     }
 
-    Matter.Engine.update(engine, 1000 / 60);
+    Matter.Engine.update(engine, dtMs);
 
     for (let i = 0; i < bindings.length; i++) {
       const item = bindings[i];
@@ -142,15 +148,17 @@ export function initTechGravity(container: HTMLElement): TechGravityHandle | nul
   const start = () => {
     if (isRunning) return;
     isRunning = true;
+    lastFrameMs = 0;
+    refreshRect();
     spawnStaggeredWaves();
     animId = requestAnimationFrame(updateLoop);
   };
   const stop = () => {
     isRunning = false;
-    if (animId) {
-      cancelAnimationFrame(animId);
-      animId = 0;
-    }
+    lastFrameMs = 0;
+    clearPendingSpawns();
+    if (animId) cancelAnimationFrame(animId);
+    animId = 0;
   };
 
   const observer = new IntersectionObserver(
@@ -165,6 +173,7 @@ export function initTechGravity(container: HTMLElement): TechGravityHandle | nul
   observer.observe(container);
 
   const handleResize = () => {
+    refreshRect();
     const newW = Math.max(container.clientWidth, 320);
     const newH = Math.max(container.clientHeight, 360);
     Matter.Body.setPosition(ground, { x: newW / 2, y: newH + 10 });
@@ -172,15 +181,17 @@ export function initTechGravity(container: HTMLElement): TechGravityHandle | nul
     Matter.Body.setPosition(leftWall, { x: -20, y: newH / 2 });
   };
   window.addEventListener("resize", handleResize, { passive: true });
+  window.addEventListener("scroll", refreshRect, { passive: true });
 
   return {
     destroy: () => {
       stop();
-      timeouts.forEach(clearTimeout);
       observer.disconnect();
+      container.removeEventListener("mouseenter", refreshRect);
       container.removeEventListener("mousemove", onMouseMove);
       container.removeEventListener("mouseleave", onMouseLeave);
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("scroll", refreshRect);
       Matter.Composite.clear(engine.world, false);
       Matter.Engine.clear(engine);
     },

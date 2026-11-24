@@ -1,6 +1,5 @@
 ---
 import type { ProjectItem } from "../projects/project-data";
-import { splitChars } from "./tech-icons";
 
 interface Props {
   project: ProjectItem;
@@ -18,14 +17,8 @@ const { project } = Astro.props;
       <ul class="stack-list">
         {project.tags?.map((tag) => (
           <li class="stack-item">
-            <span class="sr-only">{tag}</span>
-            <span class="roll-track" aria-hidden="true">
-              {splitChars(tag).map(({ char, index }) => (
-                <span class="roll-char" style={`--i:${index}`}>
-                  <span class="char-top">{char}</span>
-                  <span class="char-bot">{char}</span>
-                </span>
-              ))}
+            <span class="roll-track" data-roll-text>
+              {tag}
             </span>
           </li>
         ))}
@@ -56,17 +49,12 @@ const { project } = Astro.props;
               target="_blank"
               rel="noopener noreferrer"
               class="external-bullet-link"
+              aria-label="Ver Sistema en Producción"
               data-cursor-expand="Explorar"
             >
               <span class="bullet-dot" aria-hidden="true" />
-              <span class="sr-only">Ver Sistema en Producción</span>
-              <span class="roll-track" aria-hidden="true">
-                {splitChars("Ver Sistema en Producción ↗").map(({ char, index }) => (
-                  <span class="roll-char" style={`--i:${index}`}>
-                    <span class="char-top">{char}</span>
-                    <span class="char-bot">{char}</span>
-                  </span>
-                ))}
+              <span class="roll-track" data-roll-text>
+                Ver Sistema en Producción ↗
               </span>
             </a>
           )}
@@ -76,17 +64,12 @@ const { project } = Astro.props;
               target="_blank"
               rel="noopener noreferrer"
               class="external-bullet-link"
+              aria-label="Auditar Repositorio"
               data-cursor-expand="GitHub"
             >
               <span class="bullet-dot" aria-hidden="true" />
-              <span class="sr-only">Auditar Repositorio</span>
-              <span class="roll-track" aria-hidden="true">
-                {splitChars("Auditar Repositorio ↗").map(({ char, index }) => (
-                  <span class="roll-char" style={`--i:${index}`}>
-                    <span class="char-top">{char}</span>
-                    <span class="char-bot">{char}</span>
-                  </span>
-                ))}
+              <span class="roll-track" data-roll-text>
+                Auditar Repositorio ↗
               </span>
             </a>
           )}

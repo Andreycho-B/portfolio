@@ -1,6 +1,5 @@
 ---
 import type { ProjectItem } from "../projects/project-data";
-import { splitChars } from "./tech-icons";
 
 interface Props {
   project: ProjectItem;
@@ -26,13 +25,8 @@ const { project } = Astro.props;
           stroke-linejoin="round"
         />
       </svg>
-      <span class="roll-track" aria-hidden="true">
-        {splitChars("proyectos").map(({ char, index }) => (
-          <span class="roll-char" style={`--i:${index}`}>
-            <span class="char-top">{char}</span>
-            <span class="char-bot">{char}</span>
-          </span>
-        ))}
+      <span class="roll-track" data-roll-text>
+        proyectos
       </span>
     </a>
   </div>
@@ -44,16 +38,11 @@ const { project } = Astro.props;
         target="_blank"
         rel="noopener noreferrer"
         class="action-pill"
+        aria-label="Visitar sitio en producción"
         data-cursor-expand="Visitar"
       >
-        <span class="sr-only">Visitar sitio en producción</span>
-        <span class="roll-track" aria-hidden="true">
-          {splitChars("visitar").map(({ char, index }) => (
-            <span class="roll-char" style={`--i:${index}`}>
-              <span class="char-top">{char}</span>
-              <span class="char-bot">{char}</span>
-            </span>
-          ))}
+        <span class="roll-track" data-roll-text>
+          visitar
         </span>
         <span class="pill-arrow" aria-hidden="true">
           ↗
@@ -66,16 +55,11 @@ const { project } = Astro.props;
         target="_blank"
         rel="noopener noreferrer"
         class="action-pill"
+        aria-label="Ver código fuente en GitHub"
         data-cursor-expand="GitHub"
       >
-        <span class="sr-only">Ver código fuente en GitHub</span>
-        <span class="roll-track" aria-hidden="true">
-          {splitChars("código").map(({ char, index }) => (
-            <span class="roll-char" style={`--i:${index}`}>
-              <span class="char-top">{char}</span>
-              <span class="char-bot">{char}</span>
-            </span>
-          ))}
+        <span class="roll-track" data-roll-text>
+          código
         </span>
         <span class="pill-arrow" aria-hidden="true">
           ↗

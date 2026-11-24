@@ -13,13 +13,53 @@ import {
 import { initMorphicTitles } from "./detail-title-morph";
 import { initSpecimensTilt } from "./project-tilt-fx";
 import { initTechGravity } from "./tech-gravity-engine";
+import { splitChars } from "./tech-icons";
+
+const hydrateRollTracks = (prefersReduced: boolean): void => {
+  if (prefersReduced) return;
+  const tracks = document.querySelectorAll<HTMLElement>("[data-roll-text]");
+  for (const track of tracks) {
+    if (track.dataset.rollHydrated === "true") continue;
+    const text = track.textContent?.trim() ?? "";
+    if (!text) continue;
+    const parent = track.parentElement;
+    if (parent && !parent.hasAttribute("aria-label")) {
+      const sr = document.createElement("span");
+      sr.className = "sr-only";
+      sr.textContent = text;
+      parent.insertBefore(sr, track);
+    }
+    const frag = document.createDocumentFragment();
+    for (const { char, index } of splitChars(text)) {
+      const cell = document.createElement("span");
+      cell.className = "roll-char";
+      cell.style.setProperty("--i", String(index));
+      const top = document.createElement("span");
+      top.className = "char-top";
+      top.textContent = char;
+      const bot = document.createElement("span");
+      bot.className = "char-bot";
+      bot.textContent = char;
+      cell.append(top, bot);
+      frag.appendChild(cell);
+    }
+    track.setAttribute("aria-hidden", "true");
+    track.dataset.rollHydrated = "true";
+    track.replaceChildren(frag);
+  }
+};
 
 export const initProjectDetailPage = (): void => {
+  const stage = document.querySelector<HTMLElement>(".project-detail-stage");
+  if (!stage || stage.dataset.pageInit === "true") return;
+  stage.dataset.pageInit = "true";
+
   initIncomingFluidWipe();
   initSmoothScroll();
 
   const prefersReduced =
     typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  hydrateRollTracks(prefersReduced);
 
   const heroSpecimen = document.querySelector<HTMLElement>(".hero-specimen-card");
   if (heroSpecimen && !prefersReduced) {
@@ -67,7 +107,7 @@ export const initProjectDetailPage = (): void => {
     navigateWithFluidWipe({ targetUrl: href });
   });
 
-  initMorphicTitles();
+  const cleanupMorphicTitles = initMorphicTitles();
 
   const revealTargets = document.querySelectorAll<HTMLElement>("[data-reveal]");
   let observer: IntersectionObserver | null = null;
@@ -104,6 +144,7 @@ export const initProjectDetailPage = (): void => {
       destroySmoothScroll();
       cleanupSoundToggle();
       cleanupCursorExpand();
+      cleanupMorphicTitles();
       tiltController.destroy();
       techGravity?.destroy();
       observer?.disconnect();

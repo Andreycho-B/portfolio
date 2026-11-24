@@ -16,6 +16,8 @@ export const splitChars = (text: string): SplitCharItem[] =>
 
 const OFFICIAL_TECH_LOGOS: Record<string, OfficialTechLogo> = {
   "Go (Chi v5)": { id: "go", svgUrl: "/tech-logos/go.svg" },
+  Go: { id: "go", svgUrl: "/tech-logos/go.svg" },
+  TypeScript: { id: "typescript", svgUrl: "/tech-logos/typescript.svg" },
   "PostgreSQL 16": { id: "postgresql", svgUrl: "/tech-logos/postgresql.svg" },
   PostgreSQL: { id: "postgresql", svgUrl: "/tech-logos/postgresql.svg" },
   "Svelte 5": { id: "svelte", svgUrl: "/tech-logos/svelte.svg" },
@@ -31,10 +33,14 @@ export function getProjectLogos(tags: readonly string[], targetCount = 30): Offi
   const validLogos: OfficialTechLogo[] = [];
   for (const tag of tags) {
     const logo = OFFICIAL_TECH_LOGOS[tag];
-    if (logo) validLogos.push(logo);
+    if (logo && !validLogos.some((item) => item.id === logo.id)) validLogos.push(logo);
   }
 
-  if (validLogos.length === 0 && OFFICIAL_TECH_LOGOS.GitHub) {
+  if (
+    validLogos.length < 3 &&
+    OFFICIAL_TECH_LOGOS.GitHub &&
+    !validLogos.some((item) => item.id === "github")
+  ) {
     validLogos.push(OFFICIAL_TECH_LOGOS.GitHub);
   }
 
@@ -46,5 +52,5 @@ export function getProjectLogos(tags: readonly string[], targetCount = 30): Offi
     i++;
   }
 
-  return pool.sort((a, b) => ((a.id.charCodeAt(0) + i) % 3) - ((b.id.charCodeAt(0) + i) % 3));
+  return pool;
 }

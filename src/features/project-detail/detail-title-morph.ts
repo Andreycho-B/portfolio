@@ -5,9 +5,9 @@ const animateMercuryMorph = (
   filterId: string,
   nodeId: string,
   delay = 0,
-): void => {
+): gsap.core.Timeline | null => {
   const node = document.getElementById(nodeId) as SVGFEGaussianBlurElement | null;
-  if (!node) return;
+  if (!node) return null;
 
   const prefersReduced =
     typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -16,7 +16,7 @@ const animateMercuryMorph = (
     el.style.opacity = "1";
     el.style.transform = "none";
     el.style.filter = "";
-    return;
+    return null;
   }
 
   el.style.filter = `url(#${filterId})`;
@@ -63,11 +63,16 @@ const animateMercuryMorph = (
     },
     0,
   );
+  return tl;
 };
 
-export const initMorphicTitles = (): void => {
+export const initMorphicTitles = (): (() => void) => {
   const prefersReduced =
     typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const timelines: gsap.core.Timeline[] = [];
+  const track = (tl: gsap.core.Timeline | null): void => {
+    if (tl) timelines.push(tl);
+  };
 
   const heroTitle = document.querySelector<HTMLElement>("[data-project-title]");
   if (heroTitle) {
@@ -75,7 +80,9 @@ export const initMorphicTitles = (): void => {
       heroTitle.style.opacity = "1";
       heroTitle.style.transform = "none";
     } else {
-      animateMercuryMorph(heroTitle, "detail-title-blur-filter", "detail-title-blur-node", 0.15);
+      track(
+        animateMercuryMorph(heroTitle, "detail-title-blur-filter", "detail-title-blur-node", 0.15),
+      );
     }
   }
 
@@ -85,7 +92,9 @@ export const initMorphicTitles = (): void => {
       t.style.opacity = "1";
       t.style.transform = "none";
     });
-    return;
+    return () => {
+      for (const tl of timelines) tl.kill();
+    };
   }
 
   const morphObserver = new IntersectionObserver(
@@ -96,11 +105,19 @@ export const initMorphicTitles = (): void => {
         const type = target.dataset.morphicTitle;
         morphObserver.unobserve(target);
         if (type === "overview") {
-          animateMercuryMorph(target, "detail-overview-blur-filter", "detail-overview-blur-node");
+          track(
+            animateMercuryMorph(target, "detail-overview-blur-filter", "detail-overview-blur-node"),
+          );
         } else if (type === "statement") {
-          animateMercuryMorph(target, "detail-statement-blur-filter", "detail-statement-blur-node");
+          track(
+            animateMercuryMorph(
+              target,
+              "detail-statement-blur-filter",
+              "detail-statement-blur-node",
+            ),
+          );
         } else if (type === "next") {
-          animateMercuryMorph(target, "detail-next-blur-filter", "detail-next-blur-node");
+          track(animateMercuryMorph(target, "detail-next-blur-filter", "detail-next-blur-node"));
         }
       });
     },
@@ -110,4 +127,9 @@ export const initMorphicTitles = (): void => {
   morphicTitles.forEach((t) => {
     morphObserver.observe(t);
   });
+
+  return () => {
+    morphObserver.disconnect();
+    for (const tl of timelines) tl.kill();
+  };
 };
