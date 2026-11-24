@@ -7,12 +7,20 @@ export interface HotspotSpec {
   readonly pos: readonly [number, number, number];
   readonly phase: number;
   readonly frontOnly?: boolean;
-  readonly warm?: boolean;
+  readonly highlight?: boolean;
+  readonly rayPull?: number;
 }
 
 export const HOTSPOT_SPECS: readonly HotspotSpec[] = [
   { target: "tv", pos: [0.0, 0.165, 1.32], phase: 0.0, frontOnly: true },
-  { target: "tv_power", pos: [0.487, -0.805, 1.36], phase: 0.4, frontOnly: true, warm: true },
+  {
+    target: "tv_power",
+    pos: [0.486, -0.804, 1.232],
+    phase: 0.4,
+    frontOnly: true,
+    highlight: true,
+    rayPull: 0.16,
+  },
   { target: "bust", pos: [2.22, 0.44, -0.24], phase: 1.25 },
   { target: "thermos", pos: [2.28, -0.18, 1.18], phase: 2.5 },
   { target: "phone", pos: [1.42, -0.94, 1.36], phase: 3.75 },
@@ -28,7 +36,7 @@ uniform float uHover;
 uniform float uOpacity;
 uniform float uPhase;
 uniform float uReduced;
-uniform float uWarm;
+uniform float uHighlight;
 varying vec2 vUv;
 void main(){
   vec2 p=vUv*2.0-1.0;
@@ -39,23 +47,21 @@ void main(){
   float breath=motion*sin(uTime*2.35+uPhase);
   float wave=fract(uTime*0.42+uPhase*0.15915);
   float ringR=mix(0.38+breath*0.032,0.58,uHover);
-  float ringW=mix(0.038,0.054,uHover);
+  float ringW=mix(0.038+uHighlight*0.014,0.056+uHighlight*0.012,uHover);
   float ring=1.0-smoothstep(ringW-aa,ringW+aa,abs(r-ringR));
-  float dotR=mix(0.11-breath*0.012,0.17,uHover);
+  float dotR=mix(0.11+uHighlight*0.032-breath*0.012,0.18,uHover);
   float core=1.0-smoothstep(dotR-aa,dotR+aa,r);
-  float pulseR=mix(0.26,0.92,wave);
-  float pulseW=mix(0.032,0.012,wave);
+  float pulseR=mix(0.26,0.94,wave);
+  float pulseW=mix(0.034+uHighlight*0.012,0.014,wave);
   float pulseFade=(1.0-wave)*(1.0-wave)*smoothstep(0.0,0.12,wave);
-  float pulse=(1.0-smoothstep(pulseW-aa,pulseW+aa,abs(r-pulseR)))*pulseFade*0.58*motion*(1.0-uHover*0.75);
-  float fill=(1.0-smoothstep(ringR-aa,ringR+aa,r))*uHover*0.22;
-  float halo=exp(-pow((r-ringR)/0.16,2.0))*mix(0.56,0.72,uWarm)+exp(-pow(r/0.26,2.0))*mix(0.42,0.58,uWarm);
-  float ink=clamp(ring*mix(0.94,1.0,uHover)+core+pulse+fill,0.0,1.0);
-  float alpha=clamp(max(ink,halo*(0.82+uHover*0.18)),0.0,1.0)*uOpacity;
+  float pulse=(1.0-smoothstep(pulseW-aa,pulseW+aa,abs(r-pulseR)))*pulseFade*mix(0.58,0.88,uHighlight)*motion*(1.0-uHover*0.75);
+  float fill=(1.0-smoothstep(ringR-aa,ringR+aa,r))*uHover*0.24;
+  float halo=exp(-pow((r-ringR)/0.18,2.0))*mix(0.56,0.86,uHighlight)+exp(-pow(r/0.29,2.0))*mix(0.42,0.72,uHighlight);
+  float ink=clamp(ring*mix(0.96,1.0,max(uHover,uHighlight))+core+pulse+fill,0.0,1.0);
+  float alpha=clamp(max(ink,halo*mix(0.82+uHover*0.18,0.96,uHighlight)),0.0,1.0)*uOpacity;
   if(alpha<0.004)discard;
-  vec3 bg=mix(vec3(0.05,0.06,0.09),vec3(0.20,0.07,0.02),uWarm);
-  vec3 coolFg=mix(vec3(1.0,0.985,0.96),vec3(1.0,0.92,0.78),uHover*0.45);
-  vec3 warmFg=mix(vec3(1.0,0.62,0.22),vec3(1.0,0.94,0.82),uHover*0.65);
-  vec3 fg=mix(coolFg,warmFg,uWarm);
+  vec3 bg=vec3(0.04,0.05,0.08);
+  vec3 fg=mix(vec3(1.0,0.99,0.97),vec3(1.0),uHighlight);
   float t=clamp(ink/max(alpha/max(uOpacity,0.001),0.001),0.0,1.0);
   gl_FragColor=vec4(mix(bg,fg,t),alpha);
 }`;

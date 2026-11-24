@@ -49,6 +49,7 @@ export const createStudioHotspots = (targetScene: Scene): StudioHotspotsHandle =
   const geometry = new PlaneGeometry(1, 1);
   const items: HotspotItem[] = [];
   const lookup = new Map<Object3D, StudioHotspotId>();
+  const camDir = new Vector3();
 
   const motionQuery =
     typeof window !== "undefined" ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
@@ -71,7 +72,7 @@ export const createStudioHotspots = (targetScene: Scene): StudioHotspotsHandle =
       uOpacity: { value: 1 },
       uPhase: { value: spec.phase },
       uReduced: { value: prefersReduced ? 1 : 0 },
-      uWarm: { value: spec.warm ? 1 : 0 },
+      uHighlight: { value: spec.highlight ? 1 : 0 },
     };
     const mat = new ShaderMaterial({
       uniforms,
@@ -115,14 +116,14 @@ export const createStudioHotspots = (targetScene: Scene): StudioHotspotsHandle =
     if (st.chairLead && (activeFocus !== null || powerProgress > 0.15)) st.chairLead = false;
     if (activeFocus === "chair") st.wasSeated = true;
     const stoodUp = st.wasSeated && activeFocus === null;
-    if (chairCueReady || powerProgress > 0.15 || activeFocus === "tv" || stoodUp) {
+    if (chairCueReady || powerProgress > 0.15 || activeFocus === "tv" || stoodUp)
       st.powerCueUnlocked = true;
-    }
     if (activeFocus === "tv" || powerProgress > 0.5 || stoodUp) st.propsUnlocked = true;
-
     const zoomVis = 1 - MathUtils.smoothstep(zoomProgress, 0.02, 0.28);
-    const cueTarget = activeFocus === "chair" && chairCueReady ? 1 : 0;
-    const propsTarget = st.propsUnlocked ? 1 : 0;
+    const [cueTarget, propsTarget] = [
+      activeFocus === "chair" && chairCueReady ? 1 : 0,
+      st.propsUnlocked ? 1 : 0,
+    ];
     if (prefersReduced) [st.seatedCue, st.propsReveal] = [cueTarget, propsTarget];
     else {
       const cueRate = cueTarget > st.seatedCue ? 3.2 : 10;
@@ -161,13 +162,14 @@ export const createStudioHotspots = (targetScene: Scene): StudioHotspotsHandle =
       if (!isVisible) continue;
       st.anyVisible = true;
 
-      const dist = camera.position.distanceTo(item.worldPos);
+      if (item.spec.rayPull) {
+        camDir.subVectors(camera.position, item.worldPos).normalize();
+        item.mesh.position.copy(item.worldPos).addScaledVector(camDir, item.spec.rayPull);
+      }
+      const dist = camera.position.distanceTo(item.mesh.position);
       const isPower = target === "tv_power";
-      const baseScale = MathUtils.clamp(
-        dist * (isPower ? 0.044 : 0.048),
-        0.2,
-        isPower ? 0.52 : 0.72,
-      );
+      const [k, lo, hi] = isPower ? [0.056, 0.24, 0.62] : [0.048, 0.2, 0.72];
+      const baseScale = MathUtils.clamp(dist * k, lo, hi);
       item.mesh.scale.setScalar(baseScale * (st.chairLead && target === "chair" ? 1.18 : 1));
       item.mesh.quaternion.copy(camera.quaternion);
       const u = item.mat.uniforms;
