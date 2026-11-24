@@ -37,7 +37,6 @@ export class StudioController {
   private readonly tvPortal: StudioTvPortalHandle;
   private readonly cleanups: readonly (() => void)[];
   private lifecycle: "paused" | "running" | "destroyed";
-
   constructor(
     private readonly canvas: HTMLCanvasElement,
     private readonly scene: StudioSceneHandle,
@@ -49,17 +48,17 @@ export class StudioController {
       this.st.zone = clearStudioHoverState(scene, this.cursor);
     };
     const refreshHud = (): void => this.refreshHud(true);
-    const onResize = (): void => this.syncViewport(false);
+    const { physics, autoplay, power, audio, cursor } = this;
     const deps: StudioInputDeps = {
       canvas,
       scene,
-      physics: this.physics,
-      autoplay: this.autoplay,
-      power: this.power,
-      audio: this.audio,
-      cursor: this.cursor,
+      physics,
+      autoplay,
+      power,
+      audio,
+      cursor,
       getFocusTarget: () => this.st.focus,
-      getActiveIndex: () => toStudioSlotIndex(this.physics.currentPosition),
+      getActiveIndex: () => toStudioSlotIndex(physics.currentPosition),
       isTvPortalOpen: () => this.tvPortal.hasActivePage(),
       openInTv: (url) => {
         scene.setTvChannel("portfolio");
@@ -72,6 +71,7 @@ export class StudioController {
       },
       updatePointerHover: (nx, ny, clear) => this.handlePointerHover(nx, ny, clear),
       onPointerLeave: () => {
+        [this.st.x, this.st.y] = [-2, -2];
         clearHover();
         scene.setPointerNormalized(0, 0);
         scene.setGlassPointer(0, 0);
@@ -80,14 +80,14 @@ export class StudioController {
       refreshHud,
       requestFrame: () => this.requestFrame(),
     };
-    this.soundToggle = bindStudioSoundToggle(root, this.audio, this.cursor, clearHover, refreshHud);
+    this.soundToggle = bindStudioSoundToggle(root, audio, cursor, clearHover, refreshHud);
     this.entryHint = createStudioEntryHint(root, () => triggerStudioBackAction(deps));
     this.a11y = createStudioA11y(root);
     this.tvPortal = createStudioTvPortal({
       container: root,
       camera: scene.camera,
-      audio: this.audio,
-      cursor: this.cursor,
+      audio,
+      cursor,
       isTvFocused: () => this.st.focus === "tv",
       captureSnapshot: scene.capturePortalSnapshot,
       onExitTvFocus: () => this.applyFocusTarget(null),
@@ -97,9 +97,10 @@ export class StudioController {
       onPointerMove: (nx, ny) => this.handlePointerHover(nx, ny),
     });
     this.syncViewport(deferStart);
+    const onResize = (): void => this.syncViewport();
     this.cleanups = [observeCanvasResize(canvas, onResize), bindStudioInputs(deps)];
-    scene.setPowerState(this.power.powerProgress, this.power.buttonDepression);
-    syncStudioDrumScene(scene, this.physics, this.audio, this.st.intro);
+    scene.setPowerState(power.powerProgress, power.buttonDepression);
+    syncStudioDrumScene(scene, physics, audio, this.st.intro);
     if (!deferStart) this.requestFrame();
   }
   private refreshHud(reset = true): void {
@@ -114,15 +115,14 @@ export class StudioController {
   }
   private applyFocusTarget(t: StudioFocusTarget | null): void {
     if (t !== "tv" && this.tvPortal.hasActivePage()) this.tvPortal.suspend();
-    const prevFocus = this.st.focus;
+    const prev = this.st.focus;
     [this.st.focus, this.st.chairBreathPlayed] = [t, false];
     this.entryHint.setFocus(t);
-    if (t === "chair") this.audio.triggerChairBreath("preload");
-    else if (prevFocus === "chair") this.audio.triggerChairBreath("stop");
+    if (t === "chair" || prev === "chair")
+      this.audio.triggerChairBreath(t === "chair" ? "preload" : "stop");
     this.scene.setFocusTarget(t);
-    if (t === "tv" && this.tvPortal.hasActivePage() && this.scene.isFocusSettled()) {
+    if (t === "tv" && this.tvPortal.hasActivePage() && this.scene.isFocusSettled())
       this.tvPortal.resume();
-    }
     this.refreshHud(true);
   }
   private onPortalChanged(syncRender = false): void {
@@ -141,13 +141,15 @@ export class StudioController {
   private handlePointerHover(nx: number, ny: number, clear?: boolean): void {
     [this.st.x, this.st.y] = [nx, ny];
     if (this.lifecycle !== "running") return;
-    const livePortal = this.tvPortal.isInteractive();
-    if (livePortal) this.scene.setGlassPointer(nx, ny);
-    else this.scene.setPointerNormalized(nx, ny);
+    const live = this.tvPortal.isInteractive();
+    if (Math.abs(nx) <= 1.05 && Math.abs(ny) <= 1.05) {
+      if (live) this.scene.setGlassPointer(nx, ny);
+      else this.scene.setPointerNormalized(nx, ny);
+    }
     if (clear)
       [this.st.hoverDirty, this.st.zone] = [false, clearStudioHoverState(this.scene, this.cursor)];
     else if (!this.st.dragging) this.st.hoverDirty = true;
-    if (!livePortal) this.requestFrame();
+    if (!live) this.requestFrame();
   }
   private syncHover(reset = false): void {
     this.soundToggle.sync();
@@ -172,8 +174,7 @@ export class StudioController {
   }
   public requestFrame(): void {
     if (this.lifecycle !== "running" || this.st.raf !== null) return;
-    this.st.lastTime = performance.now();
-    this.st.raf = requestAnimationFrame(this.tick);
+    [this.st.lastTime, this.st.raf] = [performance.now(), requestAnimationFrame(this.tick)];
   }
   private readonly tick = (now: number): void => {
     const { st, tickState, scene, physics, autoplay, power, audio, tvPortal, entryHint } = this;
@@ -194,7 +195,6 @@ export class StudioController {
     this.audio.triggerChairBreath("stop");
     this.cursor.setInverted(false);
     const ui = [this.soundToggle, this.entryHint, this.a11y, this.tvPortal];
-    const core = [this.power, this.autoplay, this.physics, this.scene];
-    for (const p of [...ui, ...core]) p.dispose();
+    for (const p of [...ui, this.power, this.autoplay, this.physics, this.scene]) p.dispose();
   }
 }
