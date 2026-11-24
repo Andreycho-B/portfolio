@@ -29,6 +29,7 @@ export interface StudioControllerState {
   lastTime: number;
   lastHoverMs: number;
   wasIntro: boolean;
+  hoverDirty: boolean;
   intro: number;
   dragging: boolean;
   x: number;
@@ -44,6 +45,7 @@ export const createInitialStudioState = (): StudioControllerState => ({
   lastTime: 0,
   lastHoverMs: 0,
   wasIntro: false,
+  hoverDirty: false,
   intro: 1,
   dragging: false,
   x: 0,
@@ -91,47 +93,34 @@ export const syncStudioHoverState = (
   const { x: nx, y: ny, focus } = st;
   const offScreen = Math.abs(nx) > 1.05 || Math.abs(ny) > 1.05;
   const inPortal = !offScreen && focus === "tv" && hasPortal && scene.pickScreenUv(nx, ny) !== null;
-  const portalBezelBtn =
+  const bezelBtn =
     !offScreen && focus === "tv" && hasPortal && !inPortal ? scene.pickTvButton(nx, ny) : null;
-  const zone: StudioScreenZone =
-    offScreen || inPortal
-      ? "none"
-      : portalBezelBtn
-        ? portalBezelBtn === "power"
-          ? "power"
-          : "tv_button"
-        : focus === "tv" && hasPortal
-          ? "bezel_exit"
-          : classifyStudioHoverZone(scene, nx, ny, power.isPoweredOn, focus);
+  let zone: StudioScreenZone = "none";
+  if (!offScreen && !inPortal) {
+    if (bezelBtn) zone = bezelBtn === "power" ? "power" : "tv_button";
+    else if (focus === "tv" && hasPortal) zone = "bezel_exit";
+    else zone = classifyStudioHoverZone(scene, nx, ny, power.isPoweredOn, focus);
+  }
   const tvBtn =
-    portalBezelBtn ??
-    (zone === "tv_button" || zone === "power" ? scene.pickTvButton(nx, ny) : null);
+    bezelBtn ?? (zone === "tv_button" || zone === "power" ? scene.pickTvButton(nx, ny) : null);
   const hoveredHotspot = resolveHoveredFocusTarget(scene, zone, nx, ny);
   scene.setHoveredHotspot(hoveredHotspot);
   scene.setHoveredTvButton(tvBtn);
   if (reset || zone !== st.zone || tvBtn !== st.tvBtn) {
     if (!reset && !inPortal && !st.dragging) {
       if (tvBtn && tvBtn !== st.tvBtn) audio.playTactileFeedback("hover_button");
-      else if (zone !== st.zone && hoveredHotspot !== null) {
-        audio.playTactileFeedback("hover_hotspot");
-      }
+      else if (zone !== st.zone && hoveredHotspot) audio.playTactileFeedback("hover_hotspot");
     }
     st.tvBtn = tvBtn;
-    if (!inPortal) {
+    if (!inPortal)
       applyZoneCursorState(cursor, zone, power.getCursorLabel(), audio.isMuted(), tvBtn);
-    }
   }
   if (!inPortal) {
-    const onWhiteTvScreen =
-      focus === "tv" &&
-      !hasPortal &&
-      power.isPoweredOn &&
-      scene.getTvChannel() === "portfolio" &&
-      zone !== "bezel_exit" &&
-      zone !== "tv_button" &&
-      zone !== "power" &&
-      !(zone === "card" && isDarkProjectCard(activeIndex));
-    cursor.setInverted(!onWhiteTvScreen);
+    const isPort = !hasPortal && power.isPoweredOn && scene.getTvChannel() === "portfolio";
+    const isEdge = zone === "bezel_exit" || zone === "tv_button" || zone === "power";
+    const onWhite =
+      focus === "tv" && isPort && !isEdge && !(zone === "card" && isDarkProjectCard(activeIndex));
+    cursor.setInverted(!onWhite);
   }
   return zone;
 };
@@ -166,10 +155,12 @@ export const stepStudioFrame = (
   const pv = tvPortal.stepVisuals(dt, pw.isPoweredOn);
   sc.setTvPortalState(pv.mode, pv.cutout, pv.wave, portalUrl?.startsWith("/sobre-mi") ?? false);
   const inIntro = sc.isIntroActive();
-  if (moved || powAnim) {
-    if (tvPortal.isInteractive()) tvPortal.syncBounds(sc.camera);
-    else if (!st.dragging && !inIntro && now - st.lastHoverMs >= 33) {
-      st.lastHoverMs = now;
+  if (moved || powAnim || st.hoverDirty) {
+    if (tvPortal.isInteractive()) {
+      tvPortal.syncBounds(sc.camera);
+      st.hoverDirty = false;
+    } else if (!st.dragging && !inIntro && (st.hoverDirty || now - st.lastHoverMs >= 33)) {
+      [st.lastHoverMs, st.hoverDirty] = [now, false];
       deps.syncHover();
     }
   }
@@ -192,8 +183,13 @@ export const stepStudioFrame = (
     audio.playTactileFeedback("wheel_tick", ph.scrollVelocity);
   }
   syncStudioDrumScene(sc, ph, audio, st.intro);
-  const slotIdx = toStudioSlotIndex(ph.currentPosition);
-  a11y.sync(st.focus, pw.isPoweredOn, sc.getTvChannel(), slotIdx, portalUrl);
+  a11y.sync(
+    st.focus,
+    pw.isPoweredOn,
+    sc.getTvChannel(),
+    toStudioSlotIndex(ph.currentPosition),
+    portalUrl,
+  );
   sc.render();
   return moved || !idle || powAnim || pv.animating || st.intro < 1 || sc.isSkyAnimated();
 };

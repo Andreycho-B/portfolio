@@ -168,7 +168,7 @@ export const createStudioTvButtonCues = (parent: Group): StudioTvButtonCuesHandl
     if (material.uniforms.uOpacity) material.uniforms.uOpacity.value = opacity;
 
     const hiddenTab = typeof document !== "undefined" && document.visibilityState === "hidden";
-    return animHover || (!prefersReduced && !hiddenTab);
+    return animHover || (!state.isPortalOpen && !prefersReduced && !hiddenTab);
   };
 
   return {

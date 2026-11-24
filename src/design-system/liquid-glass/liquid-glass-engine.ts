@@ -24,8 +24,8 @@ export interface ManagedLiquidGlassSurface {
   lastH: number;
 }
 
-const MAX_GLASS_DPR = 1.5;
-const LIVE_FRAME_THROTTLE_MS = 32;
+const MAX_GLASS_DPR = 1;
+const LIVE_FRAME_THROTTLE_MS = 50;
 
 const surfaces = new Set<ManagedLiquidGlassSurface>();
 let sharedEngine: LiquidGlass | null = null;
@@ -33,6 +33,7 @@ let sharedEngineFailed = false;
 let scratchCanvas: HTMLCanvasElement | null = null;
 let scratchCtx: CanvasRenderingContext2D | null = null;
 let scheduledRafId: number | null = null;
+let lastLiveCanvasMs = 0;
 
 const handleEngineResize = (): void => {
   if (!sharedEngine || sharedEngine.renderer.contextLost) return;
@@ -78,14 +79,11 @@ const getScratchBuffer = (): {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
 } | null => {
-  if (scratchCanvas && scratchCtx) {
-    return { canvas: scratchCanvas, ctx: scratchCtx };
-  }
+  if (scratchCanvas && scratchCtx) return { canvas: scratchCanvas, ctx: scratchCtx };
   const c = document.createElement("canvas");
   const ctx = c.getContext("2d");
   if (!ctx) return null;
-  scratchCanvas = c;
-  scratchCtx = ctx;
+  [scratchCanvas, scratchCtx] = [c, ctx];
   return { canvas: c, ctx };
 };
 
@@ -109,37 +107,25 @@ const renderSingleSurface = (surface: ManagedLiquidGlassSurface, nowMs: number):
 
   const dpr = Math.min(window.devicePixelRatio || 1, MAX_GLASS_DPR);
   const pad = LIQUID_GLASS_SHADOW_PAD;
-  const totalCssW = cssW + pad * 2;
-  const totalCssH = cssH + pad * 2;
-  const pxW = Math.round(totalCssW * dpr);
-  const pxH = Math.round(totalCssH * dpr);
-
+  const [totalCssW, totalCssH] = [cssW + pad * 2, cssH + pad * 2];
+  const [pxW, pxH] = [Math.round(totalCssW * dpr), Math.round(totalCssH * dpr)];
   if (surface.canvas.width !== pxW || surface.canvas.height !== pxH) {
-    surface.canvas.width = pxW;
-    surface.canvas.height = pxH;
+    [surface.canvas.width, surface.canvas.height] = [pxW, pxH];
   }
-  surface.lastW = cssW;
-  surface.lastH = cssH;
-
-  const centerX = rect.left + rect.width * 0.5;
-  const centerY = rect.top + rect.height * 0.5;
+  [surface.lastW, surface.lastH] = [cssW, cssH];
   const sampleRect: LiquidGlassSampleRect = {
-    left: centerX - totalCssW * 0.5,
-    top: centerY - totalCssH * 0.5,
+    left: rect.left + rect.width * 0.5 - totalCssW * 0.5,
+    top: rect.top + rect.height * 0.5 - totalCssH * 0.5,
     width: totalCssW,
     height: totalCssH,
   };
-
   const excludeRoot = surface.options.getExcludeRoot?.() ?? surface.element;
   const skipFixedDom = surface.options.role === "detail-action";
-
   paintLiquidGlassBackdrop(scratch.canvas, scratch.ctx, sampleRect, dpr, excludeRoot, skipFixedDom);
-
   const config = resolveLiquidGlassConfig(surface.options.role, surface.tone, surface.buttonState);
   engine.renderer.uploadAndBlur(scratch.canvas, 0, 0, pxW, pxH, config.blurAmount);
   engine.renderer.clear();
   engine.renderer.renderGlassPanel(config, cssW, cssH, dpr);
-
   surface.ctx.clearRect(0, 0, pxW, pxH);
   surface.ctx.drawImage(engine.renderer.canvas, 0, 0, pxW, pxH, 0, 0, pxW, pxH);
   surface.dirty = false;
@@ -151,6 +137,13 @@ const flushDirtySurfaces = (): void => {
   const now = performance.now();
   for (const surface of surfaces) {
     if (!surface.enabled || !surface.dirty) continue;
+    const isLive = surface.options.trackLiveCanvas && surface.lastRenderMs > 0;
+    if (
+      isLive &&
+      (now - lastLiveCanvasMs < 120 || now - surface.lastRenderMs < LIVE_FRAME_THROTTLE_MS)
+    ) {
+      continue;
+    }
     renderSingleSurface(surface, now);
   }
 };
@@ -177,23 +170,24 @@ export const unregisterLiquidGlassSurface = (surface: ManagedLiquidGlassSurface)
 };
 
 export const notifyLiquidGlassLiveFrame = (canvas: HTMLCanvasElement): void => {
+  const now = performance.now();
+  lastLiveCanvasMs = now;
   if (surfaces.size === 0) return;
 
   let hasLiveTarget = false;
+  let hasStaticTarget = false;
   for (const surface of surfaces) {
-    if (surface.enabled && surface.options.trackLiveCanvas) {
-      hasLiveTarget = true;
-      break;
-    }
+    if (!surface.enabled) continue;
+    if (surface.options.trackLiveCanvas) hasLiveTarget = true;
+    else hasStaticTarget = true;
   }
-  updateLiveCanvasMirror(canvas, false);
+  if (hasStaticTarget) updateLiveCanvasMirror(canvas, false);
   if (!hasLiveTarget) return;
 
-  const now = performance.now();
   withActiveLiveCanvas(canvas, () => {
     for (const surface of surfaces) {
       if (!surface.enabled || !surface.options.trackLiveCanvas) continue;
-      if (!surface.dirty && now - surface.lastRenderMs < LIVE_FRAME_THROTTLE_MS) continue;
+      if (surface.lastRenderMs > 0 && now - surface.lastRenderMs < LIVE_FRAME_THROTTLE_MS) continue;
       renderSingleSurface(surface, now);
     }
   });

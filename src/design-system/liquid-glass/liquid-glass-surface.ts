@@ -89,6 +89,8 @@ export const attachLiquidGlassSurface = (
       surface.dirty = true;
       scheduleLiquidGlassFlush();
     } else {
+      surface.dirty = false;
+      surface.lastRenderMs = 0;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
   };

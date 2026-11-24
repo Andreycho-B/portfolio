@@ -144,8 +144,9 @@ export class StudioController {
     const livePortal = this.tvPortal.isInteractive();
     if (livePortal) this.scene.setGlassPointer(nx, ny);
     else this.scene.setPointerNormalized(nx, ny);
-    if (clear) this.st.zone = clearStudioHoverState(this.scene, this.cursor);
-    else if (!this.st.dragging) this.syncHover();
+    if (clear)
+      [this.st.hoverDirty, this.st.zone] = [false, clearStudioHoverState(this.scene, this.cursor)];
+    else if (!this.st.dragging) this.st.hoverDirty = true;
     if (!livePortal) this.requestFrame();
   }
   private syncHover(reset = false): void {

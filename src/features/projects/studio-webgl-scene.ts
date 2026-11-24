@@ -182,7 +182,7 @@ export const createStudioWebGLScene = (
       const hideFbo =
         st.portal || chassis.getTvChannel() !== "portfolio" || (isProp && zoom > 0.72);
       if (st.power > 0.001 && !hideFbo && cameraRig.camera.position.z > -0.1) {
-        const hiRes = (focus === "tv" || focus === "chair") && zoom > 0.25;
+        const hiRes = focus === "tv" && zoom > 0.25;
         const interval = hiRes ? 0 : cameraRig.isIntroActive() ? 50 : 33;
         chassis.setDrumUvScale(crtFbo.render(interval, hiRes ? 1 : 0.5));
       }
