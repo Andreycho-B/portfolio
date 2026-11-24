@@ -61,6 +61,7 @@ export const createStudioHotspots = (targetScene: Scene): StudioHotspotsHandle =
     propsReveal: 0,
     chairLead: true,
     wasSeated: false,
+    tvExplored: false,
     powerCueUnlocked: false,
     propsUnlocked: false,
     anyVisible: true,
@@ -115,13 +116,14 @@ export const createStudioHotspots = (targetScene: Scene): StudioHotspotsHandle =
     if (!prefersReduced) st.elapsed += dt;
     if (st.chairLead && (activeFocus !== null || powerProgress > 0.15)) st.chairLead = false;
     if (activeFocus === "chair") st.wasSeated = true;
+    if (activeFocus === "tv") st.tvExplored = true;
     const stoodUp = st.wasSeated && activeFocus === null;
     if (chairCueReady || powerProgress > 0.15 || activeFocus === "tv" || stoodUp)
       st.powerCueUnlocked = true;
     if (activeFocus === "tv" || powerProgress > 0.5 || stoodUp) st.propsUnlocked = true;
     const zoomVis = 1 - MathUtils.smoothstep(zoomProgress, 0.02, 0.28);
     const [cueTarget, propsTarget] = [
-      activeFocus === "chair" && chairCueReady ? 1 : 0,
+      activeFocus === "chair" && (chairCueReady || powerProgress > 0.15) ? 1 : 0,
       st.propsUnlocked ? 1 : 0,
     ];
     if (prefersReduced) [st.seatedCue, st.propsReveal] = [cueTarget, propsTarget];
@@ -150,7 +152,7 @@ export const createStudioHotspots = (targetScene: Scene): StudioHotspotsHandle =
 
       let localVis = zoomVis;
       if (target === "tv") {
-        const cleanScreen = isRetroChannel || (activeFocus === "chair" && st.propsUnlocked);
+        const cleanScreen = isRetroChannel || (activeFocus === "chair" && st.tvExplored);
         localVis = cleanScreen ? 0 : Math.max(zoomVis, st.seatedCue) * onFade;
       } else if (target === "tv_power") {
         localVis = st.powerCueUnlocked ? Math.max(zoomVis, st.seatedCue) * offFade : 0;
@@ -167,8 +169,7 @@ export const createStudioHotspots = (targetScene: Scene): StudioHotspotsHandle =
         item.mesh.position.copy(item.worldPos).addScaledVector(camDir, item.spec.rayPull);
       }
       const dist = camera.position.distanceTo(item.mesh.position);
-      const isPower = target === "tv_power";
-      const [k, lo, hi] = isPower ? [0.056, 0.24, 0.62] : [0.048, 0.2, 0.72];
+      const [k, lo, hi] = item.spec.scale ?? [0.048, 0.2, 0.72];
       const baseScale = MathUtils.clamp(dist * k, lo, hi);
       item.mesh.scale.setScalar(baseScale * (st.chairLead && target === "chair" ? 1.18 : 1));
       item.mesh.quaternion.copy(camera.quaternion);

@@ -9,10 +9,19 @@ export interface HotspotSpec {
   readonly frontOnly?: boolean;
   readonly highlight?: boolean;
   readonly rayPull?: number;
+  readonly scale?: readonly [number, number, number];
 }
 
 export const HOTSPOT_SPECS: readonly HotspotSpec[] = [
-  { target: "tv", pos: [0.0, 0.165, 1.32], phase: 0.0, frontOnly: true },
+  {
+    target: "tv",
+    pos: [0.0, 0.165, 1.125],
+    phase: 0.0,
+    frontOnly: true,
+    highlight: true,
+    rayPull: 0.18,
+    scale: [0.062, 0.28, 0.72],
+  },
   {
     target: "tv_power",
     pos: [0.486, -0.804, 1.232],
@@ -20,6 +29,7 @@ export const HOTSPOT_SPECS: readonly HotspotSpec[] = [
     frontOnly: true,
     highlight: true,
     rayPull: 0.16,
+    scale: [0.056, 0.24, 0.62],
   },
   { target: "bust", pos: [2.22, 0.44, -0.24], phase: 1.25 },
   { target: "thermos", pos: [2.28, -0.18, 1.18], phase: 2.5 },
