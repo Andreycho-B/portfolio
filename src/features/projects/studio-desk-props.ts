@@ -110,7 +110,7 @@ export const createStudioDeskProps = (
           {
             envIntensity: spec.envIntensity,
             optimizeGlass: spec.optimizeGlass,
-            colorCap: spec.name === "oldComputerProp" ? 512 : 1024,
+            colorCap: 1024,
           },
           materials,
           textures,
