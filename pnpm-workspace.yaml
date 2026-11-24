@@ -5,4 +5,5 @@ minimumReleaseAgeExclude:
   - "@astrojs/*"
   - astro
 allowBuilds:
+  "@ybouane/liquidglass": false
   esbuild: true
