@@ -89,18 +89,20 @@ export const syncStudioHoverState = (
   reset: boolean,
 ): StudioScreenZone => {
   const { x: nx, y: ny, focus } = st;
-  const inPortal = focus === "tv" && hasPortal && scene.pickScreenUv(nx, ny) !== null;
+  const offScreen = Math.abs(nx) > 1.05 || Math.abs(ny) > 1.05;
+  const inPortal = !offScreen && focus === "tv" && hasPortal && scene.pickScreenUv(nx, ny) !== null;
   const portalBezelBtn =
-    focus === "tv" && hasPortal && !inPortal ? scene.pickTvButton(nx, ny) : null;
-  const zone: StudioScreenZone = inPortal
-    ? "none"
-    : portalBezelBtn
-      ? portalBezelBtn === "power"
-        ? "power"
-        : "tv_button"
-      : focus === "tv" && hasPortal
-        ? "bezel_exit"
-        : classifyStudioHoverZone(scene, nx, ny, power.isPoweredOn, focus);
+    !offScreen && focus === "tv" && hasPortal && !inPortal ? scene.pickTvButton(nx, ny) : null;
+  const zone: StudioScreenZone =
+    offScreen || inPortal
+      ? "none"
+      : portalBezelBtn
+        ? portalBezelBtn === "power"
+          ? "power"
+          : "tv_button"
+        : focus === "tv" && hasPortal
+          ? "bezel_exit"
+          : classifyStudioHoverZone(scene, nx, ny, power.isPoweredOn, focus);
   const tvBtn =
     portalBezelBtn ??
     (zone === "tv_button" || zone === "power" ? scene.pickTvButton(nx, ny) : null);

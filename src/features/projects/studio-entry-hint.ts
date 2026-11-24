@@ -1,14 +1,46 @@
+import type { StudioFocusTarget } from "./studio-prop-focus";
+
 export interface StudioEntryHintHandle {
   readonly reveal: () => void;
   readonly dismiss: () => void;
+  readonly setFocus: (focus: StudioFocusTarget | null) => void;
   readonly dispose: () => void;
 }
 
 const DRAG_DISMISS_PX = 10;
 
-export const createStudioEntryHint = (root: HTMLElement): StudioEntryHintHandle => {
+export const createStudioEntryHint = (
+  root: HTMLElement,
+  onBack?: () => void,
+): StudioEntryHintHandle => {
   const el = root.querySelector<HTMLElement>("[data-studio-entry-hint]");
-  if (!el) return { reveal: () => {}, dismiss: () => {}, dispose: () => {} };
+  const backBtn = document.createElement("button");
+  backBtn.type = "button";
+  backBtn.className = "studio-back-btn";
+  backBtn.hidden = true;
+  backBtn.textContent = "← Volver";
+  backBtn.setAttribute("data-studio-back-btn", "");
+  backBtn.setAttribute("aria-label", "Volver al estudio");
+  backBtn.setAttribute("data-nosnippet", "");
+  root.appendChild(backBtn);
+  const onBackClick = (event: MouseEvent): void => {
+    event.stopPropagation();
+    onBack?.();
+  };
+  backBtn.addEventListener("click", onBackClick);
+  const setFocus = (focus: StudioFocusTarget | null): void => {
+    if (focus !== null) dismiss();
+    backBtn.hidden = focus === null;
+    if (focus === null) return;
+    const isChair = focus === "chair";
+    backBtn.textContent = isChair ? "← Levantarse" : "← Volver";
+    backBtn.setAttribute("aria-label", isChair ? "Levantarse de la silla" : "Volver al estudio");
+  };
+  const cleanupBack = (): void => {
+    backBtn.removeEventListener("click", onBackClick);
+    backBtn.remove();
+  };
+  if (!el) return { reveal: () => {}, dismiss: () => {}, setFocus, dispose: cleanupBack };
 
   let dismissed = false;
   let visible = false;
@@ -61,5 +93,13 @@ export const createStudioEntryHint = (root: HTMLElement): StudioEntryHintHandle 
   window.addEventListener("pointermove", onMove, { passive: true });
   window.addEventListener("pointerup", onUp, { passive: true });
 
-  return { reveal, dismiss, dispose: unbind };
+  return {
+    reveal,
+    dismiss,
+    setFocus,
+    dispose: () => {
+      unbind();
+      cleanupBack();
+    },
+  };
 };

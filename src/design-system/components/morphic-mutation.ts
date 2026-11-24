@@ -75,13 +75,16 @@ export const wrapMutantWord = (element: HTMLElement, targetWord: string): HTMLEl
   const textAfter = currentText.slice(wordIndex + targetWord.length);
   const charSpans = targetWord
     .split("")
-    .map((char, charIdx) => `<span class="morphic-char" data-idx="${charIdx}">${char}</span>`)
+    .map(
+      (char, charIdx) =>
+        `<span class="morphic-char" data-idx="${charIdx}" aria-hidden="true">${char}</span>`,
+    )
     .join("");
 
   const beforeHtml = textBefore
     ? `<span class="morphic-line" data-morphic-line="1">${textBefore}</span>`
     : "";
-  const mutantHtml = `<span class="morphic-line" data-morphic-line="2"><span class="morphic-mutant-word">${charSpans}</span></span>`;
+  const mutantHtml = `<span class="morphic-line" data-morphic-line="2"><span class="morphic-mutant-word" aria-label="${targetWord}">${charSpans}</span></span>`;
 
   element.innerHTML = `${beforeHtml}${mutantHtml}${textAfter}`;
   return Array.from(element.querySelectorAll<HTMLElement>(".morphic-char"));
@@ -117,12 +120,7 @@ export const startMutationLoop = (nodes: MorphicNodes): void => {
   type WaveOrigin = "start" | "end" | "center";
 
   const createStagger = (from: WaveOrigin = "start") =>
-    gsap.utils.distribute({
-      base: 0,
-      amount: 0.44,
-      from,
-      ease: "sine.inOut",
-    });
+    gsap.utils.distribute({ base: 0, amount: 0.44, from, ease: "sine.inOut" });
 
   const runWave = (from: WaveOrigin = "start") => {
     if (active) return;
@@ -132,10 +130,8 @@ export const startMutationLoop = (nodes: MorphicNodes): void => {
         active = false;
       },
     });
-
     const currentPattern = MUTATION_MATRIX[waveIndex % MUTATION_MATRIX.length] ?? MUTANT_FONTS;
     waveIndex = (waveIndex + 1) % MUTATION_MATRIX.length;
-
     const stagger = createStagger(from);
     charEls.forEach((charEl, charIdx) => {
       const ref = refs[charIdx];

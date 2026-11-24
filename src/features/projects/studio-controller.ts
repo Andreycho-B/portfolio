@@ -4,8 +4,8 @@ import { notifyLiquidGlassLiveFrame } from "../../design-system/liquid-glass/liq
 import { observeCanvasResize } from "./drum.types";
 import { DrumAutoplayController } from "./drum-autoplay";
 import { DrumScrollPhysics } from "./drum-scroll-physics";
-import type { StudioSceneHandle } from "./studio.types";
-import { createStudioA11y, type StudioA11yHandle } from "./studio-a11y";
+import type { StudioInputDeps, StudioSceneHandle } from "./studio.types";
+import { createStudioA11y, type StudioA11yHandle, triggerStudioBackAction } from "./studio-a11y";
 import { createStudioEntryHint, type StudioEntryHintHandle } from "./studio-entry-hint";
 import {
   clearStudioHoverState,
@@ -20,6 +20,7 @@ import { bindStudioInputs } from "./studio-input-bindings";
 import { StudioPowerController } from "./studio-power-state";
 import type { StudioFocusTarget } from "./studio-prop-focus";
 import { bindStudioSoundToggle, type StudioSoundToggleHandle } from "./studio-sound-toggle";
+import { dispatchTvShortcutKey } from "./studio-tv-button-action";
 import { createStudioTvPortal, type StudioTvPortalHandle } from "./studio-tv-portal";
 
 export class StudioController {
@@ -44,65 +45,62 @@ export class StudioController {
   ) {
     this.lifecycle = deferStart ? "paused" : "running";
     const root = canvas.closest<HTMLElement>("[data-projects-section]") ?? document.body;
-    const req = (): void => this.requestFrame();
     const clearHover = (): void => {
       this.st.zone = clearStudioHoverState(scene, this.cursor);
     };
     const refreshHud = (): void => this.refreshHud(true);
+    const onResize = (): void => this.syncViewport(false);
+    const deps: StudioInputDeps = {
+      canvas,
+      scene,
+      physics: this.physics,
+      autoplay: this.autoplay,
+      power: this.power,
+      audio: this.audio,
+      cursor: this.cursor,
+      getFocusTarget: () => this.st.focus,
+      getActiveIndex: () => toStudioSlotIndex(this.physics.currentPosition),
+      isTvPortalOpen: () => this.tvPortal.hasActivePage(),
+      openInTv: (url) => {
+        scene.setTvChannel("portfolio");
+        this.tvPortal.open(url);
+      },
+      closeTvPortal: () => this.tvPortal.closeToDrum(),
+      setFocusTarget: (t) => this.applyFocusTarget(t),
+      setDragging: (d) => {
+        this.st.dragging = d;
+      },
+      updatePointerHover: (nx, ny, clear) => this.handlePointerHover(nx, ny, clear),
+      onPointerLeave: () => {
+        clearHover();
+        scene.setPointerNormalized(0, 0);
+        scene.setGlassPointer(0, 0);
+        this.requestFrame();
+      },
+      refreshHud,
+      requestFrame: () => this.requestFrame(),
+    };
     this.soundToggle = bindStudioSoundToggle(root, this.audio, this.cursor, clearHover, refreshHud);
-    [this.entryHint, this.a11y] = [createStudioEntryHint(root), createStudioA11y(root)];
+    this.entryHint = createStudioEntryHint(root, () => triggerStudioBackAction(deps));
+    this.a11y = createStudioA11y(root);
     this.tvPortal = createStudioTvPortal({
       container: root,
       camera: scene.camera,
       audio: this.audio,
       cursor: this.cursor,
       isTvFocused: () => this.st.focus === "tv",
-      captureSnapshot: (iframe) => scene.capturePortalSnapshot(iframe),
+      captureSnapshot: scene.capturePortalSnapshot,
       onExitTvFocus: () => this.applyFocusTarget(null),
+      onChannelKey: (key) => dispatchTvShortcutKey(key, deps),
       onPortalChange: (syncRender) => this.onPortalChanged(syncRender),
       onPointerEnter: clearHover,
-      onPointerMove: (nx, ny) => {
-        [this.st.x, this.st.y] = [nx, ny];
-        scene.setGlassPointer(nx, ny);
-      },
+      onPointerMove: (nx, ny) => this.handlePointerHover(nx, ny),
     });
     this.syncViewport(deferStart);
-    this.cleanups = [
-      observeCanvasResize(canvas, () => this.syncViewport(false)),
-      bindStudioInputs({
-        canvas,
-        scene,
-        physics: this.physics,
-        autoplay: this.autoplay,
-        power: this.power,
-        audio: this.audio,
-        cursor: this.cursor,
-        getFocusTarget: () => this.st.focus,
-        getActiveIndex: () => toStudioSlotIndex(this.physics.currentPosition),
-        isTvPortalOpen: () => this.tvPortal.hasActivePage(),
-        openInTv: (url) => {
-          scene.setTvChannel("portfolio");
-          this.tvPortal.open(url);
-        },
-        closeTvPortal: () => this.tvPortal.closeToDrum(),
-        setFocusTarget: (t) => this.applyFocusTarget(t),
-        setDragging: (d) => {
-          this.st.dragging = d;
-        },
-        updatePointerHover: (nx, ny, clear) => this.handlePointerHover(nx, ny, clear),
-        onPointerLeave: () => {
-          clearHover();
-          scene.setPointerNormalized(0, 0);
-          scene.setGlassPointer(0, 0);
-          req();
-        },
-        refreshHud,
-        requestFrame: req,
-      }),
-    ];
+    this.cleanups = [observeCanvasResize(canvas, onResize), bindStudioInputs(deps)];
     scene.setPowerState(this.power.powerProgress, this.power.buttonDepression);
     syncStudioDrumScene(scene, this.physics, this.audio, this.st.intro);
-    if (!deferStart) req();
+    if (!deferStart) this.requestFrame();
   }
   private refreshHud(reset = true): void {
     this.syncHover(reset);
@@ -116,14 +114,15 @@ export class StudioController {
   }
   private applyFocusTarget(t: StudioFocusTarget | null): void {
     if (t !== "tv" && this.tvPortal.hasActivePage()) this.tvPortal.suspend();
-    const { scene, tvPortal, st } = this;
-    const prevFocus = st.focus;
-    [st.focus, st.chairBreathPlayed] = [t, false];
-    if (t !== null) this.entryHint.dismiss();
+    const prevFocus = this.st.focus;
+    [this.st.focus, this.st.chairBreathPlayed] = [t, false];
+    this.entryHint.setFocus(t);
     if (t === "chair") this.audio.triggerChairBreath("preload");
     else if (prevFocus === "chair") this.audio.triggerChairBreath("stop");
-    scene.setFocusTarget(t);
-    if (t === "tv" && tvPortal.hasActivePage() && scene.isFocusSettled()) tvPortal.resume();
+    this.scene.setFocusTarget(t);
+    if (t === "tv" && this.tvPortal.hasActivePage() && this.scene.isFocusSettled()) {
+      this.tvPortal.resume();
+    }
     this.refreshHud(true);
   }
   private onPortalChanged(syncRender = false): void {

@@ -49,14 +49,13 @@ export const createStudioNokiaScreen = (onUpdate?: () => void): StudioNokiaPhone
     noticeTimer: null as number | null,
     minuteTimer: null as number | null,
   };
-
   const paintNow = (notify: boolean): void => {
     if (st.disposed || !ctx) return;
-    const frame =
+    const f =
       st.mode === "snake"
         ? snake.renderToBuffer()
         : composeNokiaContactFrame(formatLocalHM(new Date()), st.notice);
-    paintNokiaLcdCanvas(ctx, frame);
+    paintNokiaLcdCanvas(ctx, f);
     texture.needsUpdate = true;
     if (notify) onUpdate?.();
   };
@@ -64,8 +63,7 @@ export const createStudioNokiaScreen = (onUpdate?: () => void): StudioNokiaPhone
     st.notice = label;
     if (st.noticeTimer !== null) window.clearTimeout(st.noticeTimer);
     st.noticeTimer = window.setTimeout(() => {
-      st.noticeTimer = null;
-      st.notice = null;
+      [st.noticeTimer, st.notice] = [null, null];
       paintNow(true);
     }, ms);
     paintNow(true);
@@ -152,7 +150,11 @@ export const createStudioNokiaScreen = (onUpdate?: () => void): StudioNokiaPhone
     return true;
   };
   const handleKey = (key: string, sound: boolean): boolean => {
-    if (st.mode !== "snake") return false;
+    if (st.mode !== "snake") {
+      if (key !== "Enter" && key !== " " && key !== "s" && key !== "S") return false;
+      pressButton("snake", sound);
+      return true;
+    }
     if (key === "Backspace" || key === "Enter" || key === " ") {
       pressButton(key === "Backspace" ? "back" : "call", sound);
       return true;
@@ -161,11 +163,11 @@ export const createStudioNokiaScreen = (onUpdate?: () => void): StudioNokiaPhone
     return dir ? steerSnake(dir, sound) : false;
   };
   const update = (dt: number, sound: boolean, camera: Camera, zoomProg: number): boolean => {
-    const hwActive = hardware?.update(dt) ?? false;
     const inSnake = st.mode === "snake";
-    const spotsActive = hotspots.update(dt, camera, st.focused, zoomProg, inSnake);
-    const hintActive = hint.update(dt, camera, st.focused, zoomProg, inSnake);
-    if (!inSnake || !st.focused) return hwActive || spotsActive || hintActive;
+    const h = hardware?.update(dt) ?? false;
+    const s = hotspots.update(dt, camera, st.focused, zoomProg, inSnake);
+    const t = hint.update(dt, camera, st.focused, zoomProg, inSnake);
+    if (!inSnake || !st.focused) return h || s || t;
     const evt = snake.stepTime(dt);
     if (evt !== "none") {
       if (evt === "eat" || evt === "gameover") playNokiaPiezoTone(evt, sound);
@@ -173,7 +175,6 @@ export const createStudioNokiaScreen = (onUpdate?: () => void): StudioNokiaPhone
     }
     return true;
   };
-
   return {
     attachModel,
     getMode: () => st.mode,
@@ -184,8 +185,7 @@ export const createStudioNokiaScreen = (onUpdate?: () => void): StudioNokiaPhone
     },
     setHoveredButton: hotspots.setHovered,
     getButtonMeshes: () => (hardware ? [...hotspots.meshes, ...hardware.buttonMeshes] : []),
-    resolveButtonId: (obj) =>
-      hotspots.resolveButtonId(obj) ?? hardware?.resolveButtonId(obj) ?? null,
+    resolveButtonId: (o) => hotspots.resolveButtonId(o) ?? hardware?.resolveButtonId(o) ?? null,
     pressButton,
     steerSnake,
     handleKey,

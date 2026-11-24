@@ -17,7 +17,8 @@ import {
 import type { TvButtonId } from "./studio-tv-buttons";
 
 const CFG = { drag: 180, tol: 6, touchTol: 12, yaw: 0.0072, pitch: 0.0052 } as const;
-const IGNORE_SURFACE_SEL = "[data-studio-tv-portal], [data-studio-sound-toggle]";
+const IGNORE_SURFACE_SEL =
+  "[data-studio-tv-portal], [data-studio-sound-toggle], [data-studio-back-btn]";
 const normXY = (x: number, y: number) => ({
   nx: (x / Math.max(1, innerWidth)) * 2 - 1,
   ny: -((y / Math.max(1, innerHeight)) * 2 - 1),

@@ -14,7 +14,7 @@ import {
 } from "./studio-tv-button-action";
 import type { TvButtonId } from "./studio-tv-buttons";
 
-const [FBO_W, FBO_H] = [1600, 1120];
+const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
 
 export interface ZoomedActionContext {
   readonly activeIndex: number;
@@ -25,12 +25,10 @@ export interface ZoomedActionContext {
   readonly onSoundToggled: () => void;
 }
 
-const toEditorialPixels = (u: number, v: number): { readonly px: number; readonly py: number } => {
+const toEditorialPixels = (u: number, v: number): readonly [number, number] => {
   const [sx, sy] = [u * 2 - 1, v * 2 - 1];
-  const scale = 0.972 + 0.026 * (sx * sx + sy * sy);
-  const bu = Math.min(1, Math.max(0, sx * scale * 0.5 + 0.5));
-  const bv = Math.min(1, Math.max(0, sy * scale * 0.5 + 0.5));
-  return { px: bu * FBO_W, py: (1 - bv) * FBO_H };
+  const sc = 0.972 + 0.026 * (sx * sx + sy * sy);
+  return [clamp01(sx * sc * 0.5 + 0.5) * 1600, (1 - clamp01(sy * sc * 0.5 + 0.5)) * 1120];
 };
 
 export const classifyStudioHoverZone = (
@@ -40,6 +38,7 @@ export const classifyStudioHoverZone = (
   isPoweredOn: boolean,
   focusTarget: StudioFocusTarget | null,
 ): StudioScreenZone => {
+  if (Math.abs(nx) > 1.05 || Math.abs(ny) > 1.05) return "none";
   const tvBtn = focusTarget === null || focusTarget === "chair" ? scene.pickTvButton(nx, ny) : null;
   if (tvBtn) return tvBtn === "power" ? "power" : "tv_button";
   if (focusTarget === null) {
@@ -49,16 +48,13 @@ export const classifyStudioHoverZone = (
     return hit === null ? "none" : hit === "chair" ? "chair_sit" : "prop_zoom";
   }
   if (focusTarget !== "tv") {
-    if (focusTarget === "phone") {
-      const nokiaZone = classifyNokiaHoverZone(scene, nx, ny);
-      if (nokiaZone !== null) return nokiaZone;
-    }
+    const nZone = focusTarget === "phone" ? classifyNokiaHoverZone(scene, nx, ny) : null;
+    if (nZone !== null) return nZone;
     if (focusTarget === "chair" && scene.isPointerOverPowerButton(nx, ny)) return "power";
     const hit = scene.pickFocusProp(nx, ny);
     if (hit) return hit === focusTarget ? "none" : hit === "chair" ? "chair_sit" : "prop_zoom";
-    if (scene.pickScreenUv(nx, ny) !== null && (isPoweredOn || focusTarget === "chair")) {
+    if (scene.pickScreenUv(nx, ny) !== null && (isPoweredOn || focusTarget === "chair"))
       return isPoweredOn ? "screen_zoom" : "power";
-    }
     return focusTarget === "chair" ? "chair_exit" : "prop_exit";
   }
   const uv = scene.pickScreenUv(nx, ny);
@@ -67,8 +63,7 @@ export const classifyStudioHoverZone = (
     return bezelBtn ? (bezelBtn === "power" ? "power" : "tv_button") : "bezel_exit";
   }
   if (scene.getTvChannel() !== "portfolio") return "tv_channel_exit";
-
-  const { px, py } = toEditorialPixels(uv.x, uv.y);
+  const [px, py] = toEditorialPixels(uv.x, uv.y);
   if (px >= 1280 && py >= 60 && py <= 160) return "sound";
   if (px <= 350 && py >= 968) return "phone";
   if (px >= 1170 && py >= 968) return "email";
@@ -130,13 +125,12 @@ export const executeZoomedZoneAction = (zone: StudioScreenZone, ctx: ZoomedActio
   else if (zone === "phone") {
     ctx.audio.playTactileFeedback("click");
     window.open(PROFILE.whatsappUrl, "_blank", "noopener,noreferrer");
-  } else if (zone === "email") {
+  } else if (zone === "email" && typeof navigator !== "undefined" && navigator.clipboard) {
     ctx.audio.playTactileFeedback("click");
-    if (typeof navigator === "undefined" || !navigator.clipboard) return;
     void navigator.clipboard
       .writeText(PROFILE.email)
       .then(ctx.onEmailCopied)
-      .catch((err: unknown) => console.warn("[StudioScreenHit] Clipboard write failed:", err));
+      .catch((err: unknown) => console.warn("[StudioScreenHit] Clipboard failed:", err));
   } else if (zone === "sound") {
     ctx.audio.toggleMute();
     ctx.audio.playTactileFeedback("click");
@@ -145,9 +139,7 @@ export const executeZoomedZoneAction = (zone: StudioScreenZone, ctx: ZoomedActio
     ctx.onStepSlot(zone === "step_prev" ? -1 : 1);
   }
 };
-
 export const isDarkProjectCard = (idx: number): boolean => PROJECTS[idx]?.theme === "dark";
-
 export const executeStudioCanvasClick = (
   zone: StudioScreenZone,
   prop: StudioFocusTarget | null,
@@ -161,39 +153,48 @@ export const executeStudioCanvasClick = (
   const isProp = zone === "prop_zoom" || zone === "chair_sit";
   const next = zone === "screen_zoom" ? "tv" : isProp ? prop : null;
   if (next === null && zone !== "prop_exit" && zone !== "chair_exit") return false;
-  if (zone === "screen_zoom") deps.audio.playTactileFeedback("crt_glass_tap");
-  else if (isProp) deps.audio.playTactileFeedback("click");
+  deps.audio.playTactileFeedback(zone === "screen_zoom" ? "crt_glass_tap" : "click");
   deps.cursor.pulse();
   deps.setFocusTarget(next);
   return true;
 };
-
-export const handleStudioKeyDown = (event: KeyboardEvent, deps: StudioInputDeps): void => {
+const dispatchStudioKey = (event: KeyboardEvent, deps: StudioInputDeps): boolean => {
   const focus = deps.getFocusTarget();
-  if (tryStepStudioFocusKey(event, focus, deps.setFocusTarget)) return;
-  if (focus === null) return;
+  const inSnake = focus === "phone" && deps.scene.getNokiaMode() === "snake";
+  if (tryStepStudioFocusKey(event, focus, deps.setFocusTarget, deps.isTvPortalOpen() || inSnake))
+    return true;
+  if (focus === null) return false;
   if (event.key === "Escape") {
     event.preventDefault();
-    deps.setFocusTarget(null);
-    return;
+    if (focus === "tv" && deps.isTvPortalOpen()) deps.closeTvPortal();
+    else if (inSnake) {
+      deps.scene.pressNokiaButton("back", !deps.audio.isMuted());
+      deps.requestFrame();
+    } else deps.setFocusTarget(null);
+    return true;
   }
   if (focus === "phone") {
-    if (deps.scene.handleNokiaKey(event.key, !deps.audio.isMuted())) {
-      event.preventDefault();
-      deps.requestFrame();
-    }
-    return;
+    if (!deps.scene.handleNokiaKey(event.key, !deps.audio.isMuted())) return false;
+    event.preventDefault();
+    deps.requestFrame();
+    return true;
   }
-  if (focus === "chair" && handleTvShortcutKey(event, deps)) return;
-  if (focus !== "tv" || deps.isTvPortalOpen() || handleTvShortcutKey(event, deps)) return;
+  if (focus === "chair") return handleTvShortcutKey(event, deps);
+  if (focus !== "tv" || deps.isTvPortalOpen()) return false;
+  if (handleTvShortcutKey(event, deps)) return true;
   if (event.key === "Enter" || event.key === " ") {
     event.preventDefault();
     openActiveProject(deps.getActiveIndex(), deps.openInTv);
-    return;
+    return true;
   }
   const dir = deps.physics.applyKeyNavigation(event.key, PROJECT_COUNT);
-  if (dir === 0) return;
+  if (dir === 0) return false;
   event.preventDefault();
   deps.autoplay.notifyUserInteraction(dir);
   deps.requestFrame();
+  return true;
+};
+
+export const handleStudioKeyDown = (event: KeyboardEvent, deps: StudioInputDeps): void => {
+  if (dispatchStudioKey(event, deps)) deps.updatePointerHover(-2, -2, true);
 };

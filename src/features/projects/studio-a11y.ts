@@ -1,6 +1,22 @@
 import { PROJECTS } from "./project-data";
+import type { StudioInputDeps } from "./studio.types";
 import type { StudioFocusTarget } from "./studio-prop-focus";
 import type { TvChannelMode } from "./studio-tv-channels";
+
+export const triggerStudioBackAction = (deps: StudioInputDeps): void => {
+  const focus = deps.getFocusTarget();
+  if (focus === "phone" && deps.scene.getNokiaMode() === "snake") {
+    deps.scene.pressNokiaButton("back", !deps.audio.isMuted());
+    deps.requestFrame();
+    return;
+  }
+  if (focus === "tv" && deps.isTvPortalOpen()) {
+    deps.closeTvPortal();
+    return;
+  }
+  deps.audio.playTactileFeedback("click", 0.65);
+  deps.setFocusTarget(null);
+};
 
 const FOCUS_ORDER: readonly (StudioFocusTarget | null)[] = [
   null,
@@ -14,14 +30,15 @@ const FOCUS_ORDER: readonly (StudioFocusTarget | null)[] = [
 ];
 
 const FOCUS_LABELS: Readonly<Record<StudioFocusTarget, string>> = {
-  tv: "Televisor CRT. Usa flechas arriba y abajo para proyectos, teclas 0 a 9 para canales, Enter para abrir o Escape para volver.",
+  tv: "Televisor CRT. Flechas arriba y abajo para proyectos, izquierda o derecha para otros objetos, teclas 0 a 9 para canales, P para encender o apagar, Enter para abrir o Escape para volver.",
   chair:
-    "Sentado en la silla Monobloc. Pulsa 0 a 9 para cambiar canales del televisor o Escape para levantarte.",
-  computer: "Computador retro blanco. Lo simple perdura, lo honesto trasciende.",
+    "Sentado en la silla Monobloc. Pulsa 0 a 9 para cambiar canales, P para encender el televisor, flechas izquierda o derecha para recorrer el estudio o Escape para levantarte.",
+  computer: "Computador retro blanco. Hola Mundo.",
   clock: "Reloj analógico en hora local real.",
   bust: "Escultura de mármol.",
   thermos: "Termo de estudio.",
-  phone: "Teléfono Nokia 3310. Usa flechas para jugar Snake o Escape para alejar.",
+  phone:
+    "Teléfono Nokia 3310. Pulsa Enter o Espacio para jugar Snake II, flechas izquierda o derecha para recorrer el estudio o Escape para alejar.",
 };
 
 const CHANNEL_LABELS: Readonly<Record<TvChannelMode, string>> = {
@@ -49,10 +66,9 @@ export const tryStepStudioFocusKey = (
   event: KeyboardEvent,
   focus: StudioFocusTarget | null,
   setFocus: (target: StudioFocusTarget | null) => void,
+  blocked = false,
 ): boolean => {
-  if (focus === "tv" || focus === "phone" || event.altKey || event.ctrlKey || event.metaKey) {
-    return false;
-  }
+  if (blocked || event.altKey || event.ctrlKey || event.metaKey) return false;
   if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return false;
   event.preventDefault();
   setFocus(stepKeyboardFocusTarget(focus, event.key === "ArrowRight" ? 1 : -1));

@@ -27,7 +27,7 @@
   pointer-events: none;
 }
 
-.projects-lens-section[data-stage-mode="studio"].has-live-portal .drum-viewport:focus-visible {
+.projects-lens-section[data-stage-mode="studio"] .drum-viewport:focus-visible {
   outline: none;
 }
 
@@ -159,7 +159,10 @@
   text-transform: uppercase;
   text-align: center;
   white-space: nowrap;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.94);
+  text-shadow:
+    0 1px 8px rgba(12, 16, 26, 0.62),
+    0 1px 2px rgba(12, 16, 26, 0.48);
   pointer-events: none;
   user-select: none;
   opacity: 0;

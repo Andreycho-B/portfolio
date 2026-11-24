@@ -154,7 +154,7 @@ const structuredData = noindex
       </svg>
     </div>
     <slot />
-    <Analytics />
+    {Boolean(import.meta.env.VERCEL || process.env.VERCEL) && <Analytics />}
     <script>
       import { installTvPortalGuard } from "../core/tv-portal-bridge";
       installTvPortalGuard();

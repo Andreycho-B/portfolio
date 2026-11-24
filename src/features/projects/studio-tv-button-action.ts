@@ -105,6 +105,8 @@ const KEY_TO_TV_BTN: Readonly<Record<string, TvButtonId>> = {
   D: "dvd",
   m: "mute",
   M: "mute",
+  p: "power",
+  P: "power",
 };
 
 export const handleTvShortcutKey = (event: KeyboardEvent, deps: StudioInputDeps): boolean => {
@@ -123,6 +125,11 @@ export const handleTvShortcutKey = (event: KeyboardEvent, deps: StudioInputDeps)
   return true;
 };
 
+export const dispatchTvShortcutKey = (key: string, deps: StudioInputDeps): void => {
+  const btn = KEY_TO_TV_BTN[key];
+  if (btn) executeTvButtonAction(btn, deps, deps.closeTvPortal);
+};
+
 export const executeTvButtonAction = (
   id: TvButtonId,
   deps: StudioInputDeps,
@@ -130,14 +137,12 @@ export const executeTvButtonAction = (
 ): void => {
   deps.scene.pressTvButtonVisual(id);
   deps.cursor.pulse();
-
   if (id === "power") {
     const on = deps.power.toggle();
     deps.audio.playTactileFeedback(on ? "crt_power_on" : "crt_power_off");
     deps.refreshHud();
     return;
   }
-
   if (id === "mute") {
     const muted = deps.audio.toggleMute();
     if (!muted) deps.audio.playTactileFeedback("click");
@@ -145,9 +150,7 @@ export const executeTvButtonAction = (
     deps.refreshHud();
     return;
   }
-
   ensureTvPoweredOn(deps);
-
   if (id === "ch4") {
     deps.audio.playTactileFeedback("tv_zap");
     deps.scene.setTvChannel("portfolio");
@@ -155,7 +158,6 @@ export const executeTvButtonAction = (
     deps.refreshHud();
     return;
   }
-
   const retro = RETRO_BY_BTN[id];
   if (retro) {
     deps.audio.playTactileFeedback("tv_zap");
@@ -164,7 +166,6 @@ export const executeTvButtonAction = (
     deps.refreshHud();
     return;
   }
-
   const slot = SLOT_BY_BTN[id];
   if (slot !== undefined) {
     const wasRetro = deps.scene.getTvChannel() !== "portfolio";
@@ -175,7 +176,6 @@ export const executeTvButtonAction = (
     deps.refreshHud();
     return;
   }
-
   if (id === "ch_prev" || id === "ch_next") {
     const step = id === "ch_prev" ? -1 : 1;
     const current = deps.scene.getTvChannel();

@@ -58,7 +58,7 @@ export const bindStudioSoundToggle = (
     if (muted !== lastMuted) {
       lastMuted = muted;
       button.dataset.muted = muted ? "true" : "false";
-      button.setAttribute("aria-pressed", muted ? "true" : "false");
+      button.setAttribute("aria-pressed", muted ? "false" : "true");
       button.setAttribute(
         "aria-label",
         muted ? "Activar modo ambiente" : "Silenciar modo ambiente",
