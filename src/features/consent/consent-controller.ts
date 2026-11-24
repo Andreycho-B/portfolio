@@ -21,17 +21,24 @@ export const initConsentScreen = (): void => {
 
   if (!screenElement || !contentElement || !promptElement || !actionsElement) return;
 
-  if (document.documentElement.classList.contains("skip-consent") || isRecentConsent()) {
+  const completeConsentScreen = (soundEnabled: boolean) => {
     screenElement.style.display = "none";
     screenElement.style.pointerEvents = "none";
-    getCursorController().enable();
-    const soundEnabled = getStoredSoundPreference();
-    void getAudioSystem().initialize(soundEnabled);
     screenElement.dispatchEvent(
       new CustomEvent("consent:completed", { bubbles: true, detail: { soundEnabled } }),
     );
+  };
+
+  if (document.documentElement.classList.contains("skip-consent") || isRecentConsent()) {
+    getCursorController().enable();
+    const soundEnabled = getStoredSoundPreference();
+    void getAudioSystem().initialize(soundEnabled);
+    completeConsentScreen(soundEnabled);
     return;
   }
+
+  const prefersReduced =
+    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const cloudCanvas = screenElement.querySelector<HTMLCanvasElement>("[data-cloud-canvas]");
   const blueBox = screenElement.querySelector<HTMLElement>("[data-blue-box]");
@@ -60,37 +67,35 @@ export const initConsentScreen = (): void => {
 
   const handlePointerMove = (event: PointerEvent) => {
     if (!isRevealed || isTransitioning) return;
-    const target = event.target instanceof Element ? event.target : null;
-    const isMute = target?.closest("[data-btn-mute]");
+    const isMute = event.target instanceof Element && event.target.closest("[data-btn-mute]");
     if (isMute) cursor.setMuted(true);
     else {
       cursor.setMuted(false);
       cursor.setExpanded(true, CURSOR_LABEL_CONSENT);
     }
   };
-
   const handlePointerDown = () => isRevealed && !isTransitioning && cursor.setPressed(true);
   const handlePointerUp = () => cursor.setPressed(false);
-
   const handleScreenClick = (event: MouseEvent) => {
     if (!isRevealed || isTransitioning) return;
-    const target = event.target instanceof Element ? event.target : null;
-    if (target?.closest("[data-btn-mute]")) return;
+    if (event.target instanceof Element && event.target.closest("[data-btn-mute]")) return;
     executeGravitationalCollapse(true);
   };
-
   const handleKeyDown = (event: KeyboardEvent) => {
     if (event.key === "Enter" && isRevealed && !isTransitioning) {
       executeGravitationalCollapse(document.activeElement !== muteButton);
     }
   };
-
-  const handleMuteEnter = () => cursor.setMuted(true);
+  const handleMuteEnter = () => {
+    if (isRevealed && !isTransitioning) cursor.setMuted(true);
+  };
   const handleMuteLeave = () => {
+    if (!isRevealed || isTransitioning) return;
     cursor.setMuted(false);
     cursor.setExpanded(true, CURSOR_LABEL_CONSENT);
   };
   const handleMuteClick = (event: MouseEvent) => {
+    if (!isRevealed || isTransitioning) return;
     event.stopPropagation();
     executeGravitationalCollapse(false);
   };
@@ -101,11 +106,9 @@ export const initConsentScreen = (): void => {
     window.removeEventListener("pointerdown", handlePointerDown);
     window.removeEventListener("pointerup", handlePointerUp);
     screenElement.removeEventListener("click", handleScreenClick);
-    if (muteButton) {
-      muteButton.removeEventListener("pointerenter", handleMuteEnter);
-      muteButton.removeEventListener("pointerleave", handleMuteLeave);
-      muteButton.removeEventListener("click", handleMuteClick);
-    }
+    muteButton?.removeEventListener("pointerenter", handleMuteEnter);
+    muteButton?.removeEventListener("pointerleave", handleMuteLeave);
+    muteButton?.removeEventListener("click", handleMuteClick);
   };
 
   const executeGravitationalCollapse = (enableSound: boolean) => {
@@ -114,18 +117,9 @@ export const initConsentScreen = (): void => {
     cleanupListeners();
     cursor.setMuted(false);
     cursor.pulse();
-
     saveConsentPreference(enableSound);
-
-    if (enableSound) {
-      void audio.initialize(true).then((ok) => ok && audio.playReleaseSound());
-    } else {
-      void audio.initialize(false);
-    }
-
-    const prefersReduced =
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (enableSound) void audio.initialize(true).then((ok) => ok && audio.playReleaseSound());
+    else void audio.initialize(false);
 
     if (prefersReduced) {
       const targets = [contentElement, actionsElement, cloudCanvas, blueBox, vignette].filter(
@@ -139,19 +133,11 @@ export const initConsentScreen = (): void => {
           cursor.setExpanded(false);
           backdrop?.destroy();
           cloud?.destroy();
-          screenElement.style.display = "none";
-          screenElement.style.pointerEvents = "none";
-          screenElement.dispatchEvent(
-            new CustomEvent("consent:completed", {
-              bubbles: true,
-              detail: { soundEnabled: enableSound },
-            }),
-          );
+          completeConsentScreen(enableSound);
         },
       });
       return;
     }
-
     executeCollapseTimeline(collapseTargets, enableSound);
   };
 
@@ -164,11 +150,8 @@ export const initConsentScreen = (): void => {
     cursor.setExpanded(true, CURSOR_LABEL_CONSENT);
   };
 
-  const prefersReducedMotion =
-    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const morphicEl = screenElement.querySelector<HTMLElement>("[data-morphic]");
-
-  if (prefersReducedMotion) {
+  if (prefersReduced) {
     backdrop?.expand();
     revealControls();
   } else if (morphicEl?.dataset.morphicComplete === "true") {

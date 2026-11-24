@@ -1,4 +1,5 @@
 import { createSpring2D } from "../../design-system/components/spring-physics";
+import { notifyLiquidGlassLiveFrame } from "../../design-system/liquid-glass/liquid-glass-engine";
 import type {
   CloudClearZoneTargets,
   CloudControllerHandle,
@@ -105,6 +106,7 @@ export const initCloudCanvas = (
   document.addEventListener("morphic:phrase-start", updateZones);
 
   let cloudProgress = 0;
+  let wipeEdge = 1;
 
   const loop = (now: number) => {
     const dt = Math.min(Math.max((now - lastTime) / 1000, 0.001), 0.033);
@@ -129,7 +131,8 @@ export const initCloudCanvas = (
     cursor.y = spring.currentY;
     cursor.strength = cursorStrength;
 
-    renderer.render(elapsed, cloudOpacity, cursor, textClearZone, actionZone, pixelScale);
+    renderer.render(elapsed, cloudOpacity, cursor, textClearZone, actionZone, pixelScale, wipeEdge);
+    notifyLiquidGlassLiveFrame(canvas);
     animationFrameId = requestAnimationFrame(loop);
   };
 
@@ -147,7 +150,11 @@ export const initCloudCanvas = (
 
   document.addEventListener("welcome:backdrop-covered", reveal, { once: true });
 
+  let isDestroyed = false;
+
   const destroy = () => {
+    if (isDestroyed) return;
+    isDestroyed = true;
     if (animationFrameId !== null) {
       cancelAnimationFrame(animationFrameId);
       animationFrameId = null;
@@ -161,10 +168,15 @@ export const initCloudCanvas = (
     window.removeEventListener("resize", resize);
     document.removeEventListener("welcome:backdrop-covered", reveal);
     document.removeEventListener("morphic:phrase-start", updateZones);
+    document.removeEventListener("astro:before-swap", destroy);
     renderer.destroy();
+  };
+
+  const setWipeEdge = (edgeNormalized: number) => {
+    wipeEdge = edgeNormalized;
   };
 
   document.addEventListener("astro:before-swap", destroy, { once: true });
 
-  return { destroy, reveal };
+  return { destroy, reveal, setWipeEdge };
 };

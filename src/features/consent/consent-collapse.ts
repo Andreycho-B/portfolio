@@ -26,6 +26,9 @@ export const executeCollapseTimeline = (
   const line1 = contentElement.querySelector<HTMLElement>('[data-morphic-line="1"]');
   const line2 = contentElement.querySelector<HTMLElement>('[data-morphic-line="2"]');
 
+  document.dispatchEvent(new CustomEvent("consent:collapse-start"));
+  cursor.setExpanded(false);
+
   const tl = gsap.timeline({
     onComplete: () => {
       backdrop?.destroy();
@@ -53,8 +56,9 @@ export const executeCollapseTimeline = (
       );
     },
     [],
-    0.48,
+    0.16,
   );
+  tl.call(() => cursor.setInverted(false), [], 0.45);
 
   tl.to(
     promptElement,
@@ -80,23 +84,28 @@ export const executeCollapseTimeline = (
     0,
   );
 
-  if (cloudCanvas) {
-    const wipeSoftBand = Number.parseFloat(
-      getComputedStyle(cloudCanvas).getPropertyValue("--wipe-soft"),
+  if (cloud) {
+    const wipeProxy = { edge: 1 };
+    tl.to(
+      wipeProxy,
+      {
+        edge: -0.45,
+        duration: 0.9,
+        ease: "power2.inOut",
+        onUpdate: () => cloud.setWipeEdge(wipeProxy.edge),
+      },
+      0.14,
     );
-    if (Number.isFinite(wipeSoftBand)) {
-      tl.to(
-        cloudCanvas,
-        {
-          "--wipe-edge": -wipeSoftBand,
-          duration: 1.6,
-          ease: "power2.inOut",
-        },
-        0.18,
-      );
-    } else {
-      console.warn("[ConsentScreen] Variable --wipe-soft no definida; se omite el degradado");
-    }
+  } else if (cloudCanvas) {
+    tl.to(
+      cloudCanvas,
+      {
+        opacity: 0,
+        duration: 0.65,
+        ease: "power2.inOut",
+      },
+      0.14,
+    );
   }
 
   if (vignette) {
@@ -107,6 +116,7 @@ export const executeCollapseTimeline = (
         opacity: 0,
         duration: 0.35,
         ease: "power2.in",
+        force3D: true,
       },
       0.1,
     );
@@ -136,7 +146,7 @@ export const executeCollapseTimeline = (
         scaleX: 1.35,
         scaleY: 0.12,
         opacity: 0,
-        filter: "blur(12px)",
+        filter: "blur(8px)",
         duration: 0.68,
         ease: "power2.inOut",
         transformOrigin: "50% 0%",
@@ -152,7 +162,7 @@ export const executeCollapseTimeline = (
         scaleX: 1.4,
         scaleY: 0.1,
         opacity: 0,
-        filter: "blur(14px)",
+        filter: "blur(9px)",
         duration: 0.68,
         ease: "power2.inOut",
         transformOrigin: "50% 0%",
@@ -168,7 +178,7 @@ export const executeCollapseTimeline = (
         scaleX: 1.4,
         scaleY: 0.1,
         opacity: 0,
-        filter: "blur(14px)",
+        filter: "blur(9px)",
         duration: 0.7,
         ease: "power2.inOut",
         transformOrigin: "50% 0%",

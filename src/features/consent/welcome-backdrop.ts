@@ -13,6 +13,7 @@ export const initWelcomeBackdrop = (rootEl: HTMLElement): WelcomeBackdropHandle 
     typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   let timeline: gsap.core.Timeline | null = null;
+  let coverCall: gsap.core.Tween | null = null;
   let isExpanded = false;
 
   const expand = () => {
@@ -87,7 +88,8 @@ export const initWelcomeBackdrop = (rootEl: HTMLElement): WelcomeBackdropHandle 
         force3D: true,
         onStart: () => {
           boxEl.classList.add("is-expanding");
-          gsap.delayedCall(0.7, () => {
+          coverCall = gsap.delayedCall(0.7, () => {
+            coverCall = null;
             rootEl.dataset.backdropActive = "true";
             document.dispatchEvent(new CustomEvent("welcome:backdrop-covered"));
           });
@@ -112,7 +114,12 @@ export const initWelcomeBackdrop = (rootEl: HTMLElement): WelcomeBackdropHandle 
       timeline.kill();
       timeline = null;
     }
+    if (coverCall) {
+      coverCall.kill();
+      coverCall = null;
+    }
     document.removeEventListener("morphic:phrase-exited", onPhraseExited);
+    document.removeEventListener("astro:before-swap", destroy);
   };
 
   document.addEventListener("astro:before-swap", destroy, { once: true });

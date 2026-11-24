@@ -22,6 +22,7 @@ uniform float u_cloudOpacity;
 uniform vec4 u_textClearZone;
 uniform vec4 u_actionZone;
 uniform float u_pixelScale;
+uniform float u_wipeEdge;
 
 const int bayer8[64] = int[64](
    0, 32,  8, 40,  2, 34, 10, 42,
@@ -103,6 +104,18 @@ float fbm(vec3 p) {
 
 void main() {
   vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+  float yTop = 1.0 - uv.y;
+  float wipeAlpha = 1.0;
+  if (u_wipeEdge < 0.999) {
+    if (yTop >= u_wipeEdge + 0.45) {
+      fragColor = vec4(0.0);
+      return;
+    }
+    if (yTop > u_wipeEdge) {
+      float t = (yTop - u_wipeEdge) / 0.45;
+      wipeAlpha = 1.0 - smoothstep(0.0, 1.0, t);
+    }
+  }
   float aspect = u_resolution.x / u_resolution.y;
   vec2 p = uv;
   p.x *= aspect;
@@ -174,6 +187,6 @@ void main() {
   float isWhite = step(ditherThreshold, cloudPresence);
   vec3 finalColor = mix(skyColor, vec3(1.0), isWhite);
 
-  fragColor = vec4(finalColor, 1.0);
+  fragColor = vec4(finalColor * wipeAlpha, wipeAlpha);
 }
 `;

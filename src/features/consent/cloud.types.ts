@@ -14,6 +14,7 @@ export interface CloudClearZoneTargets {
 export interface CloudControllerHandle {
   readonly destroy: () => void;
   readonly reveal: () => void;
+  readonly setWipeEdge: (edgeNormalized: number) => void;
 }
 
 export interface CloudWebGLRenderer {
@@ -24,6 +25,7 @@ export interface CloudWebGLRenderer {
     textClearZone: TextClearZone,
     actionZone: TextClearZone,
     pixelScale: number,
+    wipeEdge: number,
   ) => void;
   readonly resize: (width: number, height: number) => void;
   readonly destroy: () => void;

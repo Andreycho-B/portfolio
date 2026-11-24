@@ -18,7 +18,14 @@ const compileShader = (
 };
 
 export const createCloudRenderer = (canvas: HTMLCanvasElement): CloudWebGLRenderer | null => {
-  const gl = canvas.getContext("webgl2", { alpha: false, antialias: false });
+  const gl = canvas.getContext("webgl2", {
+    alpha: true,
+    antialias: false,
+    depth: false,
+    stencil: false,
+    premultipliedAlpha: true,
+    powerPreference: "high-performance",
+  });
   if (!gl) return null;
 
   const vertShader = compileShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER_SOURCE);
@@ -53,6 +60,7 @@ export const createCloudRenderer = (canvas: HTMLCanvasElement): CloudWebGLRender
   const uTextClearZone = gl.getUniformLocation(program, "u_textClearZone");
   const uActionZone = gl.getUniformLocation(program, "u_actionZone");
   const uPixelScale = gl.getUniformLocation(program, "u_pixelScale");
+  const uWipeEdge = gl.getUniformLocation(program, "u_wipeEdge");
 
   let canvasWidth = canvas.width;
   let canvasHeight = canvas.height;
@@ -70,6 +78,7 @@ export const createCloudRenderer = (canvas: HTMLCanvasElement): CloudWebGLRender
     textClearZone: TextClearZone,
     actionZone: TextClearZone,
     pixelScale: number,
+    wipeEdge: number,
   ) => {
     gl.useProgram(program);
     gl.uniform1f(uTime, time);
@@ -86,6 +95,7 @@ export const createCloudRenderer = (canvas: HTMLCanvasElement): CloudWebGLRender
     );
     gl.uniform4f(uActionZone, actionZone[0], actionZone[1], actionZone[2], actionZone[3]);
     gl.uniform1f(uPixelScale, pixelScale);
+    gl.uniform1f(uWipeEdge, wipeEdge);
 
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   };
@@ -95,6 +105,8 @@ export const createCloudRenderer = (canvas: HTMLCanvasElement): CloudWebGLRender
     gl.deleteProgram(program);
     gl.deleteShader(vertShader);
     gl.deleteShader(fragShader);
+    canvas.width = 0;
+    canvas.height = 0;
   };
 
   return { render, resize, destroy };
