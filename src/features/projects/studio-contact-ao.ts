@@ -96,14 +96,19 @@ export const bakeFloorAo = (): DataTexture => {
   const s = 128;
   const data = new Uint8Array(s * s * 4);
   for (let y = 0; y < s; y++) {
-    const ly = ((y + 0.5) / s - 0.5) * 9.8;
+    const ly = ((y + 0.5) / s - 0.5) * 10.6;
     for (let x = 0; x < s; x++) {
-      const lx = ((x + 0.5) / s - 0.5) * 10.6;
-      const [px, py] = [lx - 0.25, -ly + 0.75];
+      const lx = ((x + 0.5) / s - 0.5) * 12.4;
+      const [px, py] = [lx + 0.35, -ly + 0.65];
       const dT = Math.hypot((px - 0.35) / 3.65, (py + 0.5) / 2.35);
       const dC = Math.hypot((px + 1.6) / 1.55, (py - 3.35) / 1.45);
-      const glow = Math.exp(-dT * dT * 1.5) * 0.11 + Math.exp(-dC * dC * 1.7) * 0.09;
-      const a = Math.min(0.14, glow * smooth(5.2, 3.0, Math.hypot(lx, ly)));
+      const dM = Math.hypot((px - 4.35) / 0.96, (py + 1.25) / 0.96);
+      const glow =
+        Math.exp(-dT * dT * 1.5) * 0.11 +
+        Math.exp(-dC * dC * 1.7) * 0.09 +
+        Math.exp(-dM * dM * 2.1) * 0.16;
+      const edge = smooth(6.1, 5.1, Math.abs(lx)) * smooth(5.2, 4.3, Math.abs(ly));
+      const a = Math.min(0.18, glow * edge);
       const idx = (y * s + x) * 4;
       data[idx] = 20;
       data[idx + 1] = 28;

@@ -13,6 +13,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { STUDIO_WORLD, type StudioTableHandle } from "./studio.types";
 import { bakeFloorAo, bakeTableContactAo } from "./studio-contact-ao";
 import type { StudioAssetTracker } from "./studio-loading-tracker";
+import { createStudioMonsteraPlant } from "./studio-monstera-plant";
 import { createStudioQuartzPlatform } from "./studio-quartz-platform";
 import { clampPbrTextureBudget, disposeObject3DResources } from "./studio-texture-budget";
 
@@ -40,7 +41,7 @@ export const createStudioTable = (
   const floorAoTex = bakeFloorAo();
   const tableAoTex = bakeTableContactAo();
 
-  const floorAoGeo = new PlaneGeometry(10.6, 9.8, 1, 1);
+  const floorAoGeo = new PlaneGeometry(12.4, 10.6, 1, 1);
   const floorAoMat = new MeshBasicMaterial({
     map: floorAoTex,
     transparent: true,
@@ -49,7 +50,7 @@ export const createStudioTable = (
   });
   const floorAoMesh = new Mesh(floorAoGeo, floorAoMat);
   floorAoMesh.rotation.x = -Math.PI * 0.5;
-  floorAoMesh.position.set(-0.25, FLOOR_Y + 0.003, 0.75);
+  floorAoMesh.position.set(0.35, FLOOR_Y + 0.003, 0.65);
   freezeTransform(floorAoMesh);
 
   const fallbackMat = new MeshStandardMaterial({ color: 0x6b462a, roughness: 0.65 });
@@ -146,11 +147,13 @@ export const createStudioTable = (
 
   loadSingleMesh(WOODEN_TABLE_URL, woodenTableMesh, 0.65);
   loadSingleMesh(MONOBLOC_CHAIR_URL, chairMesh, 0.72);
+  const monstera = createStudioMonsteraPlant(group, FLOOR_Y, onAssetLoaded, tracker);
 
   const dispose = (): void => {
     isDisposed = true;
     targetScene.remove(group);
     quartzPlatform.dispose();
+    monstera.dispose();
     for (const g of [floorAoGeo, shadowGeo, woodenTableMesh.geometry, chairMesh.geometry]) {
       g.dispose();
     }
