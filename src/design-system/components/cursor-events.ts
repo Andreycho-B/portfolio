@@ -1,3 +1,5 @@
+import type { LiquidGlassSurfaceHandle } from "../liquid-glass/liquid-glass.types";
+import { attachLiquidGlassSurface } from "../liquid-glass/liquid-glass-surface";
 import type { CursorController } from "./cursor.types";
 
 interface CursorEventHandlers {
@@ -60,16 +62,77 @@ export const bindCursorExpandTriggers = (
   };
 };
 
+export interface CursorLiquidGlassBinding {
+  readonly sync: (expanded: boolean, muted: boolean, inverted: boolean, pressed: boolean) => void;
+  readonly markMoved: () => void;
+  readonly destroy: () => void;
+}
+
+export const bindCursorLiquidGlass = (cursorEl: HTMLElement): CursorLiquidGlassBinding => {
+  const pillEl = cursorEl.querySelector<HTMLElement>(".cursor-pill");
+  if (!pillEl) {
+    return { sync: () => {}, markMoved: () => {}, destroy: () => {} };
+  }
+  let isExpanded = false;
+  let isMuted = false;
+  const surface: LiquidGlassSurfaceHandle = attachLiquidGlassSurface({
+    element: pillEl,
+    role: "cursor-pill",
+    tone: "light",
+    initialEnabled: false,
+    trackScroll: true,
+    trackLiveCanvas: true,
+    getFixedSize: () => {
+      if (isMuted) return { width: 44, height: 44 };
+      if (isExpanded) return { width: 140, height: 42 };
+      return null;
+    },
+    getExcludeRoot: () => cursorEl,
+  });
+  const onTransitionEnd = (e: TransitionEvent) => {
+    if (
+      e.propertyName === "width" ||
+      e.propertyName === "height" ||
+      e.propertyName === "translate"
+    ) {
+      surface.markDirty();
+    }
+  };
+  pillEl.addEventListener("transitionend", onTransitionEnd);
+  return {
+    sync: (expanded, muted, inverted, pressed) => {
+      isExpanded = expanded;
+      isMuted = muted;
+      const active = expanded || muted;
+      surface.setTone(inverted ? "dark" : "light");
+      surface.setPressed(pressed);
+      surface.setEnabled(active);
+      if (active) surface.markDirty();
+    },
+    markMoved: () => {
+      if (isExpanded || isMuted) surface.markDirty();
+    },
+    destroy: () => {
+      pillEl.removeEventListener("transitionend", onTransitionEnd);
+      surface.destroy();
+    },
+  };
+};
+
 export const registerCursorSwapReset = (getActive: () => CursorController | null): void => {
   if (typeof document === "undefined") return;
   const resetState = () => {
     const active = getActive();
     active?.setExpanded(false);
+    active?.setMuted(false);
     active?.setPressed(false);
     active?.setInverted(false);
     document
       .querySelector<HTMLElement>("[data-interactive-cursor]")
       ?.classList.remove("is-expanded", "is-pressed", "is-muted", "is-inverted");
+    document
+      .querySelector<HTMLElement>("[data-cursor-dot]")
+      ?.classList.remove("is-pressed", "is-inverted");
     const textEl = document.querySelector<HTMLElement>("[data-cursor-text]");
     if (textEl) textEl.textContent = "Ver";
   };

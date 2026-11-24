@@ -5,8 +5,16 @@ interface Props {
   defaultLabel?: string;
 }
 
-const { defaultLabel = "Ingresar" } = Astro.props;
+const { defaultLabel = "" } = Astro.props;
 ---
+
+<div
+  class="cursor-dot"
+  data-cursor-dot
+  transition:persist="interactive-cursor-dot"
+  aria-hidden="true"
+  data-nosnippet
+></div>
 
 <div
   class="interactive-cursor"

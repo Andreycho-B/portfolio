@@ -1,6 +1,7 @@
 export interface CursorController {
   readonly enable: () => void;
   readonly disable: () => void;
+  readonly moveTo: (clientX: number, clientY: number) => void;
   readonly setExpanded: (expanded: boolean, label?: string) => void;
   readonly setMuted: (muted: boolean) => void;
   readonly setPressed: (pressed: boolean) => void;
@@ -12,6 +13,7 @@ export interface CursorController {
 export const NOOP_CONTROLLER: CursorController = {
   enable: () => {},
   disable: () => {},
+  moveTo: () => {},
   setExpanded: () => {},
   setMuted: () => {},
   setPressed: () => {},
