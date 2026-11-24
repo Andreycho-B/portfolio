@@ -9,10 +9,14 @@ import {
   executeZoomedZoneAction,
   handleStudioKeyDown,
 } from "./studio-screen-hit";
-import { handleTvSpecialClick, isTvSpecialZone } from "./studio-tv-button-action";
+import {
+  handleTvSpecialClick,
+  isTvSpecialZone,
+  resolvePortalBezelZone,
+} from "./studio-tv-button-action";
 import type { TvButtonId } from "./studio-tv-buttons";
 
-const CFG = { drag: 180, tol: 6, yaw: 0.0072, pitch: 0.0052 } as const;
+const CFG = { drag: 180, tol: 6, touchTol: 12, yaw: 0.0072, pitch: 0.0052 } as const;
 const IGNORE_SURFACE_SEL = "[data-studio-tv-portal], [data-studio-sound-toggle]";
 const normXY = (x: number, y: number) => ({
   nx: (x / Math.max(1, innerWidth)) * 2 - 1,
@@ -25,14 +29,11 @@ export const bindStudioInputs = (deps: StudioInputDeps): (() => void) => {
   const pinch = createStudioPinchZoom();
   const wheel = createStudioWheelHandler(deps);
   let emailResetTimer: number | null = null;
+  const pt = { sx: 0, sy: 0, maxDist: 0, startSlot: 0 };
   const drag = {
     id: null as number | null,
-    sx: 0,
-    sy: 0,
     lx: 0,
     ly: 0,
-    maxDist: 0,
-    startSlot: 0,
     focusAtDown: null as StudioFocusTarget | null,
     propAtDown: null as StudioFocusPropId | null,
     nokiaBtn: null as NokiaButtonId | null,
@@ -56,24 +57,25 @@ export const bindStudioInputs = (deps: StudioInputDeps): (() => void) => {
     if ((e.pointerType === "mouse" && e.button !== 0) || drag.id !== null) return;
     const { nx, ny } = normXY(e.clientX, e.clientY);
     if (focus === "tv" && deps.isTvPortalOpen() && scene.pickScreenUv(nx, ny) !== null) return;
-    const zone =
+    const portalRes =
       focus === "tv" && deps.isTvPortalOpen()
-        ? "bezel_exit"
-        : classifyStudioHoverZone(scene, nx, ny, power.isPoweredOn, focus);
+        ? resolvePortalBezelZone(scene.pickTvButton(nx, ny))
+        : null;
+    const zone =
+      portalRes?.zone ?? classifyStudioHoverZone(scene, nx, ny, power.isPoweredOn, focus);
     if (focus === "tv" && !isTvSpecialZone(zone)) {
       autoplay.notifyUserInteraction();
       physics.beginDrag();
       deps.setDragging(true);
     }
-    drag.id = e.pointerId;
-    drag.sx = drag.lx = e.clientX;
-    drag.sy = drag.ly = e.clientY;
-    drag.maxDist = 0;
-    drag.startSlot = physics.currentPosition;
-    drag.focusAtDown = focus;
+    [drag.id, pt.maxDist, pt.startSlot] = [e.pointerId, 0, physics.currentPosition];
+    [pt.sx, drag.lx, pt.sy, drag.ly] = [e.clientX, e.clientX, e.clientY, e.clientY];
+    [drag.focusAtDown, drag.zone] = [focus, zone];
     drag.propAtDown = focus !== "tv" ? scene.pickFocusProp(nx, ny) : null;
     drag.nokiaBtn = focus === "phone" ? scene.pickNokiaButton(nx, ny) : null;
-    drag.tvBtn = zone === "tv_button" || zone === "power" ? scene.pickTvButton(nx, ny) : null;
+    drag.tvBtn =
+      portalRes?.tvBtn ??
+      (zone === "tv_button" || zone === "power" ? scene.pickTvButton(nx, ny) : null);
     drag.zone = zone;
     try {
       surface.setPointerCapture(e.pointerId);
@@ -98,36 +100,33 @@ export const bindStudioInputs = (deps: StudioInputDeps): (() => void) => {
     }
     const [dx, dy] = [e.clientX - drag.lx, e.clientY - drag.ly];
     [drag.lx, drag.ly] = [e.clientX, e.clientY];
-    drag.maxDist = Math.max(drag.maxDist, Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy));
+    pt.maxDist = Math.max(pt.maxDist, Math.hypot(e.clientX - pt.sx, e.clientY - pt.sy));
+    const tol = e.pointerType === "mouse" ? CFG.tol : CFG.touchTol;
+    const snakeTouch =
+      drag.focusAtDown === "phone" && e.pointerType !== "mouse" && scene.getNokiaMode() === "snake";
     if (drag.focusAtDown !== "tv") {
-      const snakeTouch =
-        drag.focusAtDown === "phone" &&
-        e.pointerType !== "mouse" &&
-        scene.getNokiaMode() === "snake";
       if (snakeTouch) {
-        if (handleNokiaSnakeSwipe(scene, e.clientX, e.clientY, drag, !audio.isMuted()))
+        if (handleNokiaSnakeSwipe(scene, e.clientX, e.clientY, pt, !audio.isMuted()))
           deps.requestFrame();
         return;
       }
-      if (drag.maxDist >= CFG.tol) {
+      if (pt.maxDist >= tol) {
         scene.addOrbitDelta(-dx * CFG.yaw, dy * CFG.pitch);
         deps.updatePointerHover(nx, ny, true);
       }
       return;
     }
     if (drag.zone !== "bezel_exit") {
-      physics.setDirectPosition(drag.startSlot - (e.clientY - drag.sy) / CFG.drag);
-      deps.updatePointerHover(nx, ny, drag.maxDist >= CFG.tol);
+      physics.setDirectPosition(pt.startSlot - (e.clientY - pt.sy) / CFG.drag);
+      deps.updatePointerHover(nx, ny, pt.maxDist >= tol);
     }
   };
   const onDoubleClick = (e: MouseEvent): void => {
-    if (e.target instanceof Element && e.target.closest(IGNORE_SURFACE_SEL)) return;
     if (deps.getFocusTarget() !== null) return;
+    if (e.target instanceof Element && e.target.closest(IGNORE_SURFACE_SEL)) return;
     const { nx, ny } = normXY(e.clientX, e.clientY);
-    const zone = classifyStudioHoverZone(scene, nx, ny, power.isPoweredOn, null);
-    if (zone === "power" || zone === "tv_button" || zone === "prop_zoom" || zone === "chair_sit") {
-      return;
-    }
+    const z = classifyStudioHoverZone(scene, nx, ny, power.isPoweredOn, null);
+    if (z === "power" || z === "tv_button" || z === "prop_zoom" || z === "chair_sit") return;
     scene.cycleShowcaseAngle();
     cursor.pulse();
     deps.requestFrame();
@@ -145,7 +144,8 @@ export const bindStudioInputs = (deps: StudioInputDeps): (() => void) => {
   const onPointerUp = (e: PointerEvent): void => {
     const wasPinch = pinch.onPointerUp(e);
     if (e.pointerId !== drag.id) return;
-    const isClick = !wasPinch && drag.maxDist < CFG.tol && e.type === "pointerup";
+    const tol = e.pointerType === "mouse" ? CFG.tol : CFG.touchTol;
+    const isClick = !wasPinch && pt.maxDist < tol && e.type === "pointerup";
     const { zone, focusAtDown, propAtDown, nokiaBtn, tvBtn } = drag;
     releaseDrag();
     if (focusAtDown !== "tv") {

@@ -51,6 +51,13 @@ const stepDrumToSlot = (deps: StudioInputDeps, slotIndex: number): void => {
   }
 };
 
+export const resolvePortalBezelZone = (
+  btn: TvButtonId | null,
+): { readonly zone: StudioScreenZone; readonly tvBtn: TvButtonId | null } =>
+  btn
+    ? { zone: btn === "power" ? "power" : "tv_button", tvBtn: btn }
+    : { zone: "bezel_exit", tvBtn: null };
+
 export const isTvSpecialZone = (zone: StudioScreenZone): boolean =>
   zone === "bezel_exit" || zone === "tv_button" || zone === "power" || zone === "tv_channel_exit";
 

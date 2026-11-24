@@ -3,6 +3,7 @@ import { PROFILE } from "../../core/profile";
 import type { CursorController } from "../../design-system/components/cursor-controller";
 import { PROJECT_COUNT, PROJECTS } from "./project-data";
 import type { StudioInputDeps, StudioSceneHandle, StudioScreenZone } from "./studio.types";
+import { tryStepStudioFocusKey } from "./studio-a11y";
 import type { StudioHotspotId } from "./studio-hotspots-shader";
 import { classifyNokiaHoverZone } from "./studio-nokia-input";
 import type { StudioFocusTarget } from "./studio-prop-focus";
@@ -169,6 +170,7 @@ export const executeStudioCanvasClick = (
 
 export const handleStudioKeyDown = (event: KeyboardEvent, deps: StudioInputDeps): void => {
   const focus = deps.getFocusTarget();
+  if (tryStepStudioFocusKey(event, focus, deps.setFocusTarget)) return;
   if (focus === null) return;
   if (event.key === "Escape") {
     event.preventDefault();

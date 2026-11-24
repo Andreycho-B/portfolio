@@ -5,6 +5,7 @@ import { observeCanvasResize } from "./drum.types";
 import { DrumAutoplayController } from "./drum-autoplay";
 import { DrumScrollPhysics } from "./drum-scroll-physics";
 import type { StudioSceneHandle } from "./studio.types";
+import { createStudioA11y, type StudioA11yHandle } from "./studio-a11y";
 import { createStudioEntryHint, type StudioEntryHintHandle } from "./studio-entry-hint";
 import {
   clearStudioHoverState,
@@ -31,6 +32,7 @@ export class StudioController {
   private readonly cursor = getCursorController();
   private readonly soundToggle: StudioSoundToggleHandle;
   private readonly entryHint: StudioEntryHintHandle;
+  private readonly a11y: StudioA11yHandle;
   private readonly tvPortal: StudioTvPortalHandle;
   private readonly cleanups: readonly (() => void)[];
   private lifecycle: "paused" | "running" | "destroyed";
@@ -48,7 +50,7 @@ export class StudioController {
     };
     const refreshHud = (): void => this.refreshHud(true);
     this.soundToggle = bindStudioSoundToggle(root, this.audio, this.cursor, clearHover, refreshHud);
-    this.entryHint = createStudioEntryHint(root);
+    [this.entryHint, this.a11y] = [createStudioEntryHint(root), createStudioA11y(root)];
     this.tvPortal = createStudioTvPortal({
       container: root,
       camera: scene.camera,
@@ -66,8 +68,6 @@ export class StudioController {
     });
     this.syncViewport(deferStart);
     this.cleanups = [
-      this.soundToggle.dispose,
-      this.entryHint.dispose,
       observeCanvasResize(canvas, () => this.syncViewport(false)),
       bindStudioInputs({
         canvas,
@@ -116,8 +116,8 @@ export class StudioController {
   }
   private applyFocusTarget(t: StudioFocusTarget | null): void {
     if (t !== "tv" && this.tvPortal.hasActivePage()) this.tvPortal.suspend();
-    const { scene, tvPortal } = this;
-    const [prevFocus, st] = [this.st.focus, this.st];
+    const { scene, tvPortal, st } = this;
+    const prevFocus = st.focus;
     [st.focus, st.chairBreathPlayed] = [t, false];
     if (t !== null) this.entryHint.dismiss();
     if (t === "chair") this.audio.triggerChairBreath("preload");
@@ -181,6 +181,7 @@ export class StudioController {
     const alive = stepStudioFrame(
       { st, tickState, scene, physics, autoplay, power, audio, tvPortal, entryHint, syncHover },
       now,
+      this.a11y,
     );
     notifyLiquidGlassLiveFrame(this.canvas);
     this.st.raf = alive ? requestAnimationFrame(this.tick) : null;
@@ -192,7 +193,8 @@ export class StudioController {
     this.st.zone = clearStudioHoverState(this.scene, this.cursor);
     this.audio.triggerChairBreath("stop");
     this.cursor.setInverted(false);
-    for (const p of [this.tvPortal, this.power, this.autoplay, this.physics, this.scene])
-      p.dispose();
+    const ui = [this.soundToggle, this.entryHint, this.a11y, this.tvPortal];
+    const core = [this.power, this.autoplay, this.physics, this.scene];
+    for (const p of [...ui, ...core]) p.dispose();
   }
 }

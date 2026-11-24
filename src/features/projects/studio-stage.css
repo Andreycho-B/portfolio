@@ -20,6 +20,7 @@
 .projects-lens-section[data-stage-mode="studio"] .drum-viewport {
   z-index: 5;
   cursor: default;
+  touch-action: none;
 }
 
 .projects-lens-section[data-stage-mode="studio"].has-live-portal .drum-viewport {
@@ -183,5 +184,12 @@
   .projects-lens-section[data-stage-mode="studio"] .studio-entry-hint {
     font-size: 10.5px;
     letter-spacing: 0.06em;
+  }
+}
+
+@media (pointer: coarse) {
+  .projects-lens-section[data-stage-mode="studio"] .studio-sound-btn {
+    width: 44px;
+    height: 44px;
   }
 }

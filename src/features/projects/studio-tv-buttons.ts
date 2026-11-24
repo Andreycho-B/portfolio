@@ -107,8 +107,8 @@ export const createStudioTvButtons = (parent: Group): StudioTvButtonsHandle => {
   parent.add(root);
 
   const proxyMat = new MeshBasicMaterial();
-  const rowHitGeo = new BoxGeometry(ROW_STEP * 0.96, 0.088, 0.14);
-  const dvdHitGeo = new BoxGeometry(0.56, 0.1, 0.14);
+  const rowHitGeo = new BoxGeometry(ROW_STEP * 0.98, 0.115, 0.14);
+  const dvdHitGeo = new BoxGeometry(0.58, 0.125, 0.14);
   const hitMeshes: Mesh[] = [];
   const lookup = new Map<Object3D, TvButtonId>();
   const visualMeshes = new Map<TvButtonId, Mesh>();

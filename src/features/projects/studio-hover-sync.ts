@@ -5,6 +5,7 @@ import type { DrumAutoplayController } from "./drum-autoplay";
 import type { DrumScrollPhysics } from "./drum-scroll-physics";
 import { DRUM_SLOTS, PROJECT_COUNT } from "./project-data";
 import type { StudioSceneHandle, StudioScreenZone } from "./studio.types";
+import type { StudioA11yHandle } from "./studio-a11y";
 import type { StudioEntryHintHandle } from "./studio-entry-hint";
 import type { StudioPowerController } from "./studio-power-state";
 import type { StudioFocusTarget } from "./studio-prop-focus";
@@ -143,7 +144,11 @@ export const syncStudioDrumScene = (
   scene.setDrumState(p * SLOT_ANGLE, v, intro, toStudioSlotIndex(p), !audio.isMuted());
 };
 
-export const stepStudioFrame = (deps: StudioTickDeps, now: number): boolean => {
+export const stepStudioFrame = (
+  deps: StudioTickDeps,
+  now: number,
+  a11y: StudioA11yHandle,
+): boolean => {
   const { st, tickState, scene: sc, physics: ph, autoplay: ap, power: pw, audio, tvPortal } = deps;
   const dt = Math.min((now - st.lastTime) / 1000, 0.05);
   st.lastTime = now;
@@ -184,6 +189,7 @@ export const stepStudioFrame = (deps: StudioTickDeps, now: number): boolean => {
     audio.playTactileFeedback("wheel_tick", ph.scrollVelocity);
   }
   syncStudioDrumScene(sc, ph, audio, st.intro);
+  a11y.sync(st.focus, pw.isPoweredOn, sc.getTvChannel(), toStudioSlotIndex(ph.currentPosition));
   sc.render();
   return moved || !idle || powAnim || pv.animating || st.intro < 1 || sc.isSkyAnimated();
 };
