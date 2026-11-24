@@ -23,6 +23,7 @@ export interface StudioTvPortalHandle {
   readonly closeToDrum: () => void;
   readonly stepVisuals: (dt: number, poweredOn: boolean) => StudioTvPortalVisuals;
   readonly hasActivePage: () => boolean;
+  readonly getActiveUrl: () => string | null;
   readonly isInteractive: () => boolean;
   readonly isTuning: () => boolean;
   readonly syncBounds: (camera: PerspectiveCamera) => void;

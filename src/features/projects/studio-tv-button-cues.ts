@@ -19,6 +19,7 @@ export interface StudioChassisFrame {
   readonly focus: StudioFocusTarget | null;
   readonly idx: number;
   readonly muted: boolean;
+  readonly about?: boolean;
 }
 
 export interface TvButtonCueState {
@@ -75,7 +76,7 @@ const RETRO_ACTIVE_BTN: Partial<Record<TvChannelMode, TvButtonId>> = {
 };
 
 const isButtonActive = (id: TvButtonId, f: StudioChassisFrame, s: TvButtonCueState): boolean => {
-  if (s.isPortalOpen) return id === "ch4";
+  if (s.isPortalOpen && f.about) return id === "ch4";
   if (s.channel === "dvd") return id === "ch5" || id === "dvd";
   if (s.channel !== "portfolio") return RETRO_ACTIVE_BTN[s.channel] === id;
   return id === (["ch1", "ch2", "ch3"][f.idx] ?? "");

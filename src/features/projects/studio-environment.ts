@@ -97,7 +97,7 @@ export const createStudioEnvironment = (
   sunLight.castShadow = true;
   sunLight.shadow.mapSize.set(2048, 2048);
   sunLight.shadow.camera.near = 6.0;
-  sunLight.shadow.camera.far = 44.0;
+  sunLight.shadow.camera.far = 48.0;
   sunLight.shadow.camera.left = -8.6;
   sunLight.shadow.camera.right = 8.6;
   sunLight.shadow.camera.top = 7.8;

@@ -184,6 +184,7 @@ export const createStudioTvPortal = (deps: StudioTvPortalDeps): StudioTvPortalHa
     stepVisuals: (dt, poweredOn) =>
       stepPortalVisualState(s, dt, poweredOn, prefersReduced(), wipe.getWave(), wipe.isActive()),
     hasActivePage: () => s.url !== null,
+    getActiveUrl: () => s.url,
     isInteractive: () => s.live,
     isTuning: () => s.tuning,
     dispose: () => {

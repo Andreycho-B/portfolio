@@ -160,8 +160,9 @@ export const stepStudioFrame = (
     st.chairBreathPlayed = true;
     audio.triggerChairBreath("play");
   }
+  const portalUrl = tvPortal.getActiveUrl();
   const pv = tvPortal.stepVisuals(dt, pw.isPoweredOn);
-  sc.setTvPortalState(pv.mode, pv.cutout, pv.wave);
+  sc.setTvPortalState(pv.mode, pv.cutout, pv.wave, portalUrl?.startsWith("/sobre-mi") ?? false);
   const inIntro = sc.isIntroActive();
   if (moved || powAnim) {
     if (tvPortal.isInteractive()) tvPortal.syncBounds(sc.camera);
@@ -189,7 +190,8 @@ export const stepStudioFrame = (
     audio.playTactileFeedback("wheel_tick", ph.scrollVelocity);
   }
   syncStudioDrumScene(sc, ph, audio, st.intro);
-  a11y.sync(st.focus, pw.isPoweredOn, sc.getTvChannel(), toStudioSlotIndex(ph.currentPosition));
+  const slotIdx = toStudioSlotIndex(ph.currentPosition);
+  a11y.sync(st.focus, pw.isPoweredOn, sc.getTvChannel(), slotIdx, portalUrl);
   sc.render();
   return moved || !idle || powAnim || pv.animating || st.intro < 1 || sc.isSkyAnimated();
 };

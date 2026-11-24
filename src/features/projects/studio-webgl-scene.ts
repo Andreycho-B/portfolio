@@ -41,7 +41,7 @@ export const createStudioWebGLScene = (
     onAsset();
   };
   const st = { power: 0, copied: false, sound: true, sky: false, portal: false, idx: 0 };
-  let activeFocus: StudioFocusTarget | null = null;
+  let [activeFocus, about] = [null as StudioFocusTarget | null, false];
   const onDeskTick = (): void => {
     if (!(activeFocus === "tv" && st.portal)) onAssetLoaded?.();
   };
@@ -96,7 +96,8 @@ export const createStudioWebGLScene = (
     const n = deskProps.nokia.update(dt, st.sound, c, zoom);
     const p = propProverbs.update(dt, c, zoom);
     const t = tvTitle.update(dt, c, zoom, activeFocus);
-    const cf = { camera: c, power: st.power, focus: activeFocus, idx: st.idx, muted: !st.sound };
+    const { power, idx, sound } = st;
+    const cf = { camera: c, power, focus: activeFocus, idx, muted: !sound, about };
     const ch = chassis.update(dt, cf);
     st.sky = (zoom < 0.98 && environment.updateSkyTime(dt)) || h || n || p || t || ch;
     if (moved) {
@@ -136,10 +137,10 @@ export const createStudioWebGLScene = (
       propProverbs.setFocusTarget(target);
       cameraRig.setFocusTarget(target);
     },
-    setTvPortalState: (mode, cutout, wave) => {
+    setTvPortalState: (mode, cutout, wave, isAbout = false) => {
       const next = mode > 0.5 || cutout > 0.01;
       if (st.portal && !next) crtFbo.markDirty();
-      st.portal = next;
+      [st.portal, about] = [next, next && isAbout];
       chassis.setPortalState(mode, cutout, wave);
     },
     capturePortalSnapshot: portalSnapshot.capture,

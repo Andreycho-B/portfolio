@@ -98,7 +98,12 @@ export interface StudioSceneHandle extends StudioSceneNokiaApi, StudioSceneTvApi
   readonly playIntroOrbit: () => void;
   readonly isIntroActive: () => boolean;
   readonly setFocusTarget: (target: StudioFocusTarget | null) => void;
-  readonly setTvPortalState: (mode: number, cutout: number, wave: StudioFluidWaveVec) => void;
+  readonly setTvPortalState: (
+    mode: number,
+    cutout: number,
+    wave: StudioFluidWaveVec,
+    isAboutPortal?: boolean,
+  ) => void;
   readonly capturePortalSnapshot: (iframe: HTMLIFrameElement) => boolean;
   readonly getZoomProgress: () => number;
   readonly isFocusSettled: () => boolean;

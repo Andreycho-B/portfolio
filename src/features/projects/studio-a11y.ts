@@ -65,6 +65,7 @@ export interface StudioA11yHandle {
     poweredOn: boolean,
     channel: TvChannelMode,
     projectIndex: number,
+    portalUrl: string | null,
   ) => void;
   readonly dispose: () => void;
 }
@@ -88,6 +89,7 @@ export const createStudioA11y = (container: HTMLElement): StudioA11yHandle => {
     poweredOn: false,
     channel: "portfolio" as TvChannelMode,
     projectIndex: -1,
+    portalUrl: null as string | null,
     lastMsg: "",
   };
 
@@ -102,33 +104,28 @@ export const createStudioA11y = (container: HTMLElement): StudioA11yHandle => {
     poweredOn: boolean,
     channel: TvChannelMode,
     projectIndex: number,
+    portalUrl: string | null,
   ): void => {
     if (!prev.initialized) {
       prev.initialized = true;
-      prev.focus = focus;
-      prev.poweredOn = poweredOn;
-      prev.channel = channel;
-      prev.projectIndex = projectIndex;
+      Object.assign(prev, { focus, poweredOn, channel, projectIndex, portalUrl });
       return;
     }
     if (focus !== prev.focus) {
-      prev.focus = focus;
       announce(focus === null ? "Vista general del estudio 3D." : FOCUS_LABELS[focus]);
     } else if (poweredOn !== prev.poweredOn) {
-      prev.poweredOn = poweredOn;
       announce(poweredOn ? "Televisor encendido." : "Televisor apagado.");
+    } else if (portalUrl !== prev.portalUrl) {
+      if (portalUrl?.startsWith("/sobre-mi")) announce("Sobre mí abierto en el televisor.");
+      else if (portalUrl) announce("Caso de estudio abierto en el televisor.");
+      else announce("Volviendo al carrete de proyectos.");
     } else if (channel !== prev.channel) {
-      prev.channel = channel;
       announce(CHANNEL_LABELS[channel]);
     } else if (poweredOn && channel === "portfolio" && projectIndex !== prev.projectIndex) {
-      prev.projectIndex = projectIndex;
       const proj = PROJECTS[projectIndex];
       if (proj && focus === "tv") announce(`Proyecto seleccionado: ${proj.title} (${proj.year}).`);
     }
-    prev.focus = focus;
-    prev.poweredOn = poweredOn;
-    prev.channel = channel;
-    prev.projectIndex = projectIndex;
+    Object.assign(prev, { focus, poweredOn, channel, projectIndex, portalUrl });
   };
 
   return {
