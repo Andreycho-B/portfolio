@@ -3,16 +3,41 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import ConsentScreen from "../features/consent/ConsentScreen.astro";
 import ProjectsLensDrum from "../features/projects/ProjectsLensDrum.astro";
 import { PROFILE } from "../core/profile";
+import { buildHomeSchemaNodes } from "../core/structured-data";
+import { PROJECTS } from "../features/projects/project-data";
+
+const homeSchema = buildHomeSchemaNodes(PROJECTS, "es-CO");
 ---
 
 <BaseLayout
-  title="Andrey Rondón — Desarrollador de Software Fullstack & Creativo"
+  title="Andrey Rondón — Desarrollador Web Fullstack en Duitama, Colombia"
   description={PROFILE.bioLong}
+  extraSchema={homeSchema}
 >
   <main class="page-root">
     <header class="sr-only">
-      <h1>Andrey Rondón — Desarrollador de Software Fullstack & Creativo</h1>
-      <p>{PROFILE.bioLong}</p>
+      <h1>
+        Andrey Rondón — Desarrollador Web Fullstack y Frontend Creativo en Duitama, Boyacá, Colombia
+      </h1>
+      <p>{PROFILE.bioShort}</p>
+      <p>
+        Servicios: {PROFILE.services.join(". ")}. Disponible para proyectos en Duitama, Boyacá,
+        Colombia y de forma remota.
+      </p>
+      <nav aria-label="Navegación principal del portafolio">
+        <ul>
+          <li>
+            <a href="/sobre-mi">Sobre mí — Perfil técnico, stack y contacto de Andrey Rondón</a>
+          </li>
+          {PROJECTS.map((project) => (
+            <li>
+              <a href={`/proyectos/${project.slug}`}>
+                {project.title} ({project.year}) — {project.subtitle ?? project.role ?? ""}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
     </header>
     <ConsentScreen />
     <ProjectsLensDrum />

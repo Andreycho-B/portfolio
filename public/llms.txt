@@ -1,0 +1,33 @@
+# Andrey Rondón — Desarrollador Web Fullstack y Frontend Creativo
+
+> Portafolio oficial de Andrey Ernesto Rondón Corredor (Andrey Rondón / Andreycho-B), desarrollador web full-stack, frontend creativo y Tecnólogo en Análisis y Desarrollo de Software (ADSO - SENA), radicado en Duitama, Boyacá, Colombia. Disponible para proyectos en Duitama, Boyacá, Colombia y de forma remota.
+
+## Identidad y servicios
+
+- **Nombre completo:** Andrey Ernesto Rondón Corredor (Andrey Rondón)
+- **Rol:** Desarrollador Web Fullstack y Frontend Creativo
+- **Ubicación:** Duitama, Boyacá, Colombia (presencial en la región y remoto)
+- **Formación:** Tecnólogo en Análisis y Desarrollo de Software (ADSO), Servicio Nacional de Aprendizaje (SENA)
+- **Servicios:** Desarrollo web full-stack a medida, tiendas e-commerce y aplicaciones web progresivas (PWA), experiencias web interactivas 3D con Three.js y WebGL, arquitectura backend concurrente con Go/Node.js/PostgreSQL, y diseño e ingeniería frontend UI/UX.
+- **Stack principal:** TypeScript, Go (Chi v5), PostgreSQL 16, SQLC, Astro, Svelte 5, Angular 21, NestJS 11, Tailwind CSS, PWA, Three.js, WebGL, GSAP, Docker, WebSockets, Server-Sent Events (SSE), Argon2id.
+
+## Páginas principales
+
+- [Inicio — Portafolio interactivo 3D](https://www.andreyrondon.dev/): Presentación y acceso al estudio interactivo de proyectos de Andrey Rondón.
+- [Sobre Mí — Perfil profesional y stack técnico](https://www.andreyrondon.dev/sobre-mi): Declaración de ingeniería, especialidad en Frontend, Backend, Seguridad/DevOps y Arquitectura de Software, más contacto directo.
+- [Documentación completa para LLMs](https://www.andreyrondon.dev/llms-full.txt): Versión íntegra con los estudios de caso detallados y arquitectura de cada proyecto.
+
+## Estudios de caso
+
+- [Mías — Hamburguesas de Lujo](https://www.andreyrondon.dev/proyectos/mias-hamburguesas-de-lujo): Sistema de pedidos y fidelización con libro mayor inmutable en PostgreSQL 16 + SQLC, sesiones con Argon2id y JWT Dual, Svelte 5 PWA y comandas en tiempo real vía SSE sobre Go (Chi v5) (< 45 ms). Ubicación: Remoto, Duitama.
+- [Tu Súper — E-commerce Local de Comestibles](https://www.andreyrondon.dev/proyectos/tu-super): E-commerce local de comestibles y PWA en Angular 21 (Signals) y NestJS 11 + PostgreSQL con sincronización bidireccional de inventario y carrito en tiempo real mediante WebSockets.
+- [Estándar — Especificación de Ingeniería y Arquitectura de Software](https://www.andreyrondon.dev/proyectos/estandar-gobernanza-agentes): Especificación técnica open source de 32 documentos en 7 niveles jerárquicos con sistema formal RFC bajo licencia CC BY 4.0.
+
+## Perfiles oficiales y contacto
+
+- **Sitio web:** https://www.andreyrondon.dev
+- **Correo:** rondonandrey42@gmail.com
+- **Teléfono / WhatsApp:** +57 314 803 9636 (https://wa.me/573148039636)
+- **GitHub:** https://github.com/Andreycho-B
+- **LinkedIn:** https://linkedin.com/in/andrey-rond%C3%B3n-980345426
+- **Instagram:** https://instagram.com/andrey_rondonikov

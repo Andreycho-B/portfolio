@@ -3,12 +3,18 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import AboutHeader from "../features/about/AboutHeader.astro";
 import AboutShowcase from "../features/about/AboutShowcase.astro";
 import AboutFooter from "../features/about/AboutFooter.astro";
+import { buildAboutSchemaNodes, buildCanonicalUrl } from "../core/structured-data";
 import "../features/about/about.css";
+import "../features/about/about-responsive.css";
+
+const aboutCanonical = buildCanonicalUrl("/sobre-mi", Astro.site);
+const aboutSchema = buildAboutSchemaNodes(aboutCanonical, "es-CO");
 ---
 
 <BaseLayout
-  title="Sobre Mí — Andrey Rondón | Desarrollador de Software Fullstack & Creativo"
-  description="Perfil profesional y competencias técnicas de Andrey Rondón (Andrey Ernesto Rondón Corredor). Tecnólogo ADSO (SENA) en Duitama, Boyacá. Go, TypeScript, Three.js, Svelte 5, PostgreSQL y arquitectura de software."
+  title="Sobre Mí — Andrey Rondón | Desarrollador Web en Duitama"
+  description="Andrey Rondón, desarrollador web full-stack y frontend creativo en Duitama, Boyacá, Colombia. ADSO (SENA): TypeScript, Go, Astro, Three.js, PWA y PostgreSQL."
+  extraSchema={aboutSchema}
 >
   <div class="about-page-stage">
     <AboutHeader />

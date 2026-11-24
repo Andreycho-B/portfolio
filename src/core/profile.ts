@@ -19,6 +19,7 @@ interface ProfileData {
     readonly city: string;
     readonly region: string;
     readonly country: string;
+    readonly countryCode: string;
   };
   readonly education: {
     readonly institution: string;
@@ -29,6 +30,7 @@ interface ProfileData {
     readonly linkedin: SocialLink;
     readonly instagram: SocialLink;
   };
+  readonly services: readonly string[];
   readonly skills: readonly string[];
 }
 
@@ -36,11 +38,11 @@ export const PROFILE: ProfileData = {
   fullName: "Andrey Ernesto Rondón Corredor",
   shortName: "Andrey Rondón",
   alternateNames: ["Andrey Rondón", "Andreycho-B"],
-  role: "Desarrollador de Software Fullstack & Creativo",
+  role: "Desarrollador Web Fullstack y Frontend Creativo",
   bioShort:
-    "Desarrollador de Software Fullstack y Tecnólogo SENA (ADSO). Especialista en TypeScript, Go, Three.js, PostgreSQL y arquitectura de software.",
+    "Andrey Rondón es desarrollador web full-stack y frontend creativo en Duitama, Boyacá, Colombia. Tecnólogo ADSO (SENA) especializado en desarrollo web a medida, e-commerce, PWA, Astro, Three.js, WebGL, TypeScript, Go y PostgreSQL.",
   bioLong:
-    "Portafolio oficial de Andrey Rondón. Desarrollador Fullstack & Creativo en Colombia. Especializado en TypeScript, Go, Svelte, Astro, WebGL y PostgreSQL.",
+    "Andrey Rondón, desarrollador web full-stack y frontend creativo en Duitama, Boyacá, Colombia. E-commerce, PWA, Astro, Three.js, TypeScript, Go y PostgreSQL.",
   siteUrl: "https://www.andreyrondon.dev",
   email: "rondonandrey42@gmail.com",
   phone: "+57 314 803 9636",
@@ -49,6 +51,7 @@ export const PROFILE: ProfileData = {
     city: "Duitama",
     region: "Boyacá",
     country: "Colombia",
+    countryCode: "CO",
   },
   education: {
     institution: "Servicio Nacional de Aprendizaje (SENA)",
@@ -71,7 +74,20 @@ export const PROFILE: ProfileData = {
       handle: "@andrey_rondonikov",
     },
   },
+  services: [
+    "Desarrollo web full-stack a medida",
+    "Tiendas e-commerce y aplicaciones web progresivas (PWA)",
+    "Experiencias web interactivas 3D con Three.js y WebGL",
+    "Arquitectura backend concurrente con Go, Node.js y PostgreSQL",
+    "Diseño e ingeniería frontend UI/UX con Astro, Svelte y Angular",
+  ],
   skills: [
+    "Desarrollo Web Full-Stack",
+    "Desarrollo Frontend Creativo",
+    "E-commerce",
+    "PWA",
+    "Astro",
+    "UI/UX",
     "TypeScript",
     "Go (Golang)",
     "PostgreSQL",

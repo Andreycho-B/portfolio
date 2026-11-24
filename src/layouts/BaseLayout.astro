@@ -2,7 +2,9 @@
 import { ClientRouter } from "astro:transitions";
 import Analytics from "@vercel/analytics/astro";
 import { PROFILE } from "../core/profile";
+import { buildBaseSchemaGraph, buildCanonicalUrl, type SchemaNode } from "../core/structured-data";
 import InteractiveCursor from "../design-system/components/InteractiveCursor.astro";
+import "../design-system/liquid-glass/liquid-glass.css";
 import "../design-system/tokens/index.css";
 
 interface Props {
@@ -10,70 +12,43 @@ interface Props {
   description?: string;
   lang?: string;
   image?: string;
+  imageWidth?: number;
+  imageHeight?: number;
   type?: string;
   noindex?: boolean;
+  extraSchema?: readonly SchemaNode[];
 }
 
 const {
   title = `${PROFILE.shortName} — ${PROFILE.role}`,
   description = PROFILE.bioLong,
-  lang = "es",
+  lang = "es-CO",
   image = "/og-image.jpg",
+  imageWidth = 1200,
+  imageHeight = 630,
   type = "website",
   noindex = false,
+  extraSchema = [],
 } = Astro.props;
 
-const canonicalURL = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : Astro.url.href;
+const canonicalURL = buildCanonicalUrl(Astro.url.pathname, Astro.site);
 const socialImageURL = Astro.site ? new URL(image, Astro.site).href : image;
 const robotsContent = noindex ? "noindex, nofollow" : "index, follow";
+const socialImageAlt = title.includes(PROFILE.shortName)
+  ? title
+  : `${title} — ${PROFILE.shortName}`;
 const ogImageType = image.endsWith(".webp")
   ? "image/webp"
   : image.endsWith(".png")
     ? "image/png"
     : "image/jpeg";
 
-const structuredData = JSON.stringify({
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "WebSite",
-      "@id": `${PROFILE.siteUrl}/#website`,
-      name: PROFILE.shortName,
-      alternateName: [PROFILE.fullName, "andreyrondon.dev"],
-      url: PROFILE.siteUrl,
-      inLanguage: lang,
-      publisher: {
-        "@id": `${PROFILE.siteUrl}/#person`,
-      },
-    },
-    {
-      "@type": "Person",
-      "@id": `${PROFILE.siteUrl}/#person`,
-      name: PROFILE.fullName,
-      alternateName: PROFILE.alternateNames,
-      jobTitle: PROFILE.role,
-      description: description,
-      url: PROFILE.siteUrl,
-      image: socialImageURL,
-      sameAs: [
-        PROFILE.socials.github.url,
-        PROFILE.socials.linkedin.url,
-        PROFILE.socials.instagram.url,
-      ],
-      alumniOf: {
-        "@type": "EducationalOrganization",
-        name: PROFILE.education.institution,
-      },
-      address: {
-        "@type": "PostalAddress",
-        addressLocality: PROFILE.location.city,
-        addressRegion: PROFILE.location.region,
-        addressCountry: PROFILE.location.country,
-      },
-      knowsAbout: PROFILE.skills,
-    },
-  ],
-});
+const structuredData = noindex
+  ? null
+  : JSON.stringify({
+      "@context": "https://schema.org",
+      "@graph": [...buildBaseSchemaGraph(lang), ...extraSchema],
+    });
 ---
 
 <!doctype html>
@@ -81,12 +56,11 @@ const structuredData = JSON.stringify({
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta http-equiv="content-language" content="es-CO" />
     <meta name="description" content={description} />
     <meta name="author" content={PROFILE.fullName} />
     <meta name="robots" content={robotsContent} />
     <meta name="msvalidate.01" content="C2FBCFEAC5E781920AC2FBB8C459A8DB" />
-    <link rel="canonical" href={canonicalURL} />
+    {!noindex && <link rel="canonical" href={canonicalURL} />}
 
     <meta property="og:type" content={type} />
     <meta property="og:url" content={canonicalURL} />
@@ -95,10 +69,10 @@ const structuredData = JSON.stringify({
     <meta property="og:image" content={socialImageURL} />
     <meta property="og:image:secure_url" content={socialImageURL} />
     <meta property="og:image:type" content={ogImageType} />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content={`${title} — Andrey Rondón`} />
-    <meta property="og:site_name" content="Andrey Rondón" />
+    <meta property="og:image:width" content={String(imageWidth)} />
+    <meta property="og:image:height" content={String(imageHeight)} />
+    <meta property="og:image:alt" content={socialImageAlt} />
+    <meta property="og:site_name" content={PROFILE.shortName} />
     <meta property="og:locale" content="es_CO" />
 
     <meta name="twitter:card" content="summary_large_image" />
@@ -106,7 +80,7 @@ const structuredData = JSON.stringify({
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={socialImageURL} />
-    <meta name="twitter:image:alt" content={`${title} — Andrey Rondón`} />
+    <meta name="twitter:image:alt" content={socialImageAlt} />
 
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -114,8 +88,7 @@ const structuredData = JSON.stringify({
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="format-detection" content="telephone=no" />
     <meta name="theme-color" content="#ffffff" />
-
-    <script type="application/ld+json" set:html={structuredData} />
+    {structuredData && <script type="application/ld+json" set:html={structuredData} />}
     <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
@@ -182,5 +155,9 @@ const structuredData = JSON.stringify({
     </div>
     <slot />
     <Analytics />
+    <script>
+      import { installTvPortalGuard } from "../core/tv-portal-bridge";
+      installTvPortalGuard();
+    </script>
   </body>
 </html>

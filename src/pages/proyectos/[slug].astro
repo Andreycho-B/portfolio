@@ -1,6 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { PROFILE } from "../../core/profile";
+import { buildCanonicalUrl, buildProjectSchemaNodes } from "../../core/structured-data";
 import { PROJECTS, type ProjectItem } from "../../features/projects/project-data";
 import DetailHeader from "../../features/project-detail/DetailHeader.astro";
 import DetailHero from "../../features/project-detail/DetailHero.astro";
@@ -12,7 +12,7 @@ import DetailNextProject from "../../features/project-detail/DetailNextProject.a
 import "../../features/project-detail/project-detail.css";
 
 export function getStaticPaths() {
-  return PROJECTS.filter((p) => !p.externalUrl).map((project) => ({
+  return PROJECTS.map((project) => ({
     params: { slug: project.slug },
     props: { project },
   }));
@@ -24,48 +24,30 @@ interface Props {
 
 const { project } = Astro.props;
 
-const internalProjects = PROJECTS.filter((p) => !p.externalUrl);
-const currentIndex = internalProjects.findIndex((p) => p.slug === project.slug);
-const nextProject =
-  internalProjects.length > 0
-    ? (internalProjects[(currentIndex + 1) % internalProjects.length] ?? project)
-    : project;
+const currentIndex = PROJECTS.findIndex((p) => p.slug === project.slug);
+const nextProject = PROJECTS[(currentIndex + 1) % PROJECTS.length] ?? project;
 
 const coverImg = project.gallery?.[0] ?? project.imageSrc;
+const hasSpecimensGallery = (project.gallery?.length ?? 0) > 1;
 const mediaItem1 = project.gallery?.[1] ?? coverImg;
 const mediaDuoLeft = project.gallery?.[2] ?? coverImg;
 const mediaDuoRight = project.gallery?.[3] ?? coverImg;
 const mediaItemFinal = project.gallery?.[4] ?? coverImg;
 const nextCoverImg = nextProject.gallery?.[0] ?? nextProject.imageSrc;
 const coverAbsoluteUrl = Astro.site ? new URL(coverImg, Astro.site).href : coverImg;
-
-const projectSchema = JSON.stringify({
-  "@context": "https://schema.org",
-  "@type": "SoftwareSourceCode",
-  name: project.title,
-  headline: project.subtitle ?? project.title,
-  description: project.statementChallenge ?? project.subtitle ?? project.title,
-  author: {
-    "@type": "Person",
-    name: PROFILE.fullName,
-    url: PROFILE.siteUrl,
-  },
-  codeRepository: project.repoUrl ?? undefined,
-  programmingLanguage: project.tags,
-  dateCreated: project.year,
-  image: coverAbsoluteUrl,
-});
+const projectCanonical = buildCanonicalUrl(`/proyectos/${project.slug}`, Astro.site);
+const projectSchema = buildProjectSchemaNodes(projectCanonical, project, coverAbsoluteUrl, "es-CO");
 ---
 
 <BaseLayout
   title={`${project.title} — Andrey Rondón | Estudio de Caso`}
-  description={
-    project.subtitle ? `${project.title} — ${project.subtitle}. ${project.role}` : project.title
-  }
+  description={project.seoDescription}
   type="article"
   image={coverImg}
+  imageWidth={project.coverWidth}
+  imageHeight={project.coverHeight}
+  extraSchema={projectSchema}
 >
-  <script type="application/ld+json" set:html={projectSchema} />
   <svg aria-hidden="true" class="mercury-filter-defs">
     <defs>
       {["title", "overview", "statement", "next"].map((key) => (
@@ -101,13 +83,15 @@ const projectSchema = JSON.stringify({
 
       <DetailInfoGrid project={project} />
 
-      <DetailSpecimens
-        project={project}
-        mediaItem1={mediaItem1}
-        mediaDuoLeft={mediaDuoLeft}
-        mediaDuoRight={mediaDuoRight}
-        mediaItemFinal={mediaItemFinal}
-      />
+      {hasSpecimensGallery && (
+        <DetailSpecimens
+          project={project}
+          mediaItem1={mediaItem1}
+          mediaDuoLeft={mediaDuoLeft}
+          mediaDuoRight={mediaDuoRight}
+          mediaItemFinal={mediaItemFinal}
+        />
+      )}
 
       <DetailConcept project={project} />
 

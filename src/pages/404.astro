@@ -90,29 +90,36 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   .not-found-btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: 0.55rem;
     min-height: 44px;
-    padding: 0.85rem 1.6rem;
-    background: var(--color-fg);
-    color: var(--color-bg);
+    padding: 0.5rem 0.25rem;
+    background: transparent;
+    border: none;
+    color: var(--color-fg);
     font-family: var(--font-display);
-    font-size: 0.9375rem;
+    font-size: 1rem;
     font-weight: 700;
     letter-spacing: -0.01em;
     text-decoration: none;
-    border-radius: 9999px;
-    transition:
-      transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-      opacity 0.2s ease;
+    transition: opacity 0.2s ease;
   }
 
-  .not-found-btn:hover {
-    transform: scale(1.03);
-    opacity: 0.9;
+  .not-found-btn svg {
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .not-found-btn:hover,
+  .not-found-btn:focus-visible {
+    opacity: 0.65;
+  }
+
+  .not-found-btn:hover svg,
+  .not-found-btn:focus-visible svg {
+    transform: translateX(4px);
   }
 
   .not-found-btn:active {
-    transform: scale(0.98);
+    opacity: 0.45;
   }
 </style>
 
@@ -126,6 +133,10 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   } from "../features/transitions/fluid-transition-controller";
 
   const initNotFoundPage = () => {
+    const stage = document.querySelector<HTMLElement>(".not-found-stage");
+    if (!stage || stage.dataset.pageInit === "true") return;
+    stage.dataset.pageInit = "true";
+
     initIncomingFluidWipe();
     const cursor = getCursorController();
     cursor.enable();

@@ -1,12 +1,40 @@
-# Permitir indexación a motores de búsqueda legítimos
+# Permitir indexación a motores de búsqueda y motores de respuesta IA en tiempo real
 User-agent: *
 Allow: /
 
-# Bloqueo de bots de entrenamiento de Inteligencia Artificial
-User-agent: GPTBot
-Disallow: /
+# Bots de búsqueda web y citación IA en tiempo real (AEO)
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
 
 User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: DuckAssistBot
+Allow: /
+
+# Bloqueo de crawlers dedicados exclusivamente a entrenamiento masivo
+User-agent: GPTBot
 Disallow: /
 
 User-agent: CCBot
@@ -18,13 +46,7 @@ Disallow: /
 User-agent: anthropic-ai
 Disallow: /
 
-User-agent: Claude-Web
-Disallow: /
-
 User-agent: Google-Extended
-Disallow: /
-
-User-agent: FacebookBot
 Disallow: /
 
 User-agent: Meta-ExternalAgent
@@ -39,10 +61,7 @@ Disallow: /
 User-agent: cohere-ai
 Disallow: /
 
-User-agent: PerplexityBot
-Disallow: /
-
-# Bloqueo de scrapers comerciales y crawlers masivos
+# Bloqueo de scrapers comerciales masivos
 User-agent: SemrushBot
 Disallow: /
 

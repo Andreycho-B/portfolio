@@ -1,0 +1,85 @@
+# Andrey Rondón — Dossier Técnico Completo
+
+> Andrey Ernesto Rondón Corredor (Andrey Rondón, alias Andreycho-B) es un Desarrollador Web Fullstack y Frontend Creativo radicado en Duitama, Boyacá, Colombia. Es Tecnólogo en Análisis y Desarrollo de Software (ADSO) egresado del Servicio Nacional de Aprendizaje (SENA). Construye aplicaciones web full-stack, plataformas e-commerce, aplicaciones web progresivas (PWA), experiencias interactivas 3D con Three.js/WebGL y sistemas backend concurrentes.
+
+---
+
+## 1. Entidad, ubicación y disponibilidad
+
+- **Nombre:** Andrey Ernesto Rondón Corredor (Andrey Rondón)
+- **Handle público:** Andreycho-B
+- **Rol:** Desarrollador Web Fullstack y Frontend Creativo
+- **Ciudad y país:** Duitama, Boyacá, Colombia
+- **Área de cobertura:** Duitama, Boyacá, Colombia y trabajo remoto internacional
+- **Formación:** Tecnólogo en Análisis y Desarrollo de Software (ADSO), Servicio Nacional de Aprendizaje (SENA)
+- **Sitio web canónico:** https://www.andreyrondon.dev
+- **Contacto directo:** rondonandrey42@gmail.com | +57 314 803 9636 | https://wa.me/573148039636
+- **Perfiles oficiales:**
+  - GitHub: https://github.com/Andreycho-B
+  - LinkedIn: https://linkedin.com/in/andrey-rond%C3%B3n-980345426
+  - Instagram: https://instagram.com/andrey_rondonikov
+
+---
+
+## 2. Servicios y enfoque de ingeniería
+
+Andrey Rondón trabaja en el punto de contacto entre interfaces web de precisión y arquitecturas de servidor predecibles y seguras, aplicando tipado estricto, integridad transaccional e ingeniería de software rigurosa.
+
+- Desarrollo web full-stack a medida para negocios locales y productos digitales.
+- Tiendas e-commerce y aplicaciones web progresivas (PWA) optimizadas para móvil.
+- Experiencias web interactivas 3D y gráficos en tiempo real con Three.js, WebGL y GSAP.
+- Arquitectura backend concurrente, APIs RESTful y comunicación en tiempo real (WebSockets, SSE) con Go, Node.js/NestJS y PostgreSQL.
+- Diseño e ingeniería frontend UI/UX con Astro, Svelte 5, Angular 21 y accesibilidad WCAG.
+
+### Stack técnico por especialidad
+
+1. **Frontend e Interfaces Reactivas:** TypeScript (Strict), Astro, Svelte 5 (Runes), Angular 21 (Signals), Tailwind CSS, PWAs, GSAP, Three.js, WebGL, Accesibilidad WCAG.
+2. **Backend y Sistemas Concurrentes:** Go (Chi v5), PostgreSQL 16, SQLC, pgxpool, Node.js (NestJS 11), WebSockets, Server-Sent Events (SSE), Libro Mayor Inmutable.
+3. **Seguridad, DevOps y Resiliencia:** Argon2id (RFC 9106), JWT Dual, Cookies HttpOnly, Docker, GitHub Actions (CI/CD), Vitest, SonarCloud (SAST).
+4. **Arquitectura de Software y Calidad:** Clean Architecture, Domain-Driven Design (DDD), APIs RESTful, Patrones GoF, Testing Automatizado, Resiliencia.
+
+---
+
+## 3. Estudios de caso publicados
+
+### Mías — Hamburguesas de Lujo (2026)
+
+- **URL canónica:** https://www.andreyrondon.dev/proyectos/mias-hamburguesas-de-lujo
+- **Rol:** Desarrollador Fullstack (Sistema de Pedidos y Fidelización)
+- **Periodo y ubicación:** 2026 – Actualidad · Remoto, Duitama
+- **Producción:** https://mias-hamburguesas-de-lujo.pages.dev
+- **Repositorio:** https://github.com/Andreycho-B/mias-hamburguesas-de-lujo
+- **Stack:** Go (Chi v5), PostgreSQL 16, SQLC, Svelte 5, Tailwind CSS, PWA, Argon2id, SSE
+- **Aspectos clave:**
+  - Integridad contable del programa de fidelización mediante libro mayor inmutable sobre PostgreSQL 16 con SQLC.
+  - Sesiones blindadas con Argon2id (RFC 9106) y JWT Dual con canal SSE nativo para comandas en tiempo real.
+- **Reto de sistema:** Garantizar trazabilidad contable a prueba de fraude en el balance de recompensas y sincronizar estados de pedidos en caliente entre cocina y mostrador sin saturar la red móvil.
+- **Decisión técnica:** Diseño de un libro mayor inmutable en PostgreSQL 16 operado exclusivamente mediante consultas estrictamente tipadas con SQLC y transacciones serializables en pgxpool. Las comandas se distribuyen vía Server-Sent Events (SSE) nativo con latencia inferior a 45 ms sobre Go (Chi v5).
+
+### Tu Súper — E-commerce Local de Comestibles (2025)
+
+- **URL canónica:** https://www.andreyrondon.dev/proyectos/tu-super
+- **Rol:** Desarrollador Frontend y Colaborador Fullstack
+- **Periodo y ubicación:** 2024 – 2026 · Remoto, Colombia
+- **Producción:** https://tusuperfront.onrender.com
+- **Repositorio:** https://github.com/Andreycho-B/tusuper-backend
+- **Stack:** Angular 21, Signals, Tailwind CSS, PWA, NestJS 11, PostgreSQL, WebSockets, Render
+- **Aspectos clave:**
+  - Digitalización del flujo de compra móvil mediante interfaz reactiva construida en Angular 21 (Signals) y PWA.
+  - Sincronización de carrito e inventario en tiempo real con WebSockets para evitar inconsistencias en compras concurrentes.
+- **Reto de sistema:** Sincronizar variaciones de inventario en tiempo real en un e-commerce local de alta rotación, evitando la venta de stock fantasma ante compras simultáneas desde conexiones móviles inestables.
+- **Decisión técnica:** Implementación de un motor de sincronización bidireccional sobre NestJS y WebSockets con transacciones atómicas en PostgreSQL. En el cliente, la reactividad de grano fino con Angular 21 Signals asegura consistencia total antes de la pasarela de pago.
+
+### Estándar — Especificación de Ingeniería y Arquitectura de Software (2026)
+
+- **URL canónica:** https://www.andreyrondon.dev/proyectos/estandar-gobernanza-agentes
+- **Rol:** Autor y Mantenedor (Especificación Open Source)
+- **Periodo y ubicación:** 2026 – Actualidad · Remoto, Colombia
+- **Repositorio:** https://github.com/Andreycho-B/ai-agent-engineering-standard
+- **Licencia:** CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)
+- **Stack / Dominios:** Arquitectura, RFC Standard, TypeScript, Go, CC BY 4.0
+- **Aspectos clave:**
+  - Especificación técnica abierta de 32 documentos en 7 niveles jerárquicos para estandarizar arquitectura, seguridad y calidad en sistemas de producción.
+  - Sistema formal de propuestas de cambio (RFC) bajo licencia CC BY 4.0 con protocolos deterministas de revisión y entrega.
+- **Reto de sistema:** Prevenir la degradación arquitectónica, inconsistencia entre capas y acumulación de deuda técnica en el desarrollo de sistemas fullstack de alta exigencia.
+- **Decisión técnica:** Marco normativo estructurado en 32 documentos distribuidos en 7 niveles de autoridad, integrando contratos estrictos, especificaciones RFC y matrices de verificación previas a producción bajo licencia abierta CC BY 4.0.
