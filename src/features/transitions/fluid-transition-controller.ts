@@ -1,6 +1,7 @@
 import { navigate } from "astro:transitions/client";
 import { gsap } from "gsap";
 import { getAudioSystem } from "../../core/audio";
+import { getStudioTvBridge } from "../../core/tv-portal-bridge";
 import { getCursorController } from "../../design-system/components/cursor-controller";
 import {
   calculateSweepInPath,
@@ -18,7 +19,6 @@ export interface FluidTransitionOptions {
 }
 
 const STORAGE_PENDING_KEY = "portfolio_fluid_wipe_pending";
-
 let isTransitioning = false;
 
 export const isModifiedClick = (event: MouseEvent): boolean =>
@@ -49,11 +49,9 @@ const playFluidSweepOut = (): Promise<void> =>
   new Promise((resolve) => {
     const overlay = getOrCreateFluidOverlay();
     overlay.setPointerEvents(true);
-
     const prefersReduced =
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
     if (prefersReduced) {
       overlay.setPointerEvents(false);
       overlay.setLeadPath(getHiddenBottomPath());
@@ -62,10 +60,8 @@ const playFluidSweepOut = (): Promise<void> =>
       resolve();
       return;
     }
-
     overlay.setLeadPath(getFullCoverPath());
     overlay.setBodyPath(getFullCoverPath());
-
     const tl = gsap.timeline({
       onComplete: () => {
         overlay.setPointerEvents(false);
@@ -75,10 +71,8 @@ const playFluidSweepOut = (): Promise<void> =>
         resolve();
       },
     });
-
     const leadState = { progress: 0 };
     const bodyState = { progress: 0 };
-
     tl.to(
       bodyState,
       {
@@ -89,7 +83,6 @@ const playFluidSweepOut = (): Promise<void> =>
       },
       0,
     );
-
     tl.to(
       leadState,
       {
@@ -108,48 +101,53 @@ export const navigateWithFluidWipe = ({
   titleElement,
   onBeforeNavigate,
 }: FluidTransitionOptions): void => {
+  const tvBridge = getStudioTvBridge();
+  if (tvBridge) {
+    getAudioSystem().playTactileFeedback("click", 0.85);
+    const cursor = getCursorController();
+    cursor.setExpanded(false);
+    cursor.setMuted(false);
+    cursor.setPressed(false);
+    cursor.setInverted(false);
+    onBeforeNavigate?.();
+    if (targetUrl === "/" || targetUrl === "") tvBridge.closeToDrum();
+    else tvBridge.navigateInTv(targetUrl);
+    return;
+  }
   if (isTransitioning) return;
   isTransitioning = true;
-
   getAudioSystem().playTactileFeedback("click", 0.85);
   const cursor = getCursorController();
   cursor.setExpanded(false);
   cursor.setPressed(false);
   cursor.setInverted(false);
-
   const prefersReduced =
     typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
   if (prefersReduced) {
     isTransitioning = false;
     onBeforeNavigate?.();
     void navigate(targetUrl);
     return;
   }
-
   const overlay = getOrCreateFluidOverlay();
   overlay.setPointerEvents(true);
   setPendingFlag(true);
-
   const tl = gsap.timeline({
     onComplete: () => {
       onBeforeNavigate?.();
       void navigate(targetUrl);
     },
   });
-
   if (canvas) {
     tl.to(canvas, { scale: 0.9, opacity: 0.2, duration: 0.55, ease: "power3.inOut" }, 0);
   }
   if (titleElement) {
     tl.to(titleElement, { y: -32, opacity: 0, duration: 0.42, ease: "power2.in" }, 0);
   }
-
   const leadState = { progress: 0 };
   const bodyState = { progress: 0 };
   overlay.setLeadPath(getHiddenBottomPath());
   overlay.setBodyPath(getHiddenBottomPath());
-
   tl.to(
     leadState,
     {
@@ -160,7 +158,6 @@ export const navigateWithFluidWipe = ({
     },
     0.02,
   );
-
   tl.to(
     bodyState,
     {
@@ -174,19 +171,18 @@ export const navigateWithFluidWipe = ({
 };
 
 export const initIncomingFluidWipe = (): void => {
-  if (consumePendingFlag()) {
-    void playFluidSweepOut();
-  } else {
+  if (getStudioTvBridge()) {
     isTransitioning = false;
+    return;
   }
+  if (consumePendingFlag()) void playFluidSweepOut();
+  else isTransitioning = false;
 };
 
 if (typeof document !== "undefined") {
   document.addEventListener("astro:after-swap", () => {
     try {
-      if (sessionStorage.getItem(STORAGE_PENDING_KEY) !== "true") {
-        isTransitioning = false;
-      }
+      if (sessionStorage.getItem(STORAGE_PENDING_KEY) !== "true") isTransitioning = false;
     } catch (err) {
       console.warn("[FluidTransition] SessionStorage check failed:", err);
       isTransitioning = false;

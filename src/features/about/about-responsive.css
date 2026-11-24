@@ -114,3 +114,43 @@
     transition: none;
   }
 }
+
+html.in-tv-portal .about-page-stage {
+  --margin: 84px;
+}
+
+html.in-tv-portal .about-header {
+  padding: 62px var(--margin) 24px;
+}
+
+html.in-tv-portal .about-showcase-section {
+  padding: 152px var(--margin) 56px;
+}
+
+html.in-tv-portal .editorial-stage-grid {
+  grid-template-columns: minmax(0, 1fr) 240px minmax(0, 1fr);
+  gap: 40px;
+  max-width: 100%;
+}
+
+html.in-tv-portal .sculpture-box {
+  width: 228px;
+}
+
+html.in-tv-portal .editorial-paragraph {
+  font-size: 1rem;
+  line-height: 1.64;
+}
+
+html.in-tv-portal .editorial-stack-list {
+  margin-top: 72px;
+}
+
+html.in-tv-portal .editorial-stack-row {
+  padding: 52px var(--margin);
+}
+
+html.in-tv-portal .footer-particle-banner {
+  height: 240px;
+  margin-bottom: 48px;
+}

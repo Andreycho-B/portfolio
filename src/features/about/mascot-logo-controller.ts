@@ -46,6 +46,46 @@ export const initMascotLogo = (lenis: Lenis | null): MascotLogoHandle | null => 
   let lastClientX = 0;
   let lastClientY = 0;
   let lastTimestamp = 0;
+  let idleResetTimer: number | undefined;
+
+  const clearIdleTimer = (): void => {
+    if (idleResetTimer !== undefined) {
+      window.clearTimeout(idleResetTimer);
+      idleResetTimer = undefined;
+    }
+  };
+
+  const resetPose = (instant = false): void => {
+    clearIdleTimer();
+    eyesController?.resetGaze(instant);
+    if (instant) {
+      gsap.killTweensOf(logoEl);
+      gsap.set(logoEl, {
+        rotateY: 0,
+        rotateX: 0,
+        rotateZ: 0,
+        rotation: 0,
+        x: 0,
+        y: 0,
+        scaleX: 1,
+        scaleY: 1,
+        scale: 1,
+      });
+      return;
+    }
+    gsap.to(logoEl, {
+      rotateY: 0,
+      rotateX: 0,
+      rotateZ: 0,
+      x: 0,
+      y: 0,
+      scaleX: 1,
+      scaleY: 1,
+      duration: 0.85,
+      ease: "elastic.out(1, 0.55)",
+      overwrite: true,
+    });
+  };
 
   const handlePointerMove = (e: PointerEvent) => {
     if (e.pointerType !== "mouse") return;
@@ -90,8 +130,16 @@ export const initMascotLogo = (lenis: Lenis | null): MascotLogoHandle | null => 
         });
       },
     });
+    clearIdleTimer();
+    idleResetTimer = window.setTimeout(() => resetPose(false), 1100);
   };
+
+  const handlePointerLeave = (): void => resetPose(false);
+  const handleInstantReset = (): void => resetPose(true);
   window.addEventListener("pointermove", handlePointerMove, { passive: true });
+  document.documentElement.addEventListener("mouseleave", handlePointerLeave);
+  window.addEventListener("blur", handlePointerLeave);
+  window.addEventListener("studio-tv:reset-pose", handleInstantReset);
 
   let lastScrollY = window.scrollY;
   const triggerInertia = (delta: number) => {
@@ -100,8 +148,15 @@ export const initMascotLogo = (lenis: Lenis | null): MascotLogoHandle | null => 
       scale: 1 + Math.min(Math.abs(delta) * 0.0012, 0.08),
       duration: 0.45,
       ease: "power2.out",
+      overwrite: "auto",
       onComplete: () => {
-        gsap.to(logoEl, { rotation: 0, scale: 1, duration: 0.65, ease: "elastic.out(1, 0.45)" });
+        gsap.to(logoEl, {
+          rotation: 0,
+          scale: 1,
+          duration: 0.65,
+          ease: "elastic.out(1, 0.45)",
+          overwrite: "auto",
+        });
       },
     });
   };
@@ -127,7 +182,11 @@ export const initMascotLogo = (lenis: Lenis | null): MascotLogoHandle | null => 
 
   return {
     cleanup: () => {
+      clearIdleTimer();
       window.removeEventListener("pointermove", handlePointerMove);
+      document.documentElement.removeEventListener("mouseleave", handlePointerLeave);
+      window.removeEventListener("blur", handlePointerLeave);
+      window.removeEventListener("studio-tv:reset-pose", handleInstantReset);
       unbindScroll();
       floatTween.kill();
       gsap.killTweensOf(logoEl);

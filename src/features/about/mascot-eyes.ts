@@ -10,6 +10,7 @@ interface MascotEyesOptions {
 export interface MascotEyesController {
   readonly blink: (doubleBlink?: boolean) => void;
   readonly wink: (which?: "left" | "right") => void;
+  readonly resetGaze: (instant?: boolean) => void;
   readonly setScrollVelocity: (velocity: number) => void;
   readonly destroy: () => void;
 }
@@ -159,6 +160,16 @@ export const initMascotEyes = (options: MascotEyesOptions): MascotEyesController
     }
   };
 
+  const resetGaze = (instant = false): void => {
+    if (isDestroyed) return;
+    if (instant || prefersReduced) {
+      gsap.killTweensOf(eyes);
+      gsap.set(eyes, { x: 0, y: 0 });
+      return;
+    }
+    gsap.to(eyes, { x: 0, y: 0, duration: 0.55, ease: "power2.out", overwrite: "auto" });
+  };
+
   const handleZoneClick = (): void => {
     wink(Math.random() > 0.5 ? "left" : "right");
   };
@@ -169,7 +180,6 @@ export const initMascotEyes = (options: MascotEyesOptions): MascotEyesController
   window.addEventListener("pointermove", handlePointerMove, { passive: true });
   interactiveZone?.addEventListener("click", handleZoneClick);
   interactiveZone?.addEventListener("pointerdown", handleZonePointerDown);
-
   scheduleNextBlink();
   scheduleNextSaccade();
 
@@ -185,5 +195,5 @@ export const initMascotEyes = (options: MascotEyesOptions): MascotEyesController
     gsap.killTweensOf(pupils);
   };
 
-  return { blink, wink, setScrollVelocity, destroy };
+  return { blink, wink, resetGaze, setScrollVelocity, destroy };
 };

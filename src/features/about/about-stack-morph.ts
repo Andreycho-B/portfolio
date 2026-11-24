@@ -27,6 +27,7 @@ export const initAboutStackMorph = (): (() => void) => {
     const filterId = `about-morphic-filter-${index}`;
     let activeTl: gsap.core.Timeline | null = null;
     let isRevealed = false;
+    cleanups.push(() => activeTl?.kill());
 
     gsap.set(title, { opacity: 0, y: 28 });
 

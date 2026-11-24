@@ -1,5 +1,4 @@
 @import "./about-sections.css";
-@import "./about-responsive.css";
 
 .about-page-stage {
   --margin: clamp(24px, 5vw, 64px);
