@@ -67,7 +67,7 @@ export const handleTvSpecialClick = (
   if (zone === "tv_channel_exit") {
     if (isClick) {
       deps.scene.setTvChannel("portfolio");
-      deps.audio.playTactileFeedback("click");
+      deps.audio.playTactileFeedback("tv_zap");
       deps.cursor.pulse();
       deps.refreshHud();
     }
@@ -107,9 +107,9 @@ export const executeTvButtonAction = (
   }
 
   ensureTvPoweredOn(deps);
-  deps.audio.playTactileFeedback("click");
 
   if (id === "ch4") {
+    deps.audio.playTactileFeedback("tv_zap");
     deps.scene.setTvChannel("portfolio");
     deps.openInTv("/sobre-mi");
     deps.refreshHud();
@@ -118,6 +118,7 @@ export const executeTvButtonAction = (
 
   const retro = RETRO_BY_BTN[id];
   if (retro) {
+    deps.audio.playTactileFeedback("tv_zap");
     closePortalIfOpen();
     deps.scene.setTvChannel(retro);
     deps.refreshHud();
@@ -126,6 +127,8 @@ export const executeTvButtonAction = (
 
   const slot = SLOT_BY_BTN[id];
   if (slot !== undefined) {
+    const wasRetro = deps.scene.getTvChannel() !== "portfolio";
+    deps.audio.playTactileFeedback(wasRetro ? "tv_zap" : "click");
     closePortalIfOpen();
     deps.scene.setTvChannel("portfolio");
     stepDrumToSlot(deps, slot);
@@ -137,9 +140,11 @@ export const executeTvButtonAction = (
     const step = id === "ch_prev" ? -1 : 1;
     const current = deps.scene.getTvChannel();
     if (current === "portfolio" && !deps.isTvPortalOpen()) {
+      deps.audio.playTactileFeedback("click");
       deps.autoplay.notifyUserInteraction(step);
       deps.physics.stepSlots(step);
     } else {
+      deps.audio.playTactileFeedback("tv_zap");
       closePortalIfOpen();
       const idx = TV_CHANNEL_ORDER.indexOf(current);
       const next =

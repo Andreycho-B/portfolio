@@ -163,19 +163,20 @@ class ProceduralAudioEngine implements AudioEngineContract {
     }
   }
   public playTactileFeedback(type: TactileFeedbackType, velocity = 0): void {
-    const isTick = type === "wheel_tick" || type === "tick";
     if (this.isMuted() || !this.audioContext || !this.masterGain) return;
+    const isSubtle = type === "hover_hotspot" || type === "hover_button" || type === "dvd_corner";
+    const isTick = type === "wheel_tick" || type === "tick";
     const now = performance.now();
-    if (now - this.lastTactileTime < (isTick ? 40 : 75)) return;
-    this.lastTactileTime = now;
-    triggerHapticDetent(isTick ? 5 : 8);
+    if (!isSubtle && now - this.lastTactileTime < (isTick ? 40 : 75)) return;
+    if (!isSubtle) {
+      this.lastTactileTime = now;
+      triggerHapticDetent(isTick ? 5 : 8);
+    }
     if (isTick) synthesizeWheelTick(this.audioContext, this.masterGain, velocity);
     else dispatchTactileSynthesis(this.audioContext, this.masterGain, type);
   }
   public triggerProximityAura(intensity = 1.0): void {
-    if (!this.isMuted() && this.audioContext && this.ambientHandle) {
-      this.ambientHandle.triggerProximityAura(intensity);
-    }
+    if (!this.isMuted() && this.audioContext) this.ambientHandle?.triggerProximityAura(intensity);
   }
   public triggerChairBreath(action: ChairBreathAction): void {
     dispatchChairBreath(action, this.audioContext, this.masterGain, this.isMuted());
@@ -194,6 +195,6 @@ let audioInstance: AudioEngineContract | null = null;
 export const getAudioSystem = (): AudioEngineContract => {
   const shared = getStudioTvBridge()?.audio;
   if (shared) return shared;
-  if (!audioInstance) audioInstance = new ProceduralAudioEngine();
+  audioInstance ??= new ProceduralAudioEngine();
   return audioInstance;
 };

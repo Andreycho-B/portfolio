@@ -1,4 +1,5 @@
 import { CanvasTexture, ClampToEdgeWrapping, LinearFilter, SRGBColorSpace } from "three";
+import { getAudioSystem } from "../../core/audio";
 import {
   paintClockChannel,
   paintSmpteChannel,
@@ -55,10 +56,13 @@ export const createStudioTvChannels = (onUpdate?: () => void): StudioTvChannelsH
 
   const prefersReduced =
     typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const dvd = createStudioTvDvd(() => {
-    if (st.mode === "dvd") paint(0);
-    onUpdate?.();
-  });
+  const dvd = createStudioTvDvd(
+    () => {
+      if (st.mode === "dvd") paint(0);
+      onUpdate?.();
+    },
+    () => getAudioSystem().playTactileFeedback("dvd_corner"),
+  );
 
   const st = { mode: "portfolio" as TvChannelMode, elapsed: 0, osd: 0, flash: 0, accum: 0 };
 

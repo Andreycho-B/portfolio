@@ -103,9 +103,16 @@ export const syncStudioHoverState = (
   const tvBtn =
     portalBezelBtn ??
     (zone === "tv_button" || zone === "power" ? scene.pickTvButton(nx, ny) : null);
-  scene.setHoveredHotspot(resolveHoveredFocusTarget(scene, zone, nx, ny));
+  const hoveredHotspot = resolveHoveredFocusTarget(scene, zone, nx, ny);
+  scene.setHoveredHotspot(hoveredHotspot);
   scene.setHoveredTvButton(tvBtn);
   if (reset || zone !== st.zone || tvBtn !== st.tvBtn) {
+    if (!reset && !inPortal && !st.dragging) {
+      if (tvBtn && tvBtn !== st.tvBtn) audio.playTactileFeedback("hover_button");
+      else if (zone !== st.zone && hoveredHotspot !== null) {
+        audio.playTactileFeedback("hover_hotspot");
+      }
+    }
     st.tvBtn = tvBtn;
     if (!inPortal) {
       applyZoneCursorState(cursor, zone, power.getCursorLabel(), audio.isMuted(), tvBtn);

@@ -1,5 +1,6 @@
 import type { TactileFeedbackType } from "./audio.types";
 import { synthesizeCrtGlassTap } from "./audio-glass-tap";
+import { dispatchStudioSfx } from "./audio-studio-sfx";
 
 let cachedSampleRate = 0;
 let cachedSelectClick: AudioBuffer | null = null;
@@ -185,6 +186,7 @@ export const dispatchTactileSynthesis = (
   destination: GainNode,
   type: TactileFeedbackType,
 ): void => {
+  if (dispatchStudioSfx(ctx, destination, type)) return;
   if (type === "click") synthesizeIosSelectionClick(ctx, destination);
   else if (type === "jelly_pop") synthesizeJellyPop(ctx, destination);
   else if (type === "crt_glass_tap") synthesizeCrtGlassTap(ctx, destination);

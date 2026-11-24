@@ -8,7 +8,11 @@ export type TactileFeedbackType =
   | "tick"
   | "crt_power_off"
   | "crt_power_on"
-  | "crt_glass_tap";
+  | "crt_glass_tap"
+  | "hover_hotspot"
+  | "hover_button"
+  | "tv_zap"
+  | "dvd_corner";
 
 export interface AudioEngineContract {
   readonly getMode: () => AudioMode;

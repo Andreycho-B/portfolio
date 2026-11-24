@@ -76,7 +76,10 @@ const drawDvdEmblem = (
   ctx.restore();
 };
 
-export const createStudioTvDvd = (onReady?: () => void): StudioTvDvdHandle => {
+export const createStudioTvDvd = (
+  onReady?: () => void,
+  onCornerHit?: () => void,
+): StudioTvDvdHandle => {
   const st = { x: 274, y: 172, vx: SPEED_X, vy: SPEED_Y, c: 0, corners: 0, flash: 0, dead: false };
   let logoImg: HTMLImageElement | null = null;
   const tintCache = new Map<string, HTMLCanvasElement>();
@@ -134,6 +137,7 @@ export const createStudioTvDvd = (onReady?: () => void): StudioTvDvdHandle => {
         if (Math.min(st.x - padX, maxX - st.x) < 16 && Math.min(st.y - padY, maxY - st.y) < 16) {
           st.corners += 1;
           st.flash = 1;
+          onCornerHit?.();
         }
       }
       if (st.flash > 0) st.flash = Math.max(0, st.flash - dt * 1.4);
