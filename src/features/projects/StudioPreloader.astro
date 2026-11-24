@@ -1,0 +1,36 @@
+---
+import "./studio-preloader.css";
+---
+
+<div
+  class="studio-preloader"
+  data-studio-preloader
+  data-nosnippet
+  role="status"
+  aria-live="polite"
+  aria-label="Cargando estudio 3D"
+>
+  <svg class="preloader-svg-defs" aria-hidden="true">
+    <defs>
+      <filter
+        id="construct-loader-morph"
+        x="-18%"
+        y="-18%"
+        width="136%"
+        height="136%"
+        color-interpolation-filters="sRGB"
+      >
+        <feGaussianBlur in="SourceGraphic" stdDeviation="8 4" result="blur" data-preloader-blur />
+        <feColorMatrix
+          in="blur"
+          mode="matrix"
+          values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10"
+        />
+      </filter>
+    </defs>
+  </svg>
+
+  <span class="preloader-numeral" data-preloader-value>
+    00
+  </span>
+</div>

@@ -1,0 +1,65 @@
+.studio-preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  display: none;
+  place-items: center;
+  background-color: #f5f5f3;
+  color: var(--color-fg);
+  user-select: none;
+  overflow: hidden;
+  contain: strict;
+  will-change: opacity;
+}
+
+.studio-preloader::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.028;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+}
+
+html.skip-consent .studio-preloader:not([data-dismissed="true"]),
+.studio-preloader[data-active="true"]:not([data-dismissed="true"]) {
+  display: grid;
+}
+
+.studio-preloader[data-dismissed="true"] {
+  display: none;
+  pointer-events: none;
+}
+
+.preloader-svg-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.preloader-numeral {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  padding: 0.25em 0.35em;
+  font-family: var(--font-display);
+  font-size: clamp(6.25rem, 22vw, 17.5rem);
+  font-weight: 200;
+  font-variation-settings: "wght" 180;
+  line-height: 0.85;
+  letter-spacing: -0.055em;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  color: var(--color-fg);
+  contain: layout style;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .preloader-numeral {
+    filter: none;
+    font-variation-settings: "wght" 820;
+  }
+}
