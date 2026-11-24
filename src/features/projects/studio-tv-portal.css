@@ -1,0 +1,48 @@
+.studio-tv-portal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  overflow: hidden;
+  contain: strict;
+  background: var(--color-bg);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.studio-tv-portal[hidden] {
+  display: none;
+}
+
+.studio-tv-portal.is-live {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.studio-tv-portal.is-tuning {
+  pointer-events: none;
+}
+
+.studio-tv-portal.is-parked {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.studio-tv-portal-frame {
+  display: block;
+  width: 1280px;
+  height: 1068px;
+  transform-origin: 0 0;
+  border: 0;
+  background: var(--color-bg);
+}
+
+.studio-tv-portal-glass {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
