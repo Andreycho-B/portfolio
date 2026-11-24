@@ -1,3 +1,6 @@
+import type { TactileFeedbackType } from "./audio.types";
+import { synthesizeCrtGlassTap } from "./audio-glass-tap";
+
 let cachedSampleRate = 0;
 let cachedSelectClick: AudioBuffer | null = null;
 
@@ -127,4 +130,65 @@ export const synthesizeJellyPop = (ctx: AudioContext, destination: GainNode): vo
     filter.disconnect();
     gain.disconnect();
   };
+};
+
+export const synthesizeCrtPowerSwitch = (
+  ctx: AudioContext,
+  destination: GainNode,
+  turningOn: boolean,
+): void => {
+  synthesizeIosSelectionClick(ctx, destination);
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const subOsc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  const dur = turningOn ? 0.2 : 0.16;
+
+  if (turningOn) {
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(95, now);
+    osc.frequency.exponentialRampToValueAtTime(48, now + dur);
+    subOsc.type = "sine";
+    subOsc.frequency.setValueAtTime(440, now);
+    subOsc.frequency.exponentialRampToValueAtTime(1760, now + dur);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.036, now + 0.014);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+  } else {
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(3200, now);
+    osc.frequency.exponentialRampToValueAtTime(140, now + dur);
+    subOsc.type = "sine";
+    subOsc.frequency.setValueAtTime(140, now);
+    subOsc.frequency.exponentialRampToValueAtTime(48, now + dur);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.035, now + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+  }
+
+  osc.connect(gain);
+  subOsc.connect(gain);
+  gain.connect(destination);
+  osc.start(now);
+  subOsc.start(now);
+  osc.stop(now + dur + 0.01);
+  subOsc.stop(now + dur + 0.01);
+  osc.onended = () => {
+    osc.disconnect();
+    subOsc.disconnect();
+    gain.disconnect();
+  };
+};
+
+export const dispatchTactileSynthesis = (
+  ctx: AudioContext,
+  destination: GainNode,
+  type: TactileFeedbackType,
+): void => {
+  if (type === "click") synthesizeIosSelectionClick(ctx, destination);
+  else if (type === "jelly_pop") synthesizeJellyPop(ctx, destination);
+  else if (type === "crt_glass_tap") synthesizeCrtGlassTap(ctx, destination);
+  else if (type === "crt_power_on" || type === "crt_power_off") {
+    synthesizeCrtPowerSwitch(ctx, destination, type === "crt_power_on");
+  }
 };

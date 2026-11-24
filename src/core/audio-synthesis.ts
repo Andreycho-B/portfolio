@@ -21,7 +21,7 @@ export const startOrganicDrone = (
   const now = ctx.currentTime;
   const droneGain = ctx.createGain();
   droneGain.gain.setValueAtTime(0.0001, now);
-  droneGain.gain.exponentialRampToValueAtTime(0.042, now + 3.5);
+  droneGain.gain.exponentialRampToValueAtTime(0.03, now + 3.5);
   droneGain.connect(destination);
 
   const oscRoot = ctx.createOscillator();
@@ -96,7 +96,7 @@ export const startOrganicDrone = (
   let chimeTimerId: number | undefined;
   const scheduleNextChime = (delayMs: number) => {
     chimeTimerId = window.setTimeout(() => {
-      playGenerativeChime(ctx, destination);
+      if (ctx.state === "running" && !document.hidden) playGenerativeChime(ctx, destination);
       scheduleNextChime(9000 + Math.random() * 7000);
     }, delayMs);
   };

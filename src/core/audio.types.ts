@@ -1,6 +1,14 @@
 export type AudioMode = "uninitialized" | "pending_gesture" | "active" | "muted";
+export type ChairBreathAction = "preload" | "play" | "stop";
 
-export type TactileFeedbackType = "wheel_tick" | "jelly_pop" | "click" | "tick";
+export type TactileFeedbackType =
+  | "wheel_tick"
+  | "jelly_pop"
+  | "click"
+  | "tick"
+  | "crt_power_off"
+  | "crt_power_on"
+  | "crt_glass_tap";
 
 export interface AudioEngineContract {
   readonly getMode: () => AudioMode;
@@ -12,6 +20,7 @@ export interface AudioEngineContract {
   readonly playProjectArrivalSound: () => void;
   readonly playTactileFeedback: (type: TactileFeedbackType, velocity?: number) => void;
   readonly triggerProximityAura: (intensity?: number) => void;
+  readonly triggerChairBreath: (action: ChairBreathAction) => void;
   readonly stop: () => void;
 }
 

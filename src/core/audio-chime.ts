@@ -21,7 +21,7 @@ export const playGenerativeChime = (ctx: AudioContext, destination: GainNode): v
 
   const chimeGain = ctx.createGain();
   chimeGain.gain.setValueAtTime(0.0001, now);
-  chimeGain.gain.linearRampToValueAtTime(0.038, now + 0.32);
+  chimeGain.gain.linearRampToValueAtTime(0.03, now + 0.32);
   chimeGain.gain.exponentialRampToValueAtTime(0.0001, now + 4.8);
 
   const osc1 = ctx.createOscillator();

@@ -7,6 +7,53 @@ export const cancelPendingSuspend = (): void => {
   }
 };
 
+export const holdGainAtTime = (param: AudioParam, now: number): void => {
+  if (typeof param.cancelAndHoldAtTime === "function") {
+    param.cancelAndHoldAtTime(now);
+  } else {
+    param.cancelScheduledValues(now);
+    param.setValueAtTime(param.value, now);
+  }
+};
+
+export const rampGainTo = (
+  ctx: AudioContext | null,
+  gainNode: GainNode | null,
+  target: number,
+  durationSec: number,
+): void => {
+  if (!ctx || !gainNode) return;
+  const now = ctx.currentTime;
+  const safeTarget = Math.max(0.0001, Math.min(1, target));
+  holdGainAtTime(gainNode.gain, now);
+  gainNode.gain.linearRampToValueAtTime(safeTarget, now + durationSec);
+};
+
+export const tryResumeAudioContext = async (
+  ctx: AudioContext,
+  timeoutMs = 120,
+): Promise<boolean> => {
+  const isRunning = (): boolean => ctx.state === "running";
+  if (isRunning()) return true;
+  const resumed = ctx.resume().then(
+    () => true,
+    () => false,
+  );
+  const settled = await Promise.race([
+    resumed,
+    new Promise<boolean>((resolve) => window.setTimeout(() => resolve(false), timeoutMs)),
+  ]);
+  return settled && isRunning();
+};
+
+export const persistMutePreference = (muted: boolean): void => {
+  try {
+    localStorage.setItem("portfolio_sound_enabled", muted ? "false" : "true");
+  } catch (err) {
+    console.warn("[AudioEngine] Failed to persist mute preference:", err);
+  }
+};
+
 export const createMasterGainChain = (ctx: AudioContext): GainNode => {
   const now = ctx.currentTime;
   const dcBlocker = ctx.createBiquadFilter();
@@ -22,7 +69,7 @@ export const createMasterGainChain = (ctx: AudioContext): GainNode => {
   limiter.release.setValueAtTime(0.04, now);
 
   const masterGain = ctx.createGain();
-  masterGain.gain.setValueAtTime(0.7, now);
+  masterGain.gain.setValueAtTime(0.0001, now);
   masterGain.connect(dcBlocker);
   dcBlocker.connect(limiter);
   limiter.connect(ctx.destination);
@@ -32,15 +79,15 @@ export const createMasterGainChain = (ctx: AudioContext): GainNode => {
 export const gracefulMute = (
   audioContext: AudioContext | null,
   masterGain: GainNode | null,
-  durationSec = 0.03,
+  durationSec = 0.045,
 ): void => {
   if (!audioContext || !masterGain) return;
   cancelPendingSuspend();
 
   const now = audioContext.currentTime;
-  masterGain.gain.cancelScheduledValues(now);
-  masterGain.gain.setValueAtTime(masterGain.gain.value, now);
+  holdGainAtTime(masterGain.gain, now);
   masterGain.gain.linearRampToValueAtTime(0.0001, now + durationSec);
+  masterGain.gain.setValueAtTime(0, now + durationSec + 0.005);
 
   pendingSuspendTimer = window.setTimeout(
     () => {
@@ -51,7 +98,7 @@ export const gracefulMute = (
         });
       }
     },
-    Math.floor(durationSec * 1000) + 15,
+    Math.floor(durationSec * 1000) + 25,
   );
 };
 
@@ -64,7 +111,6 @@ export const bindTeardownAndVisibility = (
   for (const evt of ["pagehide", "beforeunload"] as const) {
     window.addEventListener(evt, onTeardownRamp, { capture: true });
   }
-  document.addEventListener("astro:before-swap", onTeardownRamp, { once: true });
   document.addEventListener("visibilitychange", onVisibilityChange);
 
   return () => {
@@ -72,7 +118,6 @@ export const bindTeardownAndVisibility = (
     for (const evt of ["pagehide", "beforeunload"] as const) {
       window.removeEventListener(evt, onTeardownRamp, { capture: true });
     }
-    document.removeEventListener("astro:before-swap", onTeardownRamp);
     document.removeEventListener("visibilitychange", onVisibilityChange);
   };
 };
