@@ -41,13 +41,12 @@ export const createStudioWebGLScene = (
     onAsset();
   };
   const st = { power: 0, copied: false, sound: true, sky: false, portal: false, idx: 0 };
-  let [activeFocus, about] = [null as StudioFocusTarget | null, false];
-  const onDeskTick = (): void => {
-    if (!(activeFocus === "tv" && st.portal)) onAssetLoaded?.();
-  };
-  const environment = createStudioEnvironment(renderer, scene, onShadow, tracker);
+  let [focus, about] = [null as StudioFocusTarget | null, false];
+  const environment = createStudioEnvironment(renderer, scene, cameraRig.camera, onShadow, tracker);
   const table = createStudioTable(scene, onShadow, tracker);
-  const deskProps = createStudioDeskProps(scene, onShadow, tracker, onDeskTick);
+  const deskProps = createStudioDeskProps(scene, onShadow, tracker, () => {
+    if (!st.portal || focus !== "tv") onAssetLoaded?.();
+  });
   const crtFbo = createStudioCrtFbo(renderer, onAsset, tracker);
   const crtEditorial = createStudioCrtEditorial(renderer, onAsset, tracker);
   const portalSnapshot = createStudioPortalSnapshot(renderer);
@@ -71,7 +70,8 @@ export const createStudioWebGLScene = (
     isDisposed: () => isDisposed,
     onReady: onAssetLoaded,
   });
-  const [propProxies, hotspots] = [createStudioPropHitProxies(scene), createStudioHotspots(scene)];
+  const propProxies = createStudioPropHitProxies(scene);
+  const hotspots = createStudioHotspots(scene);
   const propProverbs = createStudioPropProverbs(scene, onAssetLoaded);
   const tvTitle = createStudioTvTitle(scene, onAssetLoaded);
   const picker = createStudioScenePicker({
@@ -88,42 +88,13 @@ export const createStudioWebGLScene = (
     hotspots,
     nokia: deskProps.nokia,
   });
-  const update = (dt: number): boolean => {
-    const [moved, zoom] = [cameraRig.update(dt), cameraRig.getZoomProgress()];
-    const { camera: c } = cameraRig;
-    const [cue, retro] = [cameraRig.isChairCueReady(), chassis.getTvChannel() !== "portfolio"];
-    const h = hotspots.update(dt, c, zoom, st.power, activeFocus, cue, retro);
-    const n = deskProps.nokia.update(dt, st.sound, c, zoom);
-    const p = propProverbs.update(dt, c, zoom);
-    const t = tvTitle.update(dt, c, zoom, activeFocus);
-    const { power, idx, sound } = st;
-    const cf = { camera: c, power, focus: activeFocus, idx, muted: !sound, about };
-    const ch = chassis.update(dt, cf);
-    st.sky = (zoom < 0.98 && environment.updateSkyTime(dt)) || h || n || p || t || ch;
-    if (moved) {
-      const { x, y } = cameraRig.getSmoothedPointer();
-      environment.updatePointerLight(x, y);
-      table.updatePointer(x, y);
-      chassis.updatePointer(x, y);
-    }
-    return moved;
-  };
-  const render = (): void => {
-    const zoom = cameraRig.getZoomProgress();
-    const isDeskProp = activeFocus !== null && activeFocus !== "tv" && activeFocus !== "chair";
-    const hideFbo =
-      st.portal || chassis.getTvChannel() !== "portfolio" || (isDeskProp && zoom > 0.72);
-    if (st.power > 0.001 && !hideFbo && cameraRig.camera.position.z > -0.1) {
-      const hiRes = (activeFocus === "tv" || activeFocus === "chair") && zoom > 0.25;
-      const interval = hiRes ? 0 : cameraRig.isIntroActive() ? 50 : 33;
-      chassis.setDrumUvScale(crtFbo.render(interval, hiRes ? 1 : 0.5));
-    }
-    renderer.render(scene, cameraRig.camera);
-  };
   return {
     scene,
     camera: cameraRig.camera,
-    setPointerNormalized: cameraRig.setPointerTarget,
+    setPointerNormalized: (nx, ny) => {
+      cameraRig.setPointerTarget(nx, ny);
+      environment.updatePointerLight(nx, ny);
+    },
     setGlassPointer: chassis.updatePointer,
     addOrbitDelta: cameraRig.addOrbitDelta,
     addDistanceScaleDelta: cameraRig.addDistanceScaleDelta,
@@ -131,7 +102,7 @@ export const createStudioWebGLScene = (
     playIntroOrbit: cameraRig.playIntroOrbit,
     isIntroActive: cameraRig.isIntroActive,
     setFocusTarget: (target) => {
-      activeFocus = target;
+      focus = target;
       picker.setExcludedProp(target === "chair" ? "chair" : null);
       deskProps.nokia.setFocused(target === "phone");
       propProverbs.setFocusTarget(target);
@@ -176,7 +147,24 @@ export const createStudioWebGLScene = (
       chassis.setTitleFade(Math.max(0.36, 1 - Math.min(1, Math.abs(v) * 0.25) * 0.64));
       crtEditorial.update(idx, s, st.copied);
     },
-    update,
+    update: (dt) => {
+      const [moved, zoom] = [cameraRig.update(dt), cameraRig.getZoomProgress()];
+      const { camera: c } = cameraRig;
+      const { power, idx, sound } = st;
+      const [cue, retro] = [cameraRig.isChairCueReady(), chassis.getTvChannel() !== "portfolio"];
+      const h = hotspots.update(dt, c, zoom, power, focus, cue, retro);
+      const n = deskProps.nokia.update(dt, sound, c, zoom);
+      const p = propProverbs.update(dt, c, zoom);
+      const t = tvTitle.update(dt, c, zoom, focus);
+      const ch = chassis.update(dt, { camera: c, power, focus, idx, muted: !sound, about });
+      st.sky = environment.updateSkyTime(dt, zoom, focus) || h || n || p || t || ch;
+      if (moved) {
+        const { x, y } = cameraRig.getSmoothedPointer();
+        table.updatePointer(x, y);
+        chassis.updatePointer(x, y);
+      }
+      return moved;
+    },
     isSkyAnimated: () => st.sky,
     getLoadProgress: tracker.getProgress,
     onLoadProgress: tracker.subscribe,
@@ -188,13 +176,24 @@ export const createStudioWebGLScene = (
       renderer.setSize(rw, rh, false);
       cameraRig.resize(rw, rh);
     },
-    render,
+    render: () => {
+      const zoom = cameraRig.getZoomProgress();
+      const isProp = focus !== null && focus !== "tv" && focus !== "chair";
+      const hideFbo =
+        st.portal || chassis.getTvChannel() !== "portfolio" || (isProp && zoom > 0.72);
+      if (st.power > 0.001 && !hideFbo && cameraRig.camera.position.z > -0.1) {
+        const hiRes = (focus === "tv" || focus === "chair") && zoom > 0.25;
+        const interval = hiRes ? 0 : cameraRig.isIntroActive() ? 50 : 33;
+        chassis.setDrumUvScale(crtFbo.render(interval, hiRes ? 1 : 0.5));
+      }
+      renderer.render(scene, cameraRig.camera);
+    },
     dispose: () => {
       isDisposed = true;
       gpu.unbindContextLost();
-      for (const p of [tracker, propProxies, hotspots, propProverbs, tvTitle]) p.dispose();
-      for (const p of [chassis, crtEditorial, crtFbo, portalSnapshot, deskProps]) p.dispose();
-      for (const p of [table, environment, cameraRig, renderer]) p.dispose();
+      const a = [tracker, propProxies, hotspots, propProverbs, tvTitle, chassis, crtEditorial];
+      const b = [crtFbo, portalSnapshot, deskProps, table, environment, cameraRig, renderer];
+      for (const p of [...a, ...b]) p.dispose();
     },
   };
 };

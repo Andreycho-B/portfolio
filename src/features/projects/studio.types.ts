@@ -55,7 +55,7 @@ export interface StudioSkyDomeHandle {
 
 export interface StudioEnvironmentHandle {
   readonly updatePointerLight: (nx: number, ny: number) => void;
-  readonly updateSkyTime: (dtSeconds: number) => boolean;
+  readonly updateSkyTime: (dt: number, zoom?: number, focus?: StudioFocusTarget | null) => boolean;
   readonly dispose: () => void;
 }
 

@@ -1,4 +1,5 @@
 import {
+  type Camera,
   DirectionalLight,
   EquirectangularReflectionMapping,
   HalfFloatType,
@@ -14,6 +15,7 @@ import {
 } from "three";
 import { HDRLoader } from "three/examples/jsm/loaders/HDRLoader.js";
 import { STUDIO_WORLD, type StudioEnvironmentHandle } from "./studio.types";
+import { createStudioDustMotes } from "./studio-dust-motes";
 import type { StudioAssetTracker } from "./studio-loading-tracker";
 
 export const resolveStudioPixelRatio = (widthPx: number, heightPx: number): number => {
@@ -83,12 +85,14 @@ const HDR_YAW_ROTATION = -1.4565;
 export const createStudioEnvironment = (
   renderer: WebGLRenderer,
   targetScene: Scene,
+  camera: Camera,
   onAssetLoaded?: () => void,
   tracker?: StudioAssetTracker,
 ): StudioEnvironmentHandle => {
   let isDisposed = false;
   let hdrTexture: Texture | null = null;
   let envTarget: WebGLRenderTarget | null = null;
+  const dustMotes = createStudioDustMotes(targetScene);
 
   // High-contrast golden-hour sun shining from behind the chair so front faces stay well lit.
   const sunLight = new DirectionalLight(0xffa448, 5.2);
@@ -155,6 +159,7 @@ export const createStudioEnvironment = (
 
   const dispose = (): void => {
     isDisposed = true;
+    dustMotes.dispose();
     targetScene.background = null;
     targetScene.environment = null;
     targetScene.remove(sunLight, sunLight.target, skyBounce);
@@ -163,5 +168,9 @@ export const createStudioEnvironment = (
     hdrTexture?.dispose();
   };
 
-  return { updatePointerLight: () => {}, updateSkyTime: () => false, dispose };
+  return {
+    updatePointerLight: dustMotes.setPointer,
+    updateSkyTime: (dt, zoom = 0, focus = null) => dustMotes.update(dt, camera, zoom, focus),
+    dispose,
+  };
 };

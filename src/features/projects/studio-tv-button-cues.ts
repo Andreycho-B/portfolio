@@ -56,7 +56,7 @@ void main(){
   float core=1.0-smoothstep(coreR-aa,coreR+aa,r);
   float ringR=mix(0.56,0.78,hov),ringW=mix(0.065,0.095,hov);
   float ring=(1.0-smoothstep(ringW-aa,ringW+aa,abs(r-ringR)))*mix(0.36,0.96,max(hov,act*0.55));
-  float back=exp(-pow(r/0.52,2.0))*mix(0.28,0.44,max(hov,act));
+  float back=exp(-pow(r/0.56,2.0))*mix(0.42,0.62,max(hov,act));
   float glow=exp(-pow(r/0.36,2.0))*mix(0.24,0.58,max(hov,act*0.8));
   float ink=clamp(core+ring+glow*0.45,0.0,1.0);
   float strength=mix(mix(0.46+shimmer,0.92,act),1.0,hov);

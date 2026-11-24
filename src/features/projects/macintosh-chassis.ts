@@ -40,9 +40,9 @@ export const createMacintoshChassis = (
   let hoveredBtn: TvButtonId | null = null;
 
   const fallbackMaterial = new MeshStandardMaterial({
-    color: 0x1a1c1e,
-    roughness: 0.62,
-    metalness: 0.08,
+    color: 0xeaecef,
+    roughness: 0.56,
+    metalness: 0.06,
   });
   const chassisBodyMesh = new Mesh(new BufferGeometry(), fallbackMaterial);
   chassisBodyMesh.name = "retroTvBody";
