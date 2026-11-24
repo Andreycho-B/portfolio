@@ -114,12 +114,12 @@ export const PROP_PROVERB_GROUPS: readonly PropProverbGroupSpec[] = [
     anchor: [-2.3, -0.7, -0.3],
     yawRad: -0.46,
     planeWidth: 0.82,
-    desktopFontPx: 64,
-    mobileFontPx: 60,
+    desktopFontPx: 76,
+    mobileFontPx: 68,
     joinOnMobile: false,
     entries: [
       {
-        lines: ["Lo simple perdura,", "lo honesto trasciende"],
+        lines: ["Hola Mundo"],
         desktopPos: [-0.94, 0.14, 0.06],
         mobilePos: [0, 0.86, 0.06],
         align: "right",

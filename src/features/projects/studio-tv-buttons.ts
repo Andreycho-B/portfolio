@@ -28,7 +28,7 @@ export type TvButtonSpec = { readonly id: TvButtonId; readonly x: number; readon
 const ROW_A: readonly TvButtonId[] = ["ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7"];
 const ROW_B: readonly TvButtonId[] = ["ch8", "ch9", "ch0", "ch_prev", "ch_next", "mute", "power"];
 const TV_ROW_BUTTON_IDS: readonly TvButtonId[] = [...ROW_A, ...ROW_B];
-const [ROW_MIN_X, ROW_MAX_X, ROW_Y, ROW_Z] = [-0.524, 0.524, -0.83, 1.21];
+const [ROW_MIN_X, ROW_MAX_X, ROW_Y, ROW_Z] = [-0.524, 0.524, -0.805, 1.21];
 const ROW_STEP = (ROW_MAX_X - ROW_MIN_X) / TV_ROW_BUTTON_IDS.length;
 
 export const TV_BUTTON_SPECS: readonly TvButtonSpec[] = [
@@ -65,7 +65,7 @@ export const splitRetroTvButtons = (
       const cv = (uvAttr.getY(i0) + uvAttr.getY(i1) + uvAttr.getY(i2)) / 3;
 
       if (cu > 0.008 && cu < 0.232 && cv > 0.485 && cv < 0.755 && cz > 0.86) continue;
-      if (cy >= -0.86 && cy <= -0.8 && cz >= 1.16 && cx >= ROW_MIN_X && cx <= ROW_MAX_X) {
+      if (cy >= -0.855 && cy <= -0.755 && cz >= 1.17 && cx >= ROW_MIN_X && cx <= ROW_MAX_X) {
         const slot = Math.min(13, Math.max(0, Math.floor((cx - ROW_MIN_X) / ROW_STEP)));
         const id = TV_ROW_BUTTON_IDS[slot];
         if (id) {

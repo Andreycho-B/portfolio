@@ -35,8 +35,8 @@ void main(){
   vSun=clamp(warm*0.45+scatter*0.65+smoothstep(-4.6,1.2,pos.y)*0.25,0.0,1.0);
   vGlint=prox*(0.35+uCursorEnergy*0.65);
   float tw=0.68+0.32*sin(t*(1.4+spd*0.9)+ph*3.1);
-  vAlpha=tw*smoothstep(0.95,2.4,camDist)*(0.42+vSun*0.36+vGlint*0.38);
-  gl_PointSize=clamp(sz*(28.0/camDist)*uPixelRatio*(1.0+vGlint*0.42),2.0,15.0);
+  vAlpha=tw*smoothstep(1.1,2.6,camDist)*(0.26+vSun*0.34+vGlint*0.42);
+  gl_PointSize=clamp(sz*(42.0/camDist)*uPixelRatio*(1.0+vGlint*0.52),4.0,22.0);
   gl_Position=projectionMatrix*mv;
 }`;
 
@@ -45,10 +45,10 @@ varying float vAlpha,vSun,vGlint;
 void main(){
   float r=length(gl_PointCoord*2.0-1.0);
   if(r>1.0)discard;
-  float core=1.0-smoothstep(0.0,0.42,r);
-  float a=clamp(core*0.85+exp(-r*r*4.2)*0.72,0.0,1.0)*vAlpha*uOpacity;
+  float soft=exp(-r*r*4.8),halo=exp(-r*r*1.85)*0.34;
+  float a=clamp((soft*0.78+halo)*(1.0-smoothstep(0.76,1.0,r)),0.0,1.0)*vAlpha*uOpacity;
   if(a<0.004)discard;
-  vec3 col=mix(mix(vec3(0.96,0.97,1.0),vec3(1.0,0.85,0.52),vSun),vec3(1.0,0.96,0.82),clamp(core*0.6+vGlint*0.5,0.0,1.0));
+  vec3 col=mix(mix(vec3(1.0,0.95,0.86),vec3(1.0,0.80,0.44),vSun),vec3(1.0,0.95,0.78),clamp(soft*0.55+vGlint*0.5,0.0,1.0));
   gl_FragColor=vec4(col,a);
 }`;
 

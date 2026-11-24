@@ -43,6 +43,9 @@ const paintProverb = (
   ctx.clearRect(0, 0, TEX_W, texH);
   ctx.save();
   ctx.fillStyle = "#ffffff";
+  ctx.shadowColor = "rgba(14, 18, 30, 0.58)";
+  ctx.shadowBlur = 16;
+  ctx.shadowOffsetY = 2;
   ctx.textBaseline = "middle";
   const pad = 28;
   const maxWidth = TEX_W - pad * 2;
