@@ -1,0 +1,54 @@
+[data-liquid-glass="active"] {
+  isolation: isolate;
+  overflow: visible;
+}
+
+.liquid-glass-surface-canvas {
+  position: absolute;
+  left: -20px;
+  top: -20px;
+  width: calc(100% + 40px);
+  height: calc(100% + 40px);
+  max-width: none;
+  max-height: none;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Interactive cursor pill: glass only when expanded or muted */
+.cursor-pill[data-liquid-glass="active"] {
+  overflow: visible;
+}
+
+.cursor-pill[data-liquid-glass="active"] .liquid-glass-surface-canvas {
+  opacity: 0;
+  transition: opacity 0.14s ease-out;
+}
+
+.interactive-cursor.is-expanded .cursor-pill[data-liquid-glass="active"],
+.interactive-cursor.is-muted .cursor-pill[data-liquid-glass="active"] {
+  border-color: transparent;
+}
+
+.interactive-cursor.is-expanded .cursor-pill[data-liquid-glass="active"] .cursor-backdrop,
+.interactive-cursor.is-muted .cursor-pill[data-liquid-glass="active"] .cursor-backdrop {
+  opacity: 0;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.interactive-cursor.is-expanded
+  .cursor-pill[data-liquid-glass="active"]
+  .liquid-glass-surface-canvas,
+.interactive-cursor.is-muted .cursor-pill[data-liquid-glass="active"] .liquid-glass-surface-canvas {
+  opacity: 1;
+}
+
+.interactive-cursor.is-inverted.is-expanded
+  .cursor-pill[data-liquid-glass="active"]
+  .cursor-content,
+.interactive-cursor.is-inverted.is-muted
+  .cursor-pill[data-liquid-glass="active"]
+  .cursor-mute-icon {
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+}
