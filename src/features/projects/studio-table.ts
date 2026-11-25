@@ -1,4 +1,5 @@
 import {
+  BoxGeometry,
   BufferGeometry,
   Group,
   type Material,
@@ -81,7 +82,21 @@ export const createStudioTable = (
   shadowMesh.position.set(0, STUDIO_WORLD.tableY + 0.003, 0);
   freezeTransform(shadowMesh);
 
-  group.add(quartzPlatform.mesh, floorAoMesh, woodenTableMesh, chairMesh, shadowMesh);
+  const tableHitGeo = new BoxGeometry(6.04, 0.16, 3.74);
+  const tableHitProxy = new Mesh(tableHitGeo, fallbackMat);
+  tableHitProxy.name = "woodenTableHitProxy";
+  tableHitProxy.visible = false;
+  tableHitProxy.position.set(0, STUDIO_WORLD.tableY - 0.08, 0);
+  freezeTransform(tableHitProxy);
+
+  group.add(
+    quartzPlatform.mesh,
+    floorAoMesh,
+    woodenTableMesh,
+    chairMesh,
+    shadowMesh,
+    tableHitProxy,
+  );
   targetScene.add(group);
 
   const loadedMats = new Set<Material>([fallbackMat, floorAoMat, shadowMat]);
@@ -122,7 +137,7 @@ export const createStudioTable = (
               mat.map.anisotropy = 4;
               loadedTexs.add(mat.map);
             }
-            for (const tex of [mat.roughnessMap, mat.metalnessMap, mat.normalMap]) {
+            for (const tex of [mat.roughnessMap, mat.metalnessMap, mat.normalMap, mat.aoMap]) {
               if (!tex) continue;
               clampPbrTextureBudget(tex, 512);
               tex.anisotropy = 2;
@@ -154,17 +169,20 @@ export const createStudioTable = (
     targetScene.remove(group);
     quartzPlatform.dispose();
     monstera.dispose();
-    for (const g of [floorAoGeo, shadowGeo, woodenTableMesh.geometry, chairMesh.geometry]) {
+    for (const g of [
+      floorAoGeo,
+      shadowGeo,
+      tableHitGeo,
+      woodenTableMesh.geometry,
+      chairMesh.geometry,
+    ]) {
       g.dispose();
     }
     for (const p of [...loadedMats, ...loadedTexs]) p.dispose();
   };
 
   return {
-    tableMesh: quartzPlatform.mesh,
-    woodenTableMesh,
-    isPointInShadowCore: () => false,
-    updatePointer: () => {},
+    woodenTableMesh: tableHitProxy,
     dispose,
   };
 };

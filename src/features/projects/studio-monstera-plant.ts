@@ -17,7 +17,7 @@ const MONSTERA_POS_X = 4.35;
 const MONSTERA_POS_Z = -1.25;
 const MONSTERA_ROT_Y = -0.78;
 
-export interface StudioMonsteraPlantHandle {
+interface StudioMonsteraPlantHandle {
   readonly dispose: () => void;
 }
 

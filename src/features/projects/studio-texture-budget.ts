@@ -45,6 +45,8 @@ export const disposeObject3DResources = (root: Object3D): void => {
   }
 };
 
+const resizedCanvasCache = new WeakMap<object, Map<number, HTMLCanvasElement>>();
+
 export const clampPbrTextureBudget = (tex: Texture | null | undefined, maxDim: number): void => {
   if (!tex || typeof document === "undefined") return;
   const src = tex.image as unknown;
@@ -52,6 +54,14 @@ export const clampPbrTextureBudget = (tex: Texture | null | undefined, maxDim: n
   const w = src.width;
   const h = src.height;
   if (w <= maxDim && h <= maxDim) return;
+
+  let byDim = resizedCanvasCache.get(src);
+  const existing = byDim?.get(maxDim);
+  if (existing) {
+    tex.image = existing;
+    tex.needsUpdate = true;
+    return;
+  }
 
   const scale = maxDim / Math.max(w, h);
   const targetW = Math.max(1, Math.round(w * scale));
@@ -66,15 +76,16 @@ export const clampPbrTextureBudget = (tex: Texture | null | undefined, maxDim: n
   ctx.imageSmoothingQuality = "high";
   ctx.drawImage(src, 0, 0, targetW, targetH);
 
+  if (!byDim) {
+    byDim = new Map<number, HTMLCanvasElement>();
+    resizedCanvasCache.set(src, byDim);
+  }
+  byDim.set(maxDim, canvas);
   tex.image = canvas;
   tex.needsUpdate = true;
-
-  if (typeof ImageBitmap !== "undefined" && src instanceof ImageBitmap) {
-    src.close();
-  }
 };
 
-export const buildLightweightGlassMaterial = (
+const buildLightweightGlassMaterial = (
   source: MeshPhysicalMaterial,
   envMapIntensity: number,
 ): MeshStandardMaterial => {
@@ -96,7 +107,7 @@ export const buildLightweightGlassMaterial = (
   return mat;
 };
 
-export interface DeskPropMaterialTuning {
+interface DeskPropMaterialTuning {
   readonly envIntensity?: number;
   readonly optimizeGlass?: boolean;
   readonly colorCap: number;
@@ -121,7 +132,13 @@ export const tuneDeskPropMaterial = (
     mat.map.anisotropy = 4;
     textures.add(mat.map);
   }
-  for (const tex of [mat.roughnessMap, mat.metalnessMap, mat.normalMap, mat.emissiveMap]) {
+  for (const tex of [
+    mat.roughnessMap,
+    mat.metalnessMap,
+    mat.normalMap,
+    mat.aoMap,
+    mat.emissiveMap,
+  ]) {
     if (!tex) continue;
     clampPbrTextureBudget(tex, tex === mat.emissiveMap ? tuning.colorCap : 512);
     tex.anisotropy = 2;

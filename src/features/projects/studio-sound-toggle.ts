@@ -15,15 +15,15 @@ export const notifyStudioAudioSync = (): void => {
   if (window.parent && window.parent !== window) {
     try {
       window.parent.dispatchEvent(new Event(STUDIO_AUDIO_SYNC_EVENT));
-    } catch {
-      // Cross-origin parent ignored
+    } catch (err: unknown) {
+      if (!(err instanceof DOMException)) throw err;
     }
   }
   for (const frame of document.querySelectorAll<HTMLIFrameElement>("iframe")) {
     try {
       frame.contentWindow?.dispatchEvent(new Event(STUDIO_AUDIO_SYNC_EVENT));
-    } catch {
-      // Cross-origin frame ignored
+    } catch (err: unknown) {
+      if (!(err instanceof DOMException)) throw err;
     }
   }
 };

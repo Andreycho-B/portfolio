@@ -51,7 +51,7 @@ const CHANNEL_LABELS: Readonly<Record<TvChannelMode, string>> = {
 const STUDIO_ARIA_LABEL =
   "Estudio 3D interactivo de Andrey Rondón. Usa flechas izquierda o derecha para recorrer silla, televisor, reloj, busto, termo y Nokia; teclas 0 a 9 para canales; Escape para vista general.";
 
-export const stepKeyboardFocusTarget = (
+const stepKeyboardFocusTarget = (
   current: StudioFocusTarget | null,
   dir: -1 | 1,
 ): StudioFocusTarget | null => {
@@ -122,7 +122,20 @@ export const createStudioA11y = (container: HTMLElement): StudioA11yHandle => {
   ): void => {
     if (!prev.initialized) {
       prev.initialized = true;
-      Object.assign(prev, { focus, poweredOn, channel, projectIndex, portalUrl });
+      prev.focus = focus;
+      prev.poweredOn = poweredOn;
+      prev.channel = channel;
+      prev.projectIndex = projectIndex;
+      prev.portalUrl = portalUrl;
+      return;
+    }
+    if (
+      focus === prev.focus &&
+      poweredOn === prev.poweredOn &&
+      portalUrl === prev.portalUrl &&
+      channel === prev.channel &&
+      projectIndex === prev.projectIndex
+    ) {
       return;
     }
     if (focus !== prev.focus) {
@@ -139,7 +152,11 @@ export const createStudioA11y = (container: HTMLElement): StudioA11yHandle => {
       const proj = PROJECTS[projectIndex];
       if (proj && focus === "tv") announce(`Proyecto seleccionado: ${proj.title} (${proj.year}).`);
     }
-    Object.assign(prev, { focus, poweredOn, channel, projectIndex, portalUrl });
+    prev.focus = focus;
+    prev.poweredOn = poweredOn;
+    prev.channel = channel;
+    prev.projectIndex = projectIndex;
+    prev.portalUrl = portalUrl;
   };
 
   return {

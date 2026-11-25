@@ -27,7 +27,7 @@ const [FONT_WEIGHT, TEX_W, BASE_TEX_H, MULTI_LINE_STEP] = [600, 1024, 240, 68];
 const resolveTexHeight = (lineCount: number): number =>
   lineCount <= 2 ? BASE_TEX_H : 64 + lineCount * MULTI_LINE_STEP;
 
-export interface StudioPropProverbsHandle {
+interface StudioPropProverbsHandle {
   readonly setFocusTarget: (target: StudioFocusTarget | null) => void;
   readonly update: (dtSeconds: number, camera: Camera, zoomProgress: number) => boolean;
   readonly dispose: () => void;

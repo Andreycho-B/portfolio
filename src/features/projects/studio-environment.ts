@@ -24,7 +24,7 @@ export const resolveStudioPixelRatio = (widthPx: number, heightPx: number): numb
   return Math.min(nativeDpr, isWideDesktop ? 1.25 : 1.5);
 };
 
-export const createStudioRenderer = (canvas: HTMLCanvasElement): WebGLRenderer => {
+const createStudioRenderer = (canvas: HTMLCanvasElement): WebGLRenderer => {
   const renderer = new WebGLRenderer({
     canvas,
     antialias: true,
@@ -49,7 +49,7 @@ export const createStudioRenderer = (canvas: HTMLCanvasElement): WebGLRenderer =
   return renderer;
 };
 
-export interface StudioGpuInit {
+interface StudioGpuInit {
   readonly renderer: WebGLRenderer;
   readonly unbindContextLost: () => void;
 }
@@ -79,7 +79,6 @@ export const initStudioRenderer = (
 };
 
 const GOLDEN_HOUR_HDR_URL = "/models3D/syferfontein_1d_clear_puresky_2k.hdr";
-// Aligns syferfontein sun pixel (u=0.5996, phi=+0.6258) behind the chair at (-0.489, +0.872).
 const HDR_YAW_ROTATION = -1.4565;
 
 export const createStudioEnvironment = (
@@ -94,7 +93,6 @@ export const createStudioEnvironment = (
   let envTarget: WebGLRenderTarget | null = null;
   const dustMotes = createStudioDustMotes(targetScene);
 
-  // High-contrast golden-hour sun shining from behind the chair so front faces stay well lit.
   const sunLight = new DirectionalLight(0xffa448, 5.2);
   sunLight.position.set(-11.1, 6.0, 19.9);
   sunLight.target.position.set(0.4, -2.5, -0.6);
@@ -112,7 +110,6 @@ export const createStudioEnvironment = (
   sunLight.updateMatrixWorld(true);
   sunLight.target.updateMatrixWorld(true);
 
-  // Restrained twilight sky fill so cast shadows on wood and white quartz stay deep and clear.
   const skyBounce = new HemisphereLight(0x88a8dc, 0xb8aa9c, 0.36);
   targetScene.add(sunLight, sunLight.target, skyBounce);
 

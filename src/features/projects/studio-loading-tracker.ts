@@ -1,6 +1,6 @@
 import { type Camera, LoadingManager, type Scene, type WebGLRenderer } from "three";
 
-export type StudioLoadPhase = "assets" | "environment" | "geometry" | "shaders" | "ready";
+type StudioLoadPhase = "assets" | "environment" | "geometry" | "shaders" | "ready";
 
 export interface StudioLoadProgress {
   readonly progress: number;
@@ -15,7 +15,7 @@ export interface StudioAssetTracker {
   readonly enqueuePostLoad: (work: () => void) => void;
 }
 
-export interface StudioWarmupOptions {
+interface StudioWarmupOptions {
   readonly renderer: WebGLRenderer;
   readonly scene: Scene;
   readonly camera: Camera;
@@ -25,7 +25,7 @@ export interface StudioWarmupOptions {
   readonly onReady?: () => void;
 }
 
-export interface StudioLoadingTracker extends StudioAssetTracker {
+interface StudioLoadingTracker extends StudioAssetTracker {
   readonly getProgress: () => StudioLoadProgress;
   readonly subscribe: (listener: (state: StudioLoadProgress) => void) => () => void;
   readonly whenReady: () => Promise<void>;

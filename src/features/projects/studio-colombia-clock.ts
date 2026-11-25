@@ -1,7 +1,6 @@
 import { Mesh, type Object3D } from "three";
 
 const TWO_PI = Math.PI * 2;
-// Measured clockwise rest angles (rad from 12 o'clock) baked into wall_clock_2k.gltf meshes.
 const HOUR_REST_RAD_CW = -0.92811;
 const MINUTE_REST_RAD_CW = 0.99487;
 const SECOND_REST_RAD_CW = 2.97631;
@@ -12,7 +11,7 @@ interface LocalClockParts {
   readonly seconds: number;
 }
 
-export interface StudioColombiaClockHandle {
+interface StudioColombiaClockHandle {
   readonly attachModel: (clockRoot: Object3D) => void;
   readonly dispose: () => void;
 }
@@ -88,7 +87,6 @@ export const createStudioColombiaClock = (onTick?: () => void): StudioColombiaCl
       else if (node.name === "wall_clock_minute_hand") minuteHand = node;
       else if (node.name === "wall_clock_second_hand") secondHand = node;
       else return;
-      // Moving hands must not bake frozen shadows onto the dial when shadowMap.autoUpdate=false.
       if (node instanceof Mesh) node.castShadow = false;
     });
     syncHands(false);

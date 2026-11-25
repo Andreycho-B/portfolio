@@ -47,7 +47,7 @@ export const applyIntroOrbitStep = (
   return t < 1;
 };
 
-export const stepSpringAxis = (
+const stepSpringAxis = (
   axis: StudioSpringAxis,
   dt: number,
   omega: number = STUDIO_CAM.springOmega,
@@ -74,7 +74,7 @@ export const stepSpringGroup = (
   return moved;
 };
 
-export interface StudioPoseApplyInput {
+interface StudioPoseApplyInput {
   readonly camera: PerspectiveCamera;
   readonly lookTarget: Vector3;
   readonly px: number;

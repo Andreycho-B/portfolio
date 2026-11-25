@@ -56,6 +56,7 @@ export const createStudioWebGLScene = (
     crtEditorial.texture,
     portalSnapshot.texture,
     onShadow,
+    onAssetLoaded,
     tracker,
   );
   tracker.scheduleGpuWarmup({
@@ -77,13 +78,10 @@ export const createStudioWebGLScene = (
   const picker = createStudioScenePicker({
     camera: cameraRig.camera,
     crtGlassMesh: chassis.crtGlassMesh,
-    powerButtonMesh: chassis.powerButtonMesh,
     tvButtons: chassis.tvButtons,
     lightSurfaceMeshes: chassis.lightSurfaceMeshes,
     darkSurfaceMeshes: chassis.darkSurfaceMeshes,
-    tableMesh: table.tableMesh,
     woodenTableMesh: table.woodenTableMesh,
-    isPointInShadowCore: table.isPointInShadowCore,
     propProxies,
     hotspots,
     nokia: deskProps.nokia,
@@ -160,7 +158,6 @@ export const createStudioWebGLScene = (
       st.sky = environment.updateSkyTime(dt, zoom, focus) || h || n || p || t || ch;
       if (moved) {
         const { x, y } = cameraRig.getSmoothedPointer();
-        table.updatePointer(x, y);
         chassis.updatePointer(x, y);
       }
       return moved;

@@ -5,6 +5,7 @@ import {
   MathUtils,
   NormalBlending,
   Points,
+  Quaternion,
   type Scene,
   ShaderMaterial,
   Vector3,
@@ -62,14 +63,9 @@ const makeSeededRand = (seed: number): (() => number) => {
   };
 };
 
-export interface StudioDustMotesHandle {
+interface StudioDustMotesHandle {
   readonly setPointer: (nx: number, ny: number) => void;
-  readonly update: (
-    dt: number,
-    camera: Camera,
-    zoom: number,
-    focus: StudioFocusTarget | null,
-  ) => boolean;
+  readonly update: (dt: number, cam: Camera, z: number, f: StudioFocusTarget | null) => boolean;
   readonly dispose: () => void;
 }
 
@@ -94,10 +90,19 @@ export const createStudioDustMotes = (targetScene: Scene): StudioDustMotesHandle
   const motionQuery =
     typeof window !== "undefined" ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
   let prefersReduced = motionQuery?.matches ?? false;
-  const [rayOrigin, rayDir] = [new Vector3(0, 2, 10), new Vector3(0, 0, -1)];
+  const [rayOrigin, rayDir] = [new Vector3(1e9, 0, 0), new Vector3(0, 0, -1)];
   const [cursorVel, targetVel] = [new Vector3(), new Vector3()];
   const [prevPt, curPt, unproj] = [new Vector3(), new Vector3(), new Vector3()];
-  const ptr = { nx: 0, ny: 0, hasPrev: false, energy: 0, elapsed: 0 };
+  const prevQuat = new Quaternion();
+  const ptr = {
+    nx: 0,
+    ny: 0,
+    lastNx: -99,
+    lastNy: -99,
+    hasPrev: false,
+    energy: 0,
+    elapsed: 0,
+  };
 
   const material = new ShaderMaterial({
     uniforms: {
@@ -119,11 +124,9 @@ export const createStudioDustMotes = (targetScene: Scene): StudioDustMotesHandle
     blending: NormalBlending,
     toneMapped: false,
   });
-
   const points = new Points(geometry, material);
   points.name = "studioGoldenDustMotes";
-  points.renderOrder = 8;
-  points.frustumCulled = false;
+  [points.renderOrder, points.frustumCulled] = [8, false];
   targetScene.add(points);
 
   const onMotionChange = (): void => {
@@ -132,12 +135,7 @@ export const createStudioDustMotes = (targetScene: Scene): StudioDustMotesHandle
   };
   motionQuery?.addEventListener("change", onMotionChange);
 
-  const update = (
-    dtRaw: number,
-    camera: Camera,
-    zoom: number,
-    focus: StudioFocusTarget | null,
-  ): boolean => {
+  const update = (dtRaw: number, camera: Camera, zoom: number, focus: StudioFocusTarget | null) => {
     const dt = Math.min(Math.max(dtRaw, 0), 0.05);
     const tvHide = focus === "tv" ? 1 - MathUtils.smoothstep(zoom, 0.12, 0.52) : 1;
     const opacity = tvHide * (prefersReduced ? 0.55 : 0.94);
@@ -145,12 +143,19 @@ export const createStudioDustMotes = (targetScene: Scene): StudioDustMotesHandle
     if (!points.visible) return false;
 
     if (!prefersReduced) ptr.elapsed += dt;
-    rayOrigin.copy(camera.position);
-    rayDir
-      .copy(unproj.set(ptr.nx, ptr.ny, 0.5).unproject(camera))
-      .sub(rayOrigin)
-      .normalize();
-    const sampleDist = MathUtils.clamp(camera.position.length() * 0.65, 2.2, 8.5);
+    const { position: cp, quaternion: cq } = camera;
+    const camMoved =
+      cp.distanceToSquared(rayOrigin) > 1e-7 || 1 - Math.abs(cq.dot(prevQuat)) > 1e-6;
+    if (ptr.nx !== ptr.lastNx || ptr.ny !== ptr.lastNy || camMoved) {
+      [ptr.lastNx, ptr.lastNy] = [ptr.nx, ptr.ny];
+      rayOrigin.copy(cp);
+      prevQuat.copy(cq);
+      rayDir
+        .copy(unproj.set(ptr.nx, ptr.ny, 0.5).unproject(camera))
+        .sub(cp)
+        .normalize();
+    }
+    const sampleDist = MathUtils.clamp(cp.length() * 0.65, 2.2, 8.5);
     curPt.copy(rayOrigin).addScaledVector(rayDir, sampleDist);
     if (ptr.hasPrev && dt > 0.0005 && !prefersReduced) {
       const [dx, dy, dz] = [curPt.x - prevPt.x, curPt.y - prevPt.y, curPt.z - prevPt.z];
@@ -174,6 +179,7 @@ export const createStudioDustMotes = (targetScene: Scene): StudioDustMotesHandle
     if (u.uTime) u.uTime.value = ptr.elapsed;
     if (u.uOpacity) u.uOpacity.value = opacity;
     if (u.uCursorEnergy) u.uCursorEnergy.value = ptr.energy;
+    if (u.uPixelRatio) u.uPixelRatio.value = Math.min(window.devicePixelRatio || 1, 1.5);
     const hidden = typeof document !== "undefined" && document.visibilityState === "hidden";
     return !prefersReduced && !hidden;
   };

@@ -11,7 +11,7 @@ import {
   Vector2,
 } from "three";
 
-export interface StudioQuartzPlatformHandle {
+interface StudioQuartzPlatformHandle {
   readonly mesh: Mesh;
   readonly dispose: () => void;
 }

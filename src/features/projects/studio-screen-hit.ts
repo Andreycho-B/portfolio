@@ -16,7 +16,7 @@ import type { TvButtonId } from "./studio-tv-buttons";
 
 const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
 
-export interface ZoomedActionContext {
+interface ZoomedActionContext {
   readonly activeIndex: number;
   readonly audio: AudioEngineContract;
   readonly onOpenInTv: (targetUrl: string) => void;
@@ -115,7 +115,7 @@ export const applyZoneCursorState = (
   const label = zone === "power" ? powerLabel : tvLabel;
   cursor.setExpanded(Boolean(label), label);
 };
-export const openActiveProject = (idx: number, onOpenInTv: (url: string) => void): void => {
+const openActiveProject = (idx: number, onOpenInTv: (url: string) => void): void => {
   const project = PROJECTS[idx];
   if (project) onOpenInTv(`/proyectos/${project.slug}`);
 };

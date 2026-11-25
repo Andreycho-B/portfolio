@@ -1,4 +1,4 @@
-import type { Group, Mesh, PerspectiveCamera, Scene, ShaderMaterial, SphereGeometry } from "three";
+import type { Group, Mesh, PerspectiveCamera, Scene } from "three";
 import type { AudioEngineContract } from "../../core/audio.types";
 import type { CursorController } from "../../design-system/components/cursor-controller";
 import type { DrumAutoplayController } from "./drum-autoplay";
@@ -14,7 +14,6 @@ import type { StudioSceneTvApi, StudioTvButtonsHandle, TvButtonId } from "./stud
 import type { TvChannelMode } from "./studio-tv-channels";
 
 export type StudioPointerNormalized = { readonly x: number; readonly y: number };
-export type StudioViewportSize = { readonly widthPx: number; readonly heightPx: number };
 
 type TvScreenZone = "power" | "tv_button" | "tv_channel_exit" | "screen_zoom" | "bezel_exit";
 type CrtHudZone = "card" | "step_prev" | "step_next" | "about" | "sound" | "phone" | "email";
@@ -45,14 +44,6 @@ export interface StudioCameraState {
   readonly dispose: () => void;
 }
 
-export interface StudioSkyDomeHandle {
-  readonly mesh: Mesh;
-  readonly geometry: SphereGeometry;
-  readonly material: ShaderMaterial;
-  readonly updateTime: (dtSeconds: number) => boolean;
-  readonly dispose: () => void;
-}
-
 export interface StudioEnvironmentHandle {
   readonly updatePointerLight: (nx: number, ny: number) => void;
   readonly updateSkyTime: (dt: number, zoom?: number, focus?: StudioFocusTarget | null) => boolean;
@@ -60,10 +51,7 @@ export interface StudioEnvironmentHandle {
 }
 
 export interface StudioTableHandle {
-  readonly tableMesh: Mesh;
   readonly woodenTableMesh: Mesh;
-  readonly isPointInShadowCore: (worldX: number, worldZ: number) => boolean;
-  readonly updatePointer: (nx: number, ny: number) => void;
   readonly dispose: () => void;
 }
 
@@ -71,7 +59,6 @@ export interface MacintoshChassisHandle {
   readonly group: Group;
   readonly lightSurfaceMeshes: readonly Mesh[];
   readonly darkSurfaceMeshes: readonly Mesh[];
-  readonly powerButtonMesh: Mesh;
   readonly crtGlassMesh: Mesh;
   readonly tvButtons: StudioTvButtonsHandle;
   readonly setPortalState: (mode: number, cutout: number, wave: StudioFluidWaveVec) => void;

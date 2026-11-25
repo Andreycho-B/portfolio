@@ -15,7 +15,7 @@ import type { StudioAssetTracker } from "./studio-loading-tracker";
 import { createStudioNokiaScreen, type StudioNokiaPhoneHandle } from "./studio-nokia-screen";
 import { disposeObject3DResources, tuneDeskPropMaterial } from "./studio-texture-budget";
 
-export interface StudioDeskPropsHandle {
+interface StudioDeskPropsHandle {
   readonly nokia: StudioNokiaPhoneHandle;
   readonly dispose: () => void;
 }
@@ -135,21 +135,28 @@ export const createStudioDeskProps = (
     holder.position.set(spec.pos[0], STUDIO_WORLD.tableY, spec.pos[1]);
     holder.updateMatrixWorld(true);
     if (spec.name === "wallClockProp") colombiaClock.attachModel(model);
-    else if (spec.name === "nokiaPhoneProp") {
-      const hwAnchor = new Group();
-      hwAnchor.position.set(spec.pos[0], STUDIO_WORLD.tableY, spec.pos[1]);
-      hwAnchor.rotation.y = spec.rotationY;
-      hwAnchor.updateMatrix();
-      hwAnchor.matrixAutoUpdate = false;
-      root.add(hwAnchor);
-      nokiaScreen.attachModel(model, hwAnchor);
-    }
     holder.traverse((node) => {
       if (node.name.startsWith("wall_clock_") && node.name.endsWith("_hand")) return;
       node.updateMatrix();
       node.matrixAutoUpdate = false;
     });
     root.add(holder);
+    if (spec.name === "nokiaPhoneProp") {
+      const hwAnchor = new Group();
+      hwAnchor.position.set(spec.pos[0], STUDIO_WORLD.tableY, spec.pos[1]);
+      hwAnchor.rotation.y = spec.rotationY;
+      hwAnchor.updateMatrix();
+      hwAnchor.matrixAutoUpdate = false;
+      root.add(hwAnchor);
+      void nokiaScreen
+        .attachModel(model, hwAnchor)
+        .catch((err: unknown) => console.warn("[StudioDeskProps] Nokia hardware error:", err))
+        .finally(() => {
+          if (!isDisposed) onAssetLoaded?.();
+          done?.();
+        });
+      return;
+    }
     onAssetLoaded?.();
     done?.();
   };
