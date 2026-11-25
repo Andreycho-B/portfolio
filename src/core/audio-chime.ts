@@ -19,10 +19,16 @@ export const playGenerativeChime = (ctx: AudioContext, destination: GainNode): v
   ];
   const pan = (Math.random() * 2 - 1) * 0.35;
 
+  const filter = ctx.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(2800, now);
+  filter.Q.setValueAtTime(Math.SQRT1_2, now);
+
   const chimeGain = ctx.createGain();
-  chimeGain.gain.setValueAtTime(0.0001, now);
-  chimeGain.gain.linearRampToValueAtTime(0.03, now + 0.32);
-  chimeGain.gain.exponentialRampToValueAtTime(0.0001, now + 4.8);
+  chimeGain.gain.setValueAtTime(0, now);
+  chimeGain.gain.linearRampToValueAtTime(0.062, now + 0.34);
+  chimeGain.gain.exponentialRampToValueAtTime(0.0005, now + 4.75);
+  chimeGain.gain.linearRampToValueAtTime(0, now + 4.86);
 
   const osc1 = ctx.createOscillator();
   const osc2 = ctx.createOscillator();
@@ -32,21 +38,23 @@ export const playGenerativeChime = (ctx: AudioContext, destination: GainNode): v
 
   const panner = ctx.createStereoPanner();
   panner.pan.setValueAtTime(pan, now);
-  osc1.connect(chimeGain);
-  osc2.connect(chimeGain);
+  osc1.connect(filter);
+  osc2.connect(filter);
+  filter.connect(chimeGain);
   chimeGain.connect(panner);
   panner.connect(destination);
 
   osc1.start(now);
   osc2.start(now + 0.08);
-  osc1.stop(now + 4.9);
-  osc2.stop(now + 4.9);
+  osc1.stop(now + 4.92);
+  osc2.stop(now + 4.92);
   let isCleaned = false;
   const cleanup = () => {
     if (isCleaned) return;
     isCleaned = true;
     osc1.disconnect();
     osc2.disconnect();
+    filter.disconnect();
     chimeGain.disconnect();
     panner.disconnect();
   };

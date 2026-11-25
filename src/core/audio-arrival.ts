@@ -18,9 +18,13 @@ export const synthesizeProjectArrival = (
   const filter = ctx.createBiquadFilter();
 
   filter.type = "lowpass";
-  filter.frequency.setValueAtTime(4800, now);
-  filter.frequency.exponentialRampToValueAtTime(1200, now + 1.8);
-  filter.Q.setValueAtTime(1.2, now);
+  filter.frequency.setValueAtTime(4200, now);
+  filter.frequency.exponentialRampToValueAtTime(1100, now + 1.8);
+  filter.Q.setValueAtTime(Math.SQRT1_2, now);
+
+  masterGain.gain.setValueAtTime(1, now);
+  masterGain.gain.setValueAtTime(1, now + 2.15);
+  masterGain.gain.linearRampToValueAtTime(0, now + 2.24);
 
   filter.connect(masterGain);
   masterGain.connect(destination);
@@ -37,15 +41,16 @@ export const synthesizeProjectArrival = (
     osc.frequency.setValueAtTime(freq * 1.012, now);
     osc.frequency.exponentialRampToValueAtTime(freq, now + 0.04);
 
-    modeGain.gain.setValueAtTime(0.0001, now);
-    modeGain.gain.linearRampToValueAtTime(0.075 * gainRatio, now + 0.015);
-    modeGain.gain.exponentialRampToValueAtTime(0.0001, now + decayDuration);
+    modeGain.gain.setValueAtTime(0, now);
+    modeGain.gain.linearRampToValueAtTime(0.105 * gainRatio, now + 0.018);
+    modeGain.gain.exponentialRampToValueAtTime(0.0005, now + decayDuration - 0.02);
+    modeGain.gain.linearRampToValueAtTime(0, now + decayDuration);
 
     osc.connect(modeGain);
     modeGain.connect(filter);
 
     osc.start(now);
-    osc.stop(now + decayDuration + 0.05);
+    osc.stop(now + decayDuration + 0.06);
 
     nodesToClean.push(osc, modeGain);
     if (ratio === 1.0) rootOsc = osc;
