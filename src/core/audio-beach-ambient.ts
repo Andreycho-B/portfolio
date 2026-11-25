@@ -4,14 +4,17 @@ export interface BeachAmbientHandle {
 
 const BEACH_AMBIENT_URL = "/sounds/beach-ambient.m4a";
 const LOOP_CROSSFADE_SEC = 4.0;
-const BEACH_TARGET_GAIN = 0.145;
+const BEACH_TARGET_GAIN = 0.135;
 const FADE_IN_SEC = 3.2;
-const HIGHPASS_HZ = 75;
-const LOWPASS_HZ = 7200;
+const HIGHPASS_HZ = 80;
+const LOWPASS_HZ = 5600;
 
 let cachedSampleRate = 0;
 let cachedLoopBuffer: AudioBuffer | null = null;
 let inflightLoad: Promise<AudioBuffer | null> | null = null;
+
+const softClampSample = (s: number): number =>
+  Math.abs(s) > 0.9 ? Math.sign(s) * (0.9 + 0.08 * Math.tanh((Math.abs(s) - 0.9) * 10)) : s;
 
 const buildSeamlessLoopBuffer = (ctx: AudioContext, src: AudioBuffer): AudioBuffer => {
   const fadeSamples = Math.min(
@@ -24,12 +27,18 @@ const buildSeamlessLoopBuffer = (ctx: AudioContext, src: AudioBuffer): AudioBuff
   for (let ch = 0; ch < src.numberOfChannels; ch++) {
     const input = src.getChannelData(ch);
     const output = out.getChannelData(ch);
-    output.set(input.subarray(0, loopLen));
+    let sum = 0;
+    for (let i = 0; i < input.length; i++) sum += input[i] ?? 0;
+    const dc = input.length > 0 ? sum / input.length : 0;
+    const removeDc = Math.abs(dc) > 0.002 ? dc : 0;
+    for (let i = 0; i < loopLen; i++) output[i] = (input[i] ?? 0) - removeDc;
     for (let i = 0; i < fadeSamples; i++) {
       const t = i / fadeSamples;
       const fadeIn = Math.sin(t * Math.PI * 0.5);
       const fadeOut = Math.cos(t * Math.PI * 0.5);
-      output[i] = (input[i] ?? 0) * fadeIn + (input[loopLen + i] ?? 0) * fadeOut;
+      const mixed =
+        ((input[i] ?? 0) - removeDc) * fadeIn + ((input[loopLen + i] ?? 0) - removeDc) * fadeOut;
+      output[i] = softClampSample(mixed);
     }
   }
   return out;
@@ -117,13 +126,13 @@ export const startBeachAmbient = (
       g.gain.cancelScheduledValues(now);
       g.gain.setValueAtTime(g.gain.value, now);
     }
-    g.gain.linearRampToValueAtTime(0.0001, now + 0.15);
+    g.gain.linearRampToValueAtTime(0, now + 0.15);
 
     window.setTimeout(() => {
       try {
         if (ctx.state !== "closed") s.stop();
-      } catch {
-        // Source may already be stopped
+      } catch (err: unknown) {
+        if (!(err instanceof DOMException)) throw err;
       }
       s.disconnect();
       hp?.disconnect();

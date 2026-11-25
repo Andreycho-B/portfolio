@@ -26,8 +26,12 @@ import {
 import { synthesizeWheelTick } from "./audio-wheel-tick";
 import { getStudioTvBridge } from "./tv-portal-bridge";
 
-const UNLOCK_EVENTS = ["pointerdown", "keydown", "wheel"] as const;
+const UNLOCK_EVENTS = ["pointerdown", "keydown"] as const;
 const MASTER_TARGET = 0.7;
+const hasUserGesture = (): boolean =>
+  typeof navigator === "undefined" ||
+  !("userActivation" in navigator) ||
+  navigator.userActivation.hasBeenActive;
 
 class ProceduralAudioEngine implements AudioEngineContract {
   private mode: AudioMode = "uninitialized";
@@ -37,17 +41,15 @@ class ProceduralAudioEngine implements AudioEngineContract {
   private beachHandle: BeachAmbientHandle | null = null;
   private unbindLifecycle: (() => void) | null = null;
   private unlockPending = false;
-  private lastTactileTime = 0;
+  private lastTickTime = 0;
+  private lastActionTime = 0;
+  private lastActionType: TactileFeedbackType | null = null;
   private userMuted = false;
 
-  public getMode(): AudioMode {
-    return this.mode;
-  }
-  public isMuted(): boolean {
-    return this.mode === "muted" || this.userMuted;
-  }
+  public getMode = (): AudioMode => this.mode;
+  public isMuted = (): boolean => this.mode === "muted" || this.userMuted;
   private resumeContext(): void {
-    if (this.audioContext?.state === "suspended") {
+    if (this.audioContext?.state === "suspended" && hasUserGesture()) {
       void this.audioContext.resume().catch((err: unknown) => {
         console.warn("[AudioEngine] Resume failed:", err);
       });
@@ -61,10 +63,14 @@ class ProceduralAudioEngine implements AudioEngineContract {
     this.beachHandle ??= startBeachAmbient(this.audioContext, this.masterGain);
     rampGainTo(this.audioContext, this.masterGain, MASTER_TARGET, fadeSec);
   }
+  private deferUntilGesture(): false {
+    this.mode = "pending_gesture";
+    this.attachDeferredUnlock();
+    return false;
+  }
   public async initialize(enableSound: boolean): Promise<boolean> {
     if (!enableSound) {
-      this.mode = "muted";
-      this.userMuted = true;
+      [this.mode, this.userMuted] = ["muted", true];
       gracefulMute(this.audioContext, this.masterGain);
       return true;
     }
@@ -74,6 +80,7 @@ class ProceduralAudioEngine implements AudioEngineContract {
       this.mode = "muted";
       return false;
     }
+    if (!this.audioContext && !hasUserGesture()) return this.deferUntilGesture();
     if (this.mode === "muted" || this.mode === "uninitialized") this.mode = "pending_gesture";
     try {
       this.audioContext ??= new AudioCtxClass();
@@ -82,18 +89,12 @@ class ProceduralAudioEngine implements AudioEngineContract {
       cancelPendingSuspend();
       const running = await tryResumeAudioContext(this.audioContext);
       if (this.userMuted) return true;
-      if (running) {
-        this.activatePlayback(0.25);
-        return true;
-      }
-      this.mode = "pending_gesture";
-      this.attachDeferredUnlock();
-      return false;
+      if (!running) return this.deferUntilGesture();
+      this.activatePlayback(0.25);
+      return true;
     } catch (err) {
       if (!(err instanceof DOMException)) console.warn("[AudioEngine] Init deferred:", err);
-      this.mode = "pending_gesture";
-      this.attachDeferredUnlock();
-      return false;
+      return this.deferUntilGesture();
     }
   }
   private setupLifecycle(): void {
@@ -115,20 +116,13 @@ class ProceduralAudioEngine implements AudioEngineContract {
   private attachDeferredUnlock(): void {
     if (this.unlockPending) return;
     this.unlockPending = true;
-    const unlock = async () => {
+    const unlock = () => {
       this.unlockPending = false;
       for (const evt of UNLOCK_EVENTS) window.removeEventListener(evt, unlock);
-      if (this.mode !== "pending_gesture" || this.userMuted || !this.audioContext) return;
-      try {
-        if (this.audioContext.state === "suspended") await this.audioContext.resume();
-        if (!this.userMuted && this.audioContext.state === "running") this.activatePlayback(0.35);
-      } catch (err) {
-        if (!(err instanceof DOMException)) console.warn("[AudioEngine] Unlock failed:", err);
-      }
+      if (this.mode === "pending_gesture" && !this.userMuted) void this.initialize(true);
     };
-    for (const evt of UNLOCK_EVENTS) {
+    for (const evt of UNLOCK_EVENTS)
       window.addEventListener(evt, unlock, { once: true, passive: true });
-    }
   }
   public toggleMute(): boolean {
     this.userMuted = !this.userMuted;
@@ -153,30 +147,34 @@ class ProceduralAudioEngine implements AudioEngineContract {
   }
   public playReleaseSound(): void {
     triggerHapticDetent(10);
-    if (!this.isMuted() && this.audioContext && this.masterGain) {
-      synthesizeIosSelectionClick(this.audioContext, this.masterGain);
-    }
+    this.runSynthesis(synthesizeIosSelectionClick);
   }
   public playProjectArrivalSound(): void {
-    if (!this.isMuted() && this.audioContext && this.masterGain) {
-      synthesizeProjectArrival(this.audioContext, this.masterGain);
-    }
+    this.runSynthesis(synthesizeProjectArrival);
+  }
+  public runSynthesis(task: (ctx: AudioContext, destination: GainNode) => void): void {
+    if (this.isMuted() || !this.audioContext || !this.masterGain) return;
+    this.resumeContext();
+    task(this.audioContext, this.masterGain);
   }
   public playTactileFeedback(type: TactileFeedbackType, velocity = 0): void {
     if (this.isMuted() || !this.audioContext || !this.masterGain) return;
-    const isSubtle = type === "hover_hotspot" || type === "hover_button" || type === "dvd_corner";
-    const isTick = type === "wheel_tick" || type === "tick";
+    this.resumeContext();
     const now = performance.now();
-    if (!isSubtle && now - this.lastTactileTime < (isTick ? 40 : 75)) return;
-    if (!isSubtle) {
-      this.lastTactileTime = now;
-      triggerHapticDetent(isTick ? 5 : 8);
+    if (type === "wheel_tick" || type === "tick") {
+      if (now - this.lastTickTime < 36) return;
+      this.lastTickTime = now;
+      triggerHapticDetent(5);
+      synthesizeWheelTick(this.audioContext, this.masterGain, velocity);
+      return;
     }
-    if (isTick) synthesizeWheelTick(this.audioContext, this.masterGain, velocity);
-    else dispatchTactileSynthesis(this.audioContext, this.masterGain, type);
-  }
-  public triggerProximityAura(intensity = 1.0): void {
-    if (!this.isMuted() && this.audioContext) this.ambientHandle?.triggerProximityAura(intensity);
+    const isSubtle = type === "hover_hotspot" || type === "hover_button" || type === "dvd_corner";
+    if (!isSubtle) {
+      if (this.lastActionType === type && now - this.lastActionTime < 45) return;
+      [this.lastActionTime, this.lastActionType] = [now, type];
+      triggerHapticDetent(8);
+    }
+    dispatchTactileSynthesis(this.audioContext, this.masterGain, type);
   }
   public triggerChairBreath(action: ChairBreathAction): void {
     dispatchChairBreath(action, this.audioContext, this.masterGain, this.isMuted());

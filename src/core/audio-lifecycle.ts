@@ -7,7 +7,7 @@ export const cancelPendingSuspend = (): void => {
   }
 };
 
-export const holdGainAtTime = (param: AudioParam, now: number): void => {
+const holdGainAtTime = (param: AudioParam, now: number): void => {
   if (typeof param.cancelAndHoldAtTime === "function") {
     param.cancelAndHoldAtTime(now);
   } else {
@@ -24,7 +24,7 @@ export const rampGainTo = (
 ): void => {
   if (!ctx || !gainNode) return;
   const now = ctx.currentTime;
-  const safeTarget = Math.max(0.0001, Math.min(1, target));
+  const safeTarget = Math.max(0, Math.min(1, target));
   holdGainAtTime(gainNode.gain, now);
   gainNode.gain.linearRampToValueAtTime(safeTarget, now + durationSec);
 };
@@ -58,20 +58,26 @@ export const createMasterGainChain = (ctx: AudioContext): GainNode => {
   const now = ctx.currentTime;
   const dcBlocker = ctx.createBiquadFilter();
   dcBlocker.type = "highpass";
-  dcBlocker.frequency.setValueAtTime(30, now);
+  dcBlocker.frequency.setValueAtTime(42, now);
   dcBlocker.Q.setValueAtTime(Math.SQRT1_2, now);
 
+  const airSoftener = ctx.createBiquadFilter();
+  airSoftener.type = "lowpass";
+  airSoftener.frequency.setValueAtTime(15500, now);
+  airSoftener.Q.setValueAtTime(Math.SQRT1_2, now);
+
   const limiter = ctx.createDynamicsCompressor();
-  limiter.threshold.setValueAtTime(-2.5, now);
-  limiter.knee.setValueAtTime(0, now);
-  limiter.ratio.setValueAtTime(20, now);
-  limiter.attack.setValueAtTime(0.0005, now);
-  limiter.release.setValueAtTime(0.04, now);
+  limiter.threshold.setValueAtTime(-3.0, now);
+  limiter.knee.setValueAtTime(3, now);
+  limiter.ratio.setValueAtTime(18, now);
+  limiter.attack.setValueAtTime(0.002, now);
+  limiter.release.setValueAtTime(0.08, now);
 
   const masterGain = ctx.createGain();
-  masterGain.gain.setValueAtTime(0.0001, now);
+  masterGain.gain.setValueAtTime(0, now);
   masterGain.connect(dcBlocker);
-  dcBlocker.connect(limiter);
+  dcBlocker.connect(airSoftener);
+  airSoftener.connect(limiter);
   limiter.connect(ctx.destination);
   return masterGain;
 };
@@ -86,8 +92,7 @@ export const gracefulMute = (
 
   const now = audioContext.currentTime;
   holdGainAtTime(masterGain.gain, now);
-  masterGain.gain.linearRampToValueAtTime(0.0001, now + durationSec);
-  masterGain.gain.setValueAtTime(0, now + durationSec + 0.005);
+  masterGain.gain.linearRampToValueAtTime(0, now + durationSec);
 
   pendingSuspendTimer = window.setTimeout(
     () => {

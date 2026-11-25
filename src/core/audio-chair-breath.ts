@@ -3,11 +3,12 @@ import type { ChairBreathAction } from "./audio.types";
 const CHAIR_BREATH_URL = "/sounds/chair-deep-breath.mp3";
 const BREATH_OFFSET_SEC = 0.3;
 const BREATH_PLAY_SEC = 4.65;
-const BREATH_GAIN = 0.48;
+const BREATH_GAIN = 0.38;
+const BREATH_TARGET_PEAK = 0.78;
 const FADE_IN_SEC = 0.28;
-const FADE_OUT_SEC = 0.5;
-const HIGHPASS_HZ = 75;
-const LOWPASS_HZ = 8500;
+const FADE_OUT_SEC = 0.52;
+const HIGHPASS_HZ = 95;
+const LOWPASS_HZ = 5800;
 
 interface ActiveBreathNodes {
   readonly source: AudioBufferSourceNode;
@@ -23,6 +24,34 @@ let inflightLoad: Promise<AudioBuffer | null> | null = null;
 let activeNodes: ActiveBreathNodes | null = null;
 let playGeneration = 0;
 
+const sanitizeBreathBuffer = (buf: AudioBuffer): AudioBuffer => {
+  let peak = 0.0001;
+  for (let ch = 0; ch < buf.numberOfChannels; ch++) {
+    const d = buf.getChannelData(ch);
+    let sum = 0;
+    for (let i = 0; i < d.length; i++) sum += d[i] ?? 0;
+    const dc = d.length > 0 ? sum / d.length : 0;
+    const removeDc = Math.abs(dc) > 0.002 ? dc : 0;
+    for (let i = 0; i < d.length; i++) {
+      const s = (d[i] ?? 0) - removeDc;
+      d[i] = s;
+      const abs = Math.abs(s);
+      if (abs > peak) peak = abs;
+    }
+  }
+  const scale = Math.max(0.35, Math.min(2.0, BREATH_TARGET_PEAK / peak));
+  if (Math.abs(scale - 1) > 0.04) {
+    for (let ch = 0; ch < buf.numberOfChannels; ch++) {
+      const d = buf.getChannelData(ch);
+      for (let i = 0; i < d.length; i++) {
+        const s = d[i];
+        if (s !== undefined) d[i] = Math.max(-0.92, Math.min(0.92, s * scale));
+      }
+    }
+  }
+  return buf;
+};
+
 const loadChairBreathBuffer = (ctx: AudioContext): Promise<AudioBuffer | null> => {
   if (cachedBuffer && cachedSampleRate === ctx.sampleRate) return Promise.resolve(cachedBuffer);
   if (inflightLoad) return inflightLoad;
@@ -30,7 +59,7 @@ const loadChairBreathBuffer = (ctx: AudioContext): Promise<AudioBuffer | null> =
     try {
       const res = await fetch(CHAIR_BREATH_URL);
       if (!res.ok) return null;
-      const decoded = await ctx.decodeAudioData(await res.arrayBuffer());
+      const decoded = sanitizeBreathBuffer(await ctx.decodeAudioData(await res.arrayBuffer()));
       cachedBuffer = decoded;
       cachedSampleRate = ctx.sampleRate;
       return decoded;
@@ -48,8 +77,8 @@ const releaseNodes = (nodes: ActiveBreathNodes, ctx: AudioContext | null): void 
   if (nodes.cleanupTimer !== null) window.clearTimeout(nodes.cleanupTimer);
   try {
     if (ctx && ctx.state !== "closed") nodes.source.stop();
-  } catch {
-    // Source may already be stopped
+  } catch (err: unknown) {
+    if (!(err instanceof DOMException)) throw err;
   }
   nodes.source.disconnect();
   nodes.highpass.disconnect();
@@ -74,7 +103,7 @@ const stopActiveBreath = (ctx: AudioContext | null): void => {
     g.cancelScheduledValues(now);
     g.setValueAtTime(Math.max(0.0001, g.value), now);
   }
-  g.linearRampToValueAtTime(0.0001, now + 0.18);
+  g.linearRampToValueAtTime(0, now + 0.18);
   window.setTimeout(() => releaseNodes(nodes, ctx), 210);
 };
 
@@ -98,14 +127,14 @@ const startBreathPlayback = (ctx: AudioContext, destination: GainNode): void => 
     const lowpass = ctx.createBiquadFilter();
     lowpass.type = "lowpass";
     lowpass.frequency.setValueAtTime(LOWPASS_HZ, now);
-    lowpass.Q.setValueAtTime(0.65, now);
+    lowpass.Q.setValueAtTime(Math.SQRT1_2, now);
 
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(BREATH_GAIN, now + FADE_IN_SEC);
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(BREATH_GAIN, now + FADE_IN_SEC);
     const fadeOutStart = now + Math.max(FADE_IN_SEC + 0.1, duration - FADE_OUT_SEC);
     gain.gain.setValueAtTime(BREATH_GAIN, fadeOutStart);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    gain.gain.linearRampToValueAtTime(0, now + duration);
 
     source.connect(highpass);
     highpass.connect(lowpass);

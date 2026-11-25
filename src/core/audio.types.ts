@@ -3,7 +3,6 @@ export type ChairBreathAction = "preload" | "play" | "stop";
 
 export type TactileFeedbackType =
   | "wheel_tick"
-  | "jelly_pop"
   | "click"
   | "tick"
   | "crt_power_off"
@@ -23,8 +22,8 @@ export interface AudioEngineContract {
   readonly playReleaseSound: () => void;
   readonly playProjectArrivalSound: () => void;
   readonly playTactileFeedback: (type: TactileFeedbackType, velocity?: number) => void;
-  readonly triggerProximityAura: (intensity?: number) => void;
   readonly triggerChairBreath: (action: ChairBreathAction) => void;
+  readonly runSynthesis: (task: (ctx: AudioContext, destination: GainNode) => void) => void;
   readonly stop: () => void;
 }
 
@@ -36,6 +35,5 @@ export interface GlassHarmonicSpec {
 
 export interface AmbientTextureHandle {
   readonly gainNode: GainNode;
-  readonly triggerProximityAura: (intensity?: number) => void;
   readonly stop: () => void;
 }
