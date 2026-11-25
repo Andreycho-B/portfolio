@@ -37,8 +37,8 @@ const { nextProject, nextCoverImg } = Astro.props;
           src={nextCoverImg}
           alt={`Vista previa de ${nextProject.title}`}
           class="next-specimen-img"
-          width="1917"
-          height="912"
+          width={nextProject.coverWidth}
+          height={nextProject.coverHeight}
           loading="lazy"
           decoding="async"
         />

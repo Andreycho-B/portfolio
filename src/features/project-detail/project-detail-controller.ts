@@ -12,7 +12,6 @@ import {
 } from "../transitions/fluid-transition-controller";
 import { initMorphicTitles } from "./detail-title-morph";
 import { initSpecimensTilt } from "./project-tilt-fx";
-import { initTechGravity } from "./tech-gravity-engine";
 import { splitChars } from "./tech-icons";
 
 const hydrateRollTracks = (prefersReduced: boolean): void => {
@@ -133,11 +132,24 @@ export const initProjectDetailPage = (): void => {
   }
 
   const techStage = document.getElementById("tech-gravity-stage");
-  const techGravity = techStage ? initTechGravity(techStage) : null;
+  let techGravityDestroy: (() => void) | null = null;
+  let isDisposed = false;
+  if (techStage) {
+    void import("./tech-gravity-engine")
+      .then(({ initTechGravity }) => {
+        if (isDisposed || !techStage.isConnected) return;
+        const instance = initTechGravity(techStage);
+        if (instance) techGravityDestroy = instance.destroy;
+      })
+      .catch((err: unknown) => {
+        console.warn("[ProjectDetail] TechGravity load warning:", err);
+      });
+  }
 
   document.addEventListener(
     "astro:before-swap",
     () => {
+      isDisposed = true;
       cursor.setExpanded(false);
       cursor.setPressed(false);
       cursor.setInverted(false);
@@ -146,7 +158,7 @@ export const initProjectDetailPage = (): void => {
       cleanupCursorExpand();
       cleanupMorphicTitles();
       tiltController.destroy();
-      techGravity?.destroy();
+      techGravityDestroy?.();
       observer?.disconnect();
     },
     { once: true },

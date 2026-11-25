@@ -1,9 +1,9 @@
-export interface OfficialTechLogo {
+interface OfficialTechLogo {
   readonly id: string;
   readonly svgUrl: string;
 }
 
-export interface SplitCharItem {
+interface SplitCharItem {
   readonly char: string;
   readonly index: number;
 }

@@ -21,22 +21,28 @@ export const initSpecimensTilt = (root: Document | HTMLElement = document): Tilt
     if (!inner) return;
 
     let rect = card.getBoundingClientRect();
-    const updateRect = () => {
+    let rafId: number | null = null;
+    let latestX = 0;
+    let latestY = 0;
+
+    const updateRect = (): void => {
       rect = card.getBoundingClientRect();
     };
 
-    const handlePointerEnter = () => {
-      updateRect();
+    const cancelPendingFrame = (): void => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
     };
 
-    const handlePointerMove = (e: PointerEvent) => {
-      if (e.pointerType !== "mouse") return;
+    const flushTilt = (): void => {
+      rafId = null;
       if (rect.width === 0 || rect.height === 0) updateRect();
+      if (rect.width === 0 || rect.height === 0) return;
 
-      const clientX = e.clientX;
-      const clientY = e.clientY;
-      const normX = Math.max(-1, Math.min(1, ((clientX - rect.left) / rect.width) * 2 - 1));
-      const normY = Math.max(-1, Math.min(1, ((clientY - rect.top) / rect.height) * 2 - 1));
+      const normX = Math.max(-1, Math.min(1, ((latestX - rect.left) / rect.width) * 2 - 1));
+      const normY = Math.max(-1, Math.min(1, ((latestY - rect.top) / rect.height) * 2 - 1));
 
       gsap.to(inner, {
         rotateY: normX * 7.5,
@@ -58,7 +64,19 @@ export const initSpecimensTilt = (root: Document | HTMLElement = document): Tilt
       }
     };
 
-    const handlePointerLeave = () => {
+    const handlePointerEnter = (): void => {
+      updateRect();
+    };
+
+    const handlePointerMove = (e: PointerEvent): void => {
+      if (e.pointerType !== "mouse") return;
+      latestX = e.clientX;
+      latestY = e.clientY;
+      if (rafId === null) rafId = requestAnimationFrame(flushTilt);
+    };
+
+    const handlePointerLeave = (): void => {
+      cancelPendingFrame();
       gsap.to(inner, {
         rotateY: 0,
         rotateX: 0,
@@ -84,6 +102,7 @@ export const initSpecimensTilt = (root: Document | HTMLElement = document): Tilt
     card.addEventListener("pointerleave", handlePointerLeave, { passive: true });
 
     cleanups.push(() => {
+      cancelPendingFrame();
       card.removeEventListener("pointerenter", handlePointerEnter);
       card.removeEventListener("pointermove", handlePointerMove);
       card.removeEventListener("pointerleave", handlePointerLeave);
@@ -94,9 +113,7 @@ export const initSpecimensTilt = (root: Document | HTMLElement = document): Tilt
 
   return {
     destroy: () => {
-      cleanups.forEach((fn) => {
-        fn();
-      });
+      for (const cleanup of cleanups) cleanup();
     },
   };
 };
