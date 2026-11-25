@@ -3,7 +3,7 @@ import { PROFILE } from "../../core/profile";
 import { PROJECT_COUNT, PROJECTS } from "./project-data";
 import type { StudioAssetTracker } from "./studio-loading-tracker";
 
-export interface StudioCrtEditorialHandle {
+interface StudioCrtEditorialHandle {
   readonly texture: CanvasTexture;
   readonly update: (activeIndex: number, soundEnabled: boolean, emailCopied?: boolean) => void;
   readonly dispose: () => void;
@@ -59,7 +59,7 @@ export const createStudioCrtEditorial = (
   const texture = new CanvasTexture(canvas);
   texture.minFilter = LinearMipmapLinearFilter;
   texture.magFilter = LinearFilter;
-  texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+  texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
 
   let whiteLogo: HTMLCanvasElement | null = null;
   let fontsReady = false;
@@ -98,7 +98,6 @@ export const createStudioCrtEditorial = (
     ctx.font = `900 80px ${FONT_DISPLAY}`;
     const titleW = ctx.measureText(project.title).width;
     if (titleW > 236) ctx.font = `900 ${Math.floor((80 * 236) / titleW)}px ${FONT_DISPLAY}`;
-    // Red channel = 0 tags title/year so CRT shader modulates scroll fade with zero texture upload.
     ctx.fillStyle = "#00ffff";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";

@@ -21,7 +21,7 @@ import { createDrumLensPostPass } from "./drum-glass-shader";
 import { DRUM_SLOTS, PROJECTS } from "./project-data";
 import type { StudioAssetTracker } from "./studio-loading-tracker";
 
-export interface StudioCrtFboHandle {
+interface StudioCrtFboHandle {
   readonly texture: Texture;
   readonly markDirty: () => void;
   readonly updateState: (angleRad: number, scrollVelocity: number, introProgress: number) => void;
@@ -29,8 +29,8 @@ export interface StudioCrtFboHandle {
   readonly dispose: () => void;
 }
 
-const FBO_WIDTH = 1024;
-const FBO_HEIGHT = 716;
+const FBO_WIDTH = 1152;
+const FBO_HEIGHT = 806;
 const FBO_ASPECT = FBO_WIDTH / FBO_HEIGHT;
 const BACKGROUND_HEX = 0xffffff;
 const CAMERA_FOV_DEG = 34;

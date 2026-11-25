@@ -13,7 +13,7 @@ import {
   traceRoundedRect,
 } from "./studio-portal-snapshot-paint";
 
-export interface StudioPortalSnapshotHandle {
+interface StudioPortalSnapshotHandle {
   readonly texture: CanvasTexture;
   readonly capture: (iframe: HTMLIFrameElement) => boolean;
   readonly clear: () => void;

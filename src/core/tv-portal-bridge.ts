@@ -1,7 +1,7 @@
 import type { CursorController } from "../design-system/components/cursor.types";
 import type { AudioEngineContract } from "./audio.types";
 
-export interface StudioTvPortalBridge {
+interface StudioTvPortalBridge {
   readonly audio: AudioEngineContract;
   readonly cursor: CursorController;
   readonly closeToDrum: () => void;

@@ -15,14 +15,13 @@ import type { StudioTvPortalDeps, StudioTvPortalHandle } from "./studio-tv-porta
 
 export type { StudioTvPortalDeps, StudioTvPortalHandle } from "./studio-tv-portal.types";
 
-const FRAME_SETTLE_MS = 85;
-const LOAD_FALLBACK_MS = 1100;
-const prefersReduced = (): boolean => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const [FRAME_SETTLE_MS, LOAD_FALLBACK_MS] = [85, 1100];
 
 export const createStudioTvPortal = (deps: StudioTvPortalDeps): StudioTvPortalHandle => {
   const { portalEl, iframeEl } = createCrtPortalDom(deps.container);
   const aperture = createCrtPortalAperture();
   const wipe = createStudioCrtFluidWipe(() => deps.onPortalChange(false));
+  const motionMq = window.matchMedia("(prefers-reduced-motion: reduce)");
   const s = {
     url: null as string | null,
     displayMode: 0 as 0 | 1,
@@ -31,11 +30,11 @@ export const createStudioTvPortal = (deps: StudioTvPortalDeps): StudioTvPortalHa
     closing: false,
     frameReady: false,
     cutout: 0,
+    tuneTimer: null as number | null,
   };
-  let tuneTimer: number | null = null;
   const clearTune = (): void => {
-    if (tuneTimer !== null) window.clearTimeout(tuneTimer);
-    tuneTimer = null;
+    if (s.tuneTimer !== null) window.clearTimeout(s.tuneTimer);
+    s.tuneTimer = null;
   };
   const setDom = (has: boolean, live: boolean, tuning = false): void =>
     syncPortalDomVisibility(deps.container, portalEl, has, live, tuning);
@@ -65,11 +64,12 @@ export const createStudioTvPortal = (deps: StudioTvPortalDeps): StudioTvPortalHa
     setDom(true, live);
     if (live) syncBounds(deps.camera);
     else {
-      tuneTimer = window.setTimeout(() => {
-        tuneTimer = null;
-        if (!s.url || s.live || s.tuning || s.closing) return;
-        deps.captureSnapshot(iframeEl);
-        deps.onPortalChange(false);
+      s.tuneTimer = window.setTimeout(() => {
+        s.tuneTimer = null;
+        if (s.url && !s.live && !s.tuning && !s.closing) {
+          deps.captureSnapshot(iframeEl);
+          deps.onPortalChange(false);
+        }
       }, 650);
     }
     deps.onPortalChange(false);
@@ -96,16 +96,17 @@ export const createStudioTvPortal = (deps: StudioTvPortalDeps): StudioTvPortalHa
     if (!s.url || !s.tuning || s.closing) return;
     const href = readPortalFrameHref(iframeEl);
     if (href === "about:blank") return;
-    if (isRootPortalRoute(href)) commitCloseToDrum(true);
-    else {
-      clearTune();
-      if (prefersReduced()) markReady();
-      else tuneTimer = window.setTimeout(markReady, FRAME_SETTLE_MS);
+    if (isRootPortalRoute(href)) {
+      commitCloseToDrum(true);
+      return;
     }
+    clearTune();
+    if (motionMq.matches) markReady();
+    else s.tuneTimer = window.setTimeout(markReady, FRAME_SETTLE_MS);
   };
   const startFrameNav = (targetUrl: string): void => {
     replacePortalFrameUrl(iframeEl, targetUrl);
-    tuneTimer = window.setTimeout(markReady, LOAD_FALLBACK_MS);
+    s.tuneTimer = window.setTimeout(markReady, LOAD_FALLBACK_MS);
   };
   const open = (targetUrl: string): void => {
     if (isRootPortalRoute(targetUrl)) {
@@ -138,16 +139,17 @@ export const createStudioTvPortal = (deps: StudioTvPortalDeps): StudioTvPortalHa
   };
   const suspend = (): void => {
     if (!s.url) return;
-    if (s.closing) commitCloseToDrum(false);
-    else {
-      if (!s.tuning || s.live) {
-        iframeEl.contentWindow?.dispatchEvent(new Event("studio-tv:reset-pose"));
-        deps.captureSnapshot(iframeEl);
-      }
-      Object.assign(s, { live: false, cutout: 0 });
-      setDom(true, false, s.tuning);
-      deps.onPortalChange(true);
+    if (s.closing) {
+      commitCloseToDrum(false);
+      return;
     }
+    if (!s.tuning || s.live) {
+      iframeEl.contentWindow?.dispatchEvent(new Event("studio-tv:reset-pose"));
+      deps.captureSnapshot(iframeEl);
+    }
+    Object.assign(s, { live: false, cutout: 0 });
+    setDom(true, false, s.tuning);
+    deps.onPortalChange(true);
   };
   const resume = (): void => {
     if (!s.url || s.live || s.tuning || s.closing) return;
@@ -162,19 +164,14 @@ export const createStudioTvPortal = (deps: StudioTvPortalDeps): StudioTvPortalHa
   };
   iframeEl.addEventListener("load", onFrameLoad);
   portalEl.addEventListener("pointerenter", onPortalEnter);
-  registerStudioTvBridge({
-    audio: deps.audio,
-    cursor: deps.cursor,
-    closeToDrum,
-    exitTvFocus: deps.onExitTvFocus,
-    navigateInTv: open,
-    handleChannelKey: deps.onChannelKey,
-    syncPointer: (x, y) =>
-      deps.onPointerMove?.(
-        (x / Math.max(1, innerWidth)) * 2 - 1,
-        -((y / Math.max(1, innerHeight)) * 2 - 1),
-      ),
-  });
+  const { audio, cursor, onExitTvFocus: exitTvFocus, onChannelKey: handleChannelKey } = deps;
+  const syncPointer = (x: number, y: number): void =>
+    deps.onPointerMove?.(
+      (x / Math.max(1, innerWidth)) * 2 - 1,
+      -((y / Math.max(1, innerHeight)) * 2 - 1),
+    );
+  const bridge = { audio, cursor, closeToDrum, exitTvFocus, navigateInTv: open, handleChannelKey };
+  registerStudioTvBridge({ ...bridge, syncPointer });
   return {
     open,
     suspend,
@@ -182,7 +179,7 @@ export const createStudioTvPortal = (deps: StudioTvPortalDeps): StudioTvPortalHa
     closeToDrum,
     syncBounds,
     stepVisuals: (dt, poweredOn) =>
-      stepPortalVisualState(s, dt, poweredOn, prefersReduced(), wipe.getWave(), wipe.isActive()),
+      stepPortalVisualState(s, dt, poweredOn, motionMq.matches, wipe.getWave(), wipe.isActive()),
     hasActivePage: () => s.url !== null,
     getActiveUrl: () => s.url,
     isInteractive: () => s.live,

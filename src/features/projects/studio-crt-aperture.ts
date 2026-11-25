@@ -4,8 +4,8 @@ import type { StudioFluidWaveVec } from "./studio-crt-fluid-wipe";
 
 const [CRT_MID_Y, CRT_HALF_W, CRT_HALF_H, SIDE_STEPS, CUTOUT_RATE] = [0.165, 1.026, 0.8557, 8, 18];
 const [APERTURE_TOP_Y, APERTURE_BOT_Y] = [1.0207, -0.6907];
-export const CRT_VIRTUAL_W = 1280;
-export const CRT_VIRTUAL_H = 1068;
+const CRT_VIRTUAL_W = 1280;
+const CRT_VIRTUAL_H = 1068;
 
 const buildApertureRing3D = (): readonly Vector3[] => {
   const pts2d: [number, number][] = [];
@@ -29,7 +29,7 @@ const buildApertureRing3D = (): readonly Vector3[] => {
 
 const APERTURE_RING_3D = buildApertureRing3D();
 
-export interface CrtPortalApertureSync {
+interface CrtPortalApertureSync {
   readonly sync: (portalEl: HTMLElement, camera: PerspectiveCamera) => void;
 }
 
@@ -115,7 +115,7 @@ export const stepPortalVisualState = (
   };
 };
 
-export interface CrtPortalDom {
+interface CrtPortalDom {
   readonly portalEl: HTMLDivElement;
   readonly iframeEl: HTMLIFrameElement;
 }
@@ -129,10 +129,7 @@ export const createCrtPortalDom = (container: HTMLElement): CrtPortalDom => {
   iframeEl.className = "studio-tv-portal-frame";
   iframeEl.title = "Contenido interactivo del portafolio en el televisor";
   iframeEl.src = "about:blank";
-  const glassEl = document.createElement("div");
-  glassEl.className = "studio-tv-portal-glass";
-  glassEl.setAttribute("aria-hidden", "true");
-  portalEl.append(iframeEl, glassEl);
+  portalEl.appendChild(iframeEl);
   container.appendChild(portalEl);
   return { portalEl, iframeEl };
 };

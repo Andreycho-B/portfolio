@@ -56,7 +56,7 @@ export const createInitialStudioState = (): StudioControllerState => ({
   zone: "none",
 });
 
-export interface StudioTickDeps {
+interface StudioTickDeps {
   readonly st: StudioControllerState;
   readonly tickState: { prevPos: number; lastDetentPos: number };
   readonly scene: StudioSceneHandle;
@@ -165,6 +165,9 @@ export const stepStudioFrame = (
     }
   }
   if (pw.isPoweredOn || st.focus !== null) deps.entryHint.dismiss();
+  deps.entryHint.syncTvScroll(
+    st.focus === "tv" && pw.isPoweredOn && !hasPage && sc.getTvChannel() === "portfolio",
+  );
   if (st.wasIntro && !inIntro) {
     st.lastHoverMs = now;
     deps.entryHint.reveal();

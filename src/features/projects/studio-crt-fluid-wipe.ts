@@ -2,7 +2,7 @@ import { gsap } from "gsap";
 
 export type StudioFluidWaveVec = readonly [number, number, number, number];
 
-export interface StudioCrtFluidWipeHandle {
+interface StudioCrtFluidWipeHandle {
   readonly getWave: () => StudioFluidWaveVec;
   readonly isActive: () => boolean;
   readonly isCovering: () => boolean;
@@ -21,6 +21,7 @@ const prefersReducedMotion = (): boolean =>
 
 export const createStudioCrtFluidWipe = (onTick: () => void): StudioCrtFluidWipeHandle => {
   const wave = { leadIn: 0, bodyIn: 0, bodyOut: 0, leadOut: 0 };
+  const waveVec: [number, number, number, number] = [0, 0, 0, 0];
   let phase: "idle" | "in" | "covered" | "out" = "idle";
   let activeTl: gsap.core.Timeline | null = null;
 
@@ -108,7 +109,13 @@ export const createStudioCrtFluidWipe = (onTick: () => void): StudioCrtFluidWipe
   };
 
   return {
-    getWave: () => [wave.leadIn, wave.bodyIn, wave.bodyOut, wave.leadOut],
+    getWave: () => {
+      waveVec[0] = wave.leadIn;
+      waveVec[1] = wave.bodyIn;
+      waveVec[2] = wave.bodyOut;
+      waveVec[3] = wave.leadOut;
+      return waveVec;
+    },
     isActive: () => phase !== "idle",
     isCovering: () => phase === "covered",
     startSweepIn,
