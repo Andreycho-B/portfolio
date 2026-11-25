@@ -4,19 +4,6 @@
   background: #f5f5f3;
 }
 
-.projects-lens-section[data-stage-mode="studio"] .projects-meta-bar,
-.projects-lens-section[data-stage-mode="studio"] .projects-stage,
-.projects-lens-section[data-stage-mode="studio"] .projects-footer-bar {
-  visibility: hidden;
-  pointer-events: none;
-}
-
-.projects-lens-section[data-stage-mode="studio"] .projects-meta-bar *,
-.projects-lens-section[data-stage-mode="studio"] .projects-stage *,
-.projects-lens-section[data-stage-mode="studio"] .projects-footer-bar * {
-  pointer-events: none;
-}
-
 .projects-lens-section[data-stage-mode="studio"] .drum-viewport {
   z-index: 5;
   cursor: default;

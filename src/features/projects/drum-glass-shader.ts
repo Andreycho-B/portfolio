@@ -15,7 +15,7 @@ const LENS_VELOCITY_CAP = 3;
 const LENS_BAND_BASE = 0.165;
 const LENS_BAND_GAIN = 0.014;
 
-export const DRUM_GLASS_VERTEX_SHADER = `
+const DRUM_GLASS_VERTEX_SHADER = `
   varying vec2 vUv;
   void main() {
     vUv = uv;
@@ -23,7 +23,7 @@ export const DRUM_GLASS_VERTEX_SHADER = `
   }
 `;
 
-export const DRUM_GLASS_FRAGMENT_SHADER = `
+const DRUM_GLASS_FRAGMENT_SHADER = `
   uniform sampler2D tDiffuse;
   uniform float uBandTop;
   uniform float uBandBot;
@@ -94,7 +94,7 @@ export const DRUM_GLASS_FRAGMENT_SHADER = `
   }
 `;
 
-export interface DrumLensPostPass {
+interface DrumLensPostPass {
   readonly scene: Scene;
   readonly camera: OrthographicCamera;
   readonly updateUniforms: (scrollVelocity: number, introProgress: number) => void;

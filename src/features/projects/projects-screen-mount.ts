@@ -119,7 +119,6 @@ const runConstructEntry = (
       { once: true },
     );
 
-    // Promote the WebGL2 canvas layer and paint the intro start pose while still behind opaque 100.
     studioScene.playIntroOrbit();
     root.hidden = false;
     canvas.style.opacity = "1";

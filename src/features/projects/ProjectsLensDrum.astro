@@ -1,10 +1,7 @@
 ---
-import { PROFILE } from "../../core/profile";
 import { PROJECTS } from "./project-data";
 import StudioPreloader from "./StudioPreloader.astro";
 import "./projects-drum.css";
-
-const initialProject = PROJECTS[0];
 ---
 
 <StudioPreloader />
@@ -16,31 +13,6 @@ const initialProject = PROJECTS[0];
   hidden
   aria-label="Proyectos seleccionados"
 >
-  <svg aria-hidden="true" class="lens-filter-defs">
-    <defs>
-      <filter
-        id="project-title-blur-filter"
-        x="-30%"
-        y="-30%"
-        width="160%"
-        height="160%"
-        color-interpolation-filters="sRGB"
-      >
-        <feGaussianBlur
-          id="project-title-blur-node"
-          in="SourceGraphic"
-          stdDeviation="0 0"
-          result="blur"
-        />
-        <feColorMatrix
-          in="blur"
-          mode="matrix"
-          values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11"
-        />
-      </filter>
-    </defs>
-  </svg>
-
   <button
     type="button"
     class="studio-sound-btn"
@@ -70,33 +42,15 @@ const initialProject = PROJECTS[0];
       </g>
     </svg>
   </button>
+
   <p class="studio-entry-hint" data-studio-entry-hint data-nosnippet>
     Siéntate para comenzar · o explora libremente
   </p>
-  <header class="projects-meta-bar" data-nosnippet>
-    <a href="/" class="brand-lockup" aria-label="Andrey — Inicio">
-      <img
-        src="/logo.webp"
-        alt="Andrey"
-        class="brand-monogram"
-        width="28"
-        height="34"
-        decoding="async"
-      />
-    </a>
-    <button
-      type="button"
-      class="sound-toggle-btn"
-      data-sound-toggle
-      aria-label="Silenciar sonido"
-      aria-pressed="false"
-    >
-      <span class="sound-label">SONIDO</span>
-      <span class="sound-state" data-sound-state aria-hidden="true">
-        [ON]
-      </span>
-    </button>
-  </header>
+
+  <p class="studio-scroll-hint" data-studio-scroll-hint data-nosnippet aria-hidden="true">
+    <span class="studio-scroll-label-desktop">Desliza · rueda o touchpad</span>
+    <span class="studio-scroll-label-touch">Desliza para explorar</span>
+  </p>
 
   <div
     class="drum-viewport"
@@ -117,8 +71,8 @@ const initialProject = PROJECTS[0];
             src={project.imageSrc}
             alt={`Captura del proyecto ${project.title}`}
             class="fallback-card-img"
-            width="1917"
-            height="912"
+            width={project.coverWidth}
+            height={project.coverHeight}
             loading="lazy"
             decoding="async"
           />
@@ -127,69 +81,6 @@ const initialProject = PROJECTS[0];
       ))}
     </div>
   </div>
-
-  <div class="projects-stage">
-    <div class="project-info-column" aria-live="polite" aria-atomic="true">
-      <h2 class="project-morphic-title" data-project-title>
-        {initialProject.title}
-      </h2>
-      <div class="project-details-row">
-        <span class="project-year" data-project-year>
-          {initialProject.year}
-        </span>
-      </div>
-    </div>
-
-    <div class="drum-spacer" aria-hidden="true"></div>
-
-    <div class="project-action-column">
-      <a href="/sobre-mi" class="about-anchor-link" data-about-trigger>
-        <span class="about-section-label">
-          sobre mí
-          <svg class="about-arrow" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path
-              d="M6 3.5L10.5 8L6 12.5"
-              stroke="currentColor"
-              stroke-width="1.3"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </span>
-      </a>
-    </div>
-  </div>
-
-  <footer class="projects-footer-bar" data-nosnippet>
-    <a
-      href={PROFILE.whatsappUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      class="footer-link footer-link-left"
-      aria-label={`WhatsApp: ${PROFILE.phone}`}
-    >
-      {PROFILE.phone}
-    </a>
-
-    <div class="drum-pagination">
-      <span class="drum-idx" data-project-index>
-        01
-      </span>
-      <div class="drum-track" aria-hidden="true">
-        <div class="drum-thumb" data-drum-thumb />
-      </div>
-      <span class="drum-total">{String(PROJECTS.length).padStart(2, "0")}</span>
-    </div>
-
-    <button
-      type="button"
-      class="footer-link footer-link-right"
-      data-email-link
-      aria-label={`Copiar correo: ${PROFILE.email}`}
-    >
-      <span data-email-text>{PROFILE.email.toUpperCase()}</span>
-    </button>
-  </footer>
 </section>
 
 <script>

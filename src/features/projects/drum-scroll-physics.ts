@@ -1,4 +1,4 @@
-export type SlotPosition = number;
+type SlotPosition = number;
 type SlotOffset = number;
 
 interface DragSample {
