@@ -17,13 +17,13 @@ import type { StudioFluidWaveVec } from "./studio-crt-fluid-wipe";
 import type { StudioAssetTracker } from "./studio-loading-tracker";
 import { clampPbrTextureBudget, disposeObject3DResources } from "./studio-texture-budget";
 import { createStudioTvButtonCues, type StudioChassisFrame } from "./studio-tv-button-cues";
-import { createStudioTvButtons, splitRetroTvButtons, type TvButtonId } from "./studio-tv-buttons";
+import { createStudioTvButtons, type TvButtonId } from "./studio-tv-buttons";
 import { createStudioTvChannels, type TvChannelMode } from "./studio-tv-channels";
+import { createStudioTvDecals } from "./studio-tv-decals";
+import { splitRetroTvButtons } from "./studio-tv-mesh-split";
 
 const RETRO_TV_MODEL_URL = "/models3D/tv__old_tv__retro_tv.glb";
-const TV_SCALE = 1.12;
-const TV_OFFSET_Y = -2.6159;
-const TV_OFFSET_Z = 0.525;
+const [TV_SCALE, TV_OFFSET_Y, TV_OFFSET_Z] = [1.12, -2.6159, 0.525];
 const ZERO_WAVE: StudioFluidWaveVec = [0, 0, 0, 0];
 
 export const createMacintoshChassis = (
@@ -31,7 +31,8 @@ export const createMacintoshChassis = (
   tDrum: Texture,
   tEditorial: Texture,
   tPortal: Texture,
-  onAssetLoaded?: () => void,
+  onGeometryReady?: () => void,
+  onChannelReady?: () => void,
   tracker?: StudioAssetTracker,
 ): MacintoshChassisHandle => {
   const group = new Group();
@@ -59,10 +60,11 @@ export const createMacintoshChassis = (
   tvHitHull.matrixAutoUpdate = false;
 
   const tvButtons = createStudioTvButtons(group);
+  const tvDecals = createStudioTvDecals();
   const tvButtonCues = createStudioTvButtonCues(group);
-  const tvChannels = createStudioTvChannels(onAssetLoaded);
+  const tvChannels = createStudioTvChannels(onChannelReady);
   const crtGlass = createMacintoshCrtGlass(tDrum, tEditorial, tPortal);
-  group.add(chassisBodyMesh, tvHitHull, crtGlass.mesh);
+  group.add(chassisBodyMesh, tvDecals.brandMesh, tvHitHull, crtGlass.mesh);
   targetScene.add(group);
 
   const loadedGeometries: BufferGeometry[] = [hullGeo];
@@ -97,6 +99,7 @@ export const createMacintoshChassis = (
         const meshNode = sourceMesh as Mesh;
         const combinedMatrix = placementMatrix.clone().multiply(meshNode.matrixWorld);
         const { cabinetGeo, buttonGeos } = splitRetroTvButtons(meshNode.geometry, combinedMatrix);
+        for (const [id, geo] of buttonGeos) tvDecals.prepareButton(id, geo);
         chassisBodyMesh.geometry.dispose();
         chassisBodyMesh.geometry = cabinetGeo;
         chassisBodyMesh.visible = true;
@@ -106,22 +109,23 @@ export const createMacintoshChassis = (
         loadedGeometries.push(cabinetGeo);
 
         const mat = Array.isArray(meshNode.material) ? meshNode.material[0] : meshNode.material;
-        let tvMat: Material = fallbackMaterial;
         if (mat instanceof MeshStandardMaterial) {
           mat.envMapIntensity = 0.92;
-          for (const tex of [mat.map, mat.roughnessMap, mat.metalnessMap, mat.normalMap]) {
+          const maps = [mat.map, mat.roughnessMap, mat.metalnessMap, mat.normalMap, mat.aoMap];
+          for (const tex of maps) {
             if (!tex) continue;
             clampPbrTextureBudget(tex, 1024);
+            tex.anisotropy = tex === mat.map ? 8 : 4;
             loadedTextures.add(tex);
           }
-          tvMat = mat;
+          tvDecals.scrubCabinetBrand(mat);
           chassisBodyMesh.material = mat;
           loadedMaterials.add(mat);
           if (mat.roughnessMap) crtGlass.setRoughnessMap(mat.roughnessMap);
         }
-        tvButtons.bindVisuals(buttonGeos, tvMat);
+        tvButtons.bindVisuals(buttonGeos, tvDecals.buttonMaterial);
         meshNode.geometry.dispose();
-        onAssetLoaded?.();
+        onGeometryReady?.();
         done?.();
       };
       if (tracker) tracker.enqueuePostLoad(applyTv);
@@ -168,7 +172,7 @@ export const createMacintoshChassis = (
   const dispose = (): void => {
     isDisposed = true;
     targetScene.remove(group);
-    const rs = [tvButtons, tvButtonCues, tvChannels, crtGlass, chassisBodyMesh.geometry];
+    const rs = [tvButtons, tvDecals, tvButtonCues, tvChannels, crtGlass, chassisBodyMesh.geometry];
     for (const r of rs) r.dispose();
     for (const r of [...loadedGeometries, ...loadedMaterials, ...loadedTextures]) r.dispose();
   };
@@ -177,7 +181,6 @@ export const createMacintoshChassis = (
     group,
     lightSurfaceMeshes: [crtGlass.mesh],
     darkSurfaceMeshes: [tvHitHull, ...tvButtons.hitMeshes],
-    powerButtonMesh: tvButtons.powerHitMesh,
     crtGlassMesh: crtGlass.mesh,
     tvButtons,
     setPortalState,

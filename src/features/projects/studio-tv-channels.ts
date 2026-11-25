@@ -29,7 +29,7 @@ const CHANNEL_OSD: Readonly<Record<TvChannelMode, string>> = {
   clock: "CH 09 · RELOJ",
 };
 
-export interface StudioTvChannelsHandle {
+interface StudioTvChannelsHandle {
   readonly texture: CanvasTexture;
   readonly getChannel: () => TvChannelMode;
   readonly isRetroActive: () => boolean;

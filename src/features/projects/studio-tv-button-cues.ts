@@ -22,14 +22,14 @@ export interface StudioChassisFrame {
   readonly about?: boolean;
 }
 
-export interface TvButtonCueState {
+interface TvButtonCueState {
   readonly channel: TvChannelMode;
   readonly isPortalOpen: boolean;
   readonly hoveredButton: TvButtonId | null;
   readonly getPressDepth: (id: TvButtonId) => number;
 }
 
-export interface StudioTvButtonCuesHandle {
+interface StudioTvButtonCuesHandle {
   readonly update: (dt: number, frame: StudioChassisFrame, state: TvButtonCueState) => boolean;
   readonly dispose: () => void;
 }
@@ -68,6 +68,7 @@ void main(){
   gl_FragColor=vec4(mix(vec3(0.05,0.04,0.03),fg,t),alpha);
 }`;
 
+const PORTFOLIO_BTNS: readonly TvButtonId[] = ["ch1", "ch2", "ch3"];
 const RETRO_ACTIVE_BTN: Partial<Record<TvChannelMode, TvButtonId>> = {
   smpte: "ch6",
   static: "ch7",
@@ -79,7 +80,7 @@ const isButtonActive = (id: TvButtonId, f: StudioChassisFrame, s: TvButtonCueSta
   if (s.isPortalOpen && f.about) return id === "ch4";
   if (s.channel === "dvd") return id === "ch5" || id === "dvd";
   if (s.channel !== "portfolio") return RETRO_ACTIVE_BTN[s.channel] === id;
-  return id === (["ch1", "ch2", "ch3"][f.idx] ?? "");
+  return id === (PORTFOLIO_BTNS[f.idx] ?? "");
 };
 
 export const createStudioTvButtonCues = (parent: Group): StudioTvButtonCuesHandle => {
@@ -123,6 +124,8 @@ export const createStudioTvButtonCues = (parent: Group): StudioTvButtonCuesHandl
   motionQuery?.addEventListener("change", onMotionChange);
 
   const hovers = new Float32Array(count);
+  const prevZs = new Float32Array(count);
+  let prevScale = -1;
   const mat4 = new Matrix4();
   const center = new Vector3(0, -0.82, 1.24);
 
@@ -140,8 +143,10 @@ export const createStudioTvButtonCues = (parent: Group): StudioTvButtonCuesHandl
 
     const dist = frame.camera.position.distanceTo(center);
     const scale = MathUtils.clamp(dist * 0.0078, 0.032, 0.056);
+    const scaleChanged = Math.abs(scale - prevScale) > 1e-5;
+    if (scaleChanged) prevScale = scale;
     const hoverLerp = prefersReduced ? 1 : 1 - Math.exp(-14 * dt);
-    let animHover = false;
+    let [animHover, stateDirty, matrixDirty] = [false, false, false];
 
     for (let i = 0; i < count; i += 1) {
       const spec = TV_BUTTON_SPECS[i];
@@ -153,17 +158,25 @@ export const createStudioTvButtonCues = (parent: Group): StudioTvButtonCuesHandl
       if (hovers[i] !== target) animHover = true;
 
       const idx = i * 4;
-      stateData[idx] = hovers[i] ?? 0;
-      stateData[idx + 1] = isButtonActive(spec.id, frame, state) ? 1 : 0;
-      stateData[idx + 2] = spec.id === "power" ? 1 : spec.id === "mute" && frame.muted ? 2 : 0;
+      const hov = hovers[i] ?? 0;
+      const act = isButtonActive(spec.id, frame, state) ? 1 : 0;
+      const acc = spec.id === "power" ? 1 : spec.id === "mute" && frame.muted ? 2 : 0;
+      if (stateData[idx] !== hov || stateData[idx + 1] !== act || stateData[idx + 2] !== acc) {
+        [stateData[idx], stateData[idx + 1], stateData[idx + 2]] = [hov, act, acc];
+        stateDirty = true;
+      }
 
       const z = 1.242 - state.getPressDepth(spec.id) * 0.6;
-      mat4.makeScale(scale, scale, 1);
-      mat4.setPosition(spec.x, spec.y + 0.043, z);
-      mesh.setMatrixAt(i, mat4);
+      if (scaleChanged || Math.abs(z - (prevZs[i] ?? 0)) > 1e-5) {
+        prevZs[i] = z;
+        mat4.makeScale(scale, scale, 1);
+        mat4.setPosition(spec.x, spec.y + 0.043, z);
+        mesh.setMatrixAt(i, mat4);
+        matrixDirty = true;
+      }
     }
-    mesh.instanceMatrix.needsUpdate = true;
-    stateAttr.needsUpdate = true;
+    if (matrixDirty) mesh.instanceMatrix.needsUpdate = true;
+    if (stateDirty) stateAttr.needsUpdate = true;
     if (material.uniforms.uTime) material.uniforms.uTime.value = elapsed;
     if (material.uniforms.uOpacity) material.uniforms.uOpacity.value = opacity;
 

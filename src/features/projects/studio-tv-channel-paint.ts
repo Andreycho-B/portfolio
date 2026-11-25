@@ -61,6 +61,10 @@ export const paintTerminalChannel = (ctx: CanvasRenderingContext2D, elapsed: num
   }
 };
 
+const RESOLVED_TZ = (Intl.DateTimeFormat().resolvedOptions().timeZone || "LOCAL").toUpperCase();
+let cachedClockDayKey = -1;
+let cachedClockDateLabel = "";
+
 export const paintClockChannel = (ctx: CanvasRenderingContext2D): void => {
   ctx.fillStyle = "#0a0c12";
   ctx.fillRect(0, 0, TV_CH_W, TV_CH_H);
@@ -68,10 +72,13 @@ export const paintClockChannel = (ctx: CanvasRenderingContext2D): void => {
   const hh = String(now.getHours()).padStart(2, "0");
   const mm = String(now.getMinutes()).padStart(2, "0");
   const ss = String(now.getSeconds()).padStart(2, "0");
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "LOCAL";
-  const dateStr = now
-    .toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long" })
-    .toUpperCase();
+  const dayKey = now.getFullYear() * 10000 + now.getMonth() * 100 + now.getDate();
+  if (dayKey !== cachedClockDayKey) {
+    cachedClockDayKey = dayKey;
+    cachedClockDateLabel = now
+      .toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long" })
+      .toUpperCase();
+  }
   ctx.fillStyle = "#ffffff";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -79,8 +86,8 @@ export const paintClockChannel = (ctx: CanvasRenderingContext2D): void => {
   ctx.fillText(`${hh}:${mm}:${ss}`, TV_CH_W * 0.5, TV_CH_H * 0.46);
   ctx.font = '500 22px "Karrik", sans-serif';
   ctx.fillStyle = "rgba(255, 255, 255, 0.78)";
-  ctx.fillText(dateStr, TV_CH_W * 0.5, TV_CH_H * 0.66);
+  ctx.fillText(cachedClockDateLabel, TV_CH_W * 0.5, TV_CH_H * 0.66);
   ctx.font = '400 17px "Karrik", monospace';
   ctx.fillStyle = "#68ff98";
-  ctx.fillText(`ZONA HORARIA · ${tz.toUpperCase()}`, TV_CH_W * 0.5, TV_CH_H * 0.76);
+  ctx.fillText(`ZONA HORARIA · ${RESOLVED_TZ}`, TV_CH_W * 0.5, TV_CH_H * 0.76);
 };

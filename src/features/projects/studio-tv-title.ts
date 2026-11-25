@@ -24,7 +24,7 @@ const TEX_H = 256;
 const TITLE_W = 2.24;
 const TITLE_H = (TITLE_W * TEX_H) / TEX_W;
 
-export interface StudioTvTitleHandle {
+interface StudioTvTitleHandle {
   readonly update: (
     dtSeconds: number,
     camera: Camera,

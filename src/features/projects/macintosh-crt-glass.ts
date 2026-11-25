@@ -3,7 +3,7 @@ import { createCrtGlassDomeGeometry } from "./macintosh-crt-geometry";
 import { CRT_GLASS_FRAGMENT_SHADER, CRT_GLASS_VERTEX_SHADER } from "./macintosh-crt-shaders";
 import type { StudioFluidWaveVec } from "./studio-crt-fluid-wipe";
 
-export interface MacintoshCrtGlassHandle {
+interface MacintoshCrtGlassHandle {
   readonly mesh: Mesh;
   readonly setRoughnessMap: (tex: Texture) => void;
   readonly setChannelTexture: (tex: Texture | null) => void;

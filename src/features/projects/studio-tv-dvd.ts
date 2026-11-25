@@ -9,7 +9,7 @@ const DVD_COLORS = [
 ] as const;
 const [BADGE_W, BADGE_H, SPEED_X, SPEED_Y] = [208, 198, 138, 102];
 
-export interface StudioTvDvdHandle {
+interface StudioTvDvdHandle {
   readonly reset: () => void;
   readonly stepAndPaint: (
     ctx: CanvasRenderingContext2D,
@@ -82,6 +82,7 @@ export const createStudioTvDvd = (
 ): StudioTvDvdHandle => {
   const st = { x: 274, y: 172, vx: SPEED_X, vy: SPEED_Y, c: 0, corners: 0, flash: 0, dead: false };
   let logoImg: HTMLImageElement | null = null;
+  let backdropCanvas: HTMLCanvasElement | null = null;
   const tintCache = new Map<string, HTMLCanvasElement>();
 
   const img = new Image();
@@ -145,11 +146,20 @@ export const createStudioTvDvd = (
       [st.x, st.y] = [(w - BADGE_W) * 0.5, (h - BADGE_H) * 0.5];
     }
 
-    const grad = ctx.createRadialGradient(w * 0.5, h * 0.5, 40, w * 0.5, h * 0.5, w * 0.68);
-    grad.addColorStop(0, "#101cff");
-    grad.addColorStop(1, "#050bb8");
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, w, h);
+    if (!backdropCanvas || backdropCanvas.width !== w || backdropCanvas.height !== h) {
+      const bc = document.createElement("canvas");
+      [bc.width, bc.height] = [w, h];
+      const bCtx = bc.getContext("2d");
+      if (bCtx) {
+        const grad = bCtx.createRadialGradient(w * 0.5, h * 0.5, 40, w * 0.5, h * 0.5, w * 0.68);
+        grad.addColorStop(0, "#101cff");
+        grad.addColorStop(1, "#050bb8");
+        bCtx.fillStyle = grad;
+        bCtx.fillRect(0, 0, w, h);
+      }
+      backdropCanvas = bc;
+    }
+    ctx.drawImage(backdropCanvas, 0, 0);
 
     if (st.flash > 0.01) {
       ctx.fillStyle = `rgba(255, 245, 160, ${(st.flash * 0.24).toFixed(3)})`;
