@@ -1,7 +1,7 @@
-export type ProjectTheme = "dark" | "light";
+type ProjectTheme = "dark" | "light";
 
-export type ProjectId = "mias" | "tusuper" | "estandar";
-export type ProjectSlug = "mias-hamburguesas-de-lujo" | "tu-super" | "estandar-gobernanza-agentes";
+type ProjectId = "mias" | "tusuper" | "estandar";
+type ProjectSlug = "mias-hamburguesas-de-lujo" | "tu-super" | "estandar-gobernanza-agentes";
 
 export interface ProjectItem {
   readonly id: ProjectId;
@@ -154,7 +154,3 @@ export const PROJECTS: readonly [ProjectItem, ...ProjectItem[]] = [
 
 export const PROJECT_COUNT = PROJECTS.length;
 export const DRUM_SLOTS = 9;
-
-export function getProjectBySlug(slug: string): ProjectItem | undefined {
-  return PROJECTS.find((p) => p.slug === slug);
-}
