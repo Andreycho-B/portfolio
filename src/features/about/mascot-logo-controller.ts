@@ -26,12 +26,7 @@ export const initMascotLogo = (lenis: Lenis | null): MascotLogoHandle | null => 
   }
 
   if (prefersReduced) {
-    return {
-      cleanup: () => {
-        eyesController?.destroy();
-      },
-      triggerBlink: () => {},
-    };
+    return { cleanup: () => eyesController?.destroy(), triggerBlink: () => {} };
   }
 
   const floatRig = document.getElementById("mascot-float-rig");
@@ -43,9 +38,8 @@ export const initMascotLogo = (lenis: Lenis | null): MascotLogoHandle | null => 
     ease: "sine.inOut",
   });
 
-  let lastClientX = 0;
-  let lastClientY = 0;
-  let lastTimestamp = 0;
+  let [lastClientX, lastClientY, pendingX, pendingY, lastTimestamp] = [0, 0, 0, 0, 0];
+  let pointerRafId: number | null = null;
   let idleResetTimer: number | undefined;
 
   const clearIdleTimer = (): void => {
@@ -56,6 +50,10 @@ export const initMascotLogo = (lenis: Lenis | null): MascotLogoHandle | null => 
   };
 
   const resetPose = (instant = false): void => {
+    if (pointerRafId !== null) {
+      cancelAnimationFrame(pointerRafId);
+      pointerRafId = null;
+    }
     clearIdleTimer();
     eyesController?.resetGaze(instant);
     if (instant) {
@@ -87,32 +85,24 @@ export const initMascotLogo = (lenis: Lenis | null): MascotLogoHandle | null => 
     });
   };
 
-  const handlePointerMove = (e: PointerEvent) => {
-    if (e.pointerType !== "mouse") return;
+  const flushPointerMove = (): void => {
+    pointerRafId = null;
     const now = performance.now();
     const dt = Math.max(now - lastTimestamp, 16);
     lastTimestamp = now;
 
-    const dx = e.clientX - lastClientX;
-    const dy = e.clientY - lastClientY;
-    lastClientX = e.clientX;
-    lastClientY = e.clientY;
-
+    const [dx, dy] = [pendingX - lastClientX, pendingY - lastClientY];
+    [lastClientX, lastClientY] = [pendingX, pendingY];
     const velocityX = Math.max(Math.min(dx / dt, 2.5), -2.5);
     const velocityY = Math.max(Math.min(dy / dt, 2.5), -2.5);
-
-    const normX = (e.clientX / window.innerWidth) * 2 - 1;
-    const normY = -(e.clientY / window.innerHeight) * 2 + 1;
-
-    const targetRotateY = normX * 22;
-    const targetRotateX = normY * 18;
-    const targetRotateZ = normX * 3.5 + velocityX * 2.2;
+    const normX = (pendingX / Math.max(1, window.innerWidth)) * 2 - 1;
+    const normY = -(pendingY / Math.max(1, window.innerHeight)) * 2 + 1;
     const stretchFactor = Math.min(Math.hypot(velocityX, velocityY) * 0.02, 0.05);
 
     gsap.to(logoEl, {
-      rotateY: targetRotateY,
-      rotateX: targetRotateX,
-      rotateZ: targetRotateZ,
+      rotateY: normX * 22,
+      rotateX: normY * 18,
+      rotateZ: normX * 3.5 + velocityX * 2.2,
       x: normX * 18,
       y: -normY * 14,
       scaleX: 1 - stretchFactor * 0.5,
@@ -132,6 +122,12 @@ export const initMascotLogo = (lenis: Lenis | null): MascotLogoHandle | null => 
     });
     clearIdleTimer();
     idleResetTimer = window.setTimeout(() => resetPose(false), 1100);
+  };
+
+  const handlePointerMove = (e: PointerEvent): void => {
+    if (e.pointerType !== "mouse") return;
+    [pendingX, pendingY] = [e.clientX, e.clientY];
+    if (pointerRafId === null) pointerRafId = requestAnimationFrame(flushPointerMove);
   };
 
   const handlePointerLeave = (): void => resetPose(false);
@@ -182,6 +178,7 @@ export const initMascotLogo = (lenis: Lenis | null): MascotLogoHandle | null => 
 
   return {
     cleanup: () => {
+      if (pointerRafId !== null) cancelAnimationFrame(pointerRafId);
       clearIdleTimer();
       window.removeEventListener("pointermove", handlePointerMove);
       document.documentElement.removeEventListener("mouseleave", handlePointerLeave);

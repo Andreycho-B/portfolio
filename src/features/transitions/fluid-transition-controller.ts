@@ -11,7 +11,7 @@ import {
 } from "./fluid-curve-math";
 import { getOrCreateFluidOverlay } from "./fluid-wipe-overlay";
 
-export interface FluidTransitionOptions {
+interface FluidTransitionOptions {
   readonly targetUrl: string;
   readonly canvas?: HTMLCanvasElement | null;
   readonly titleElement?: HTMLElement | null;

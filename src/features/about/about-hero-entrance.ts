@@ -67,8 +67,9 @@ export const initAboutHeroEntrance = (options?: HeroEntranceOptions): (() => voi
     tl.to(target, { filter: "blur(0px)", duration: 1.05, ease: "power2.out" }, start);
   }
 
-  const heroFitsViewport = () => !stageGrid || stageGrid.offsetHeight <= window.innerHeight;
-  let isHeroVisibleAtOnce = heroFitsViewport();
+  let stageGridHeight = stageGrid ? stageGrid.offsetHeight : 0;
+  let isHeroVisibleAtOnce = !stageGrid || stageGridHeight <= window.innerHeight;
+  let stylesCleared = true;
 
   const clearElementStyles = (el: HTMLElement) => {
     el.style.filter = "";
@@ -80,19 +81,21 @@ export const initAboutHeroEntrance = (options?: HeroEntranceOptions): (() => voi
   const updateScrollBlur = (scrollY: number) => {
     if (prefersReduced) return;
 
-    const maxScroll = Math.max(stageGrid ? stageGrid.offsetHeight * 0.85 : 460, 360);
+    const maxScroll = Math.max(stageGrid ? stageGridHeight * 0.85 : 460, 360);
     const progress = isHeroVisibleAtOnce ? Math.min(Math.max(scrollY / maxScroll, 0), 1) : 0;
 
     if (progress > 0.02 && tl.isActive()) tl.kill();
 
     if (progress <= 0.01) {
-      if (!tl.isActive()) {
+      if (!tl.isActive() && !stylesCleared) {
         clearElementStyles(mascotBox);
         clearElementStyles(leftPara);
         clearElementStyles(rightPara);
+        stylesCleared = true;
       }
       return;
     }
+    stylesCleared = false;
 
     const blurCurve = progress ** 1.15;
     const opacityCurve = progress ** 1.1;
@@ -136,7 +139,8 @@ export const initAboutHeroEntrance = (options?: HeroEntranceOptions): (() => voi
   }
 
   const onViewportResize = () => {
-    isHeroVisibleAtOnce = heroFitsViewport();
+    stageGridHeight = stageGrid ? stageGrid.offsetHeight : 0;
+    isHeroVisibleAtOnce = !stageGrid || stageGridHeight <= window.innerHeight;
     updateScrollBlur(window.scrollY);
   };
   window.addEventListener("resize", onViewportResize, { passive: true });

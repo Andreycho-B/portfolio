@@ -35,29 +35,10 @@ export const initMascotEyes = (options: MascotEyesOptions): MascotEyesController
 
   const executeBlink = (targets: SVGElement[], onComplete?: () => void): void => {
     if (prefersReduced) return;
-    const tl = gsap.timeline({
-      onComplete: () => {
-        onComplete?.();
-      },
-    });
-
-    tl.to(targets, {
-      scaleY: 0.05,
-      scaleX: 1.15,
-      y: 3.5,
-      duration: 0.075,
-      ease: "power2.in",
-    });
-
+    const tl = gsap.timeline({ onComplete: () => onComplete?.() });
+    tl.to(targets, { scaleY: 0.05, scaleX: 1.15, y: 3.5, duration: 0.075, ease: "power2.in" });
     tl.to(targets, { duration: 0.025 });
-
-    tl.to(targets, {
-      scaleY: 1,
-      scaleX: 1,
-      y: 0,
-      duration: 0.14,
-      ease: "power2.out",
-    });
+    tl.to(targets, { scaleY: 1, scaleX: 1, y: 0, duration: 0.14, ease: "power2.out" });
   };
 
   const blink = (forceDouble = false): void => {
@@ -101,22 +82,28 @@ export const initMascotEyes = (options: MascotEyesOptions): MascotEyesController
 
   let saccadeOffsetX = 0;
   let saccadeOffsetY = 0;
+  let pointerRafId: number | null = null;
+  let pendingClientX = 0;
+  let pendingClientY = 0;
 
-  const handlePointerMove = (e: PointerEvent): void => {
-    if (prefersReduced || e.pointerType !== "mouse") return;
-    const normX = (e.clientX / window.innerWidth) * 2 - 1;
-    const normY = (e.clientY / window.innerHeight) * 2 - 1;
-
-    const gazeX = normX * 5.2 + saccadeOffsetX;
-    const gazeY = normY * 4.6 + saccadeOffsetY;
-
+  const flushGaze = (): void => {
+    pointerRafId = null;
+    if (isDestroyed || prefersReduced) return;
+    const normX = (pendingClientX / Math.max(1, window.innerWidth)) * 2 - 1;
+    const normY = (pendingClientY / Math.max(1, window.innerHeight)) * 2 - 1;
     gsap.to(eyes, {
-      x: gazeX,
-      y: gazeY,
+      x: normX * 5.2 + saccadeOffsetX,
+      y: normY * 4.6 + saccadeOffsetY,
       duration: 0.42,
       ease: "power2.out",
       overwrite: "auto",
     });
+  };
+
+  const handlePointerMove = (e: PointerEvent): void => {
+    if (prefersReduced || e.pointerType !== "mouse") return;
+    [pendingClientX, pendingClientY] = [e.clientX, e.clientY];
+    if (pointerRafId === null) pointerRafId = requestAnimationFrame(flushGaze);
   };
 
   const scheduleNextSaccade = (): void => {
@@ -162,6 +149,10 @@ export const initMascotEyes = (options: MascotEyesOptions): MascotEyesController
 
   const resetGaze = (instant = false): void => {
     if (isDestroyed) return;
+    if (pointerRafId !== null) {
+      cancelAnimationFrame(pointerRafId);
+      pointerRafId = null;
+    }
     if (instant || prefersReduced) {
       gsap.killTweensOf(eyes);
       gsap.set(eyes, { x: 0, y: 0 });
@@ -185,6 +176,7 @@ export const initMascotEyes = (options: MascotEyesOptions): MascotEyesController
 
   const destroy = (): void => {
     isDestroyed = true;
+    if (pointerRafId !== null) cancelAnimationFrame(pointerRafId);
     window.clearTimeout(timerId);
     window.clearTimeout(saccadeTimerId);
     squintTween?.kill();
