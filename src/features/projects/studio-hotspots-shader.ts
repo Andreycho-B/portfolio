@@ -38,17 +38,7 @@ export const HOTSPOT_SPECS: readonly HotspotSpec[] = [
   { target: "chair", pos: [-1.82, -1.65, 3.82], phase: 5.65 },
 ];
 
-export const HOTSPOT_VS = `varying vec2 vUv;
-void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
-
-export const HOTSPOT_FS = `uniform float uTime;
-uniform float uHover;
-uniform float uOpacity;
-uniform float uPhase;
-uniform float uReduced;
-uniform float uHighlight;
-varying vec2 vUv;
-void main(){
+const HOTSPOT_SDF_BODY = `if(uOpacity<0.004)discard;
   vec2 p=vUv*2.0-1.0;
   float r=length(p);
   if(r>1.0)discard;
@@ -73,5 +63,28 @@ void main(){
   vec3 bg=vec3(0.04,0.05,0.08);
   vec3 fg=mix(vec3(1.0,0.99,0.97),vec3(1.0),uHighlight);
   float t=clamp(ink/max(alpha/max(uOpacity,0.001),0.001),0.0,1.0);
-  gl_FragColor=vec4(mix(bg,fg,t),alpha);
+  gl_FragColor=vec4(mix(bg,fg,t),alpha);`;
+
+export const HOTSPOT_VS = `varying vec2 vUv;
+void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
+
+export const HOTSPOT_FS = `uniform float uTime,uHover,uOpacity,uPhase,uReduced,uHighlight;
+varying vec2 vUv;
+void main(){${HOTSPOT_SDF_BODY}}`;
+
+export const HOTSPOT_INSTANCED_VS = `attribute vec4 aHotspotState;
+varying vec2 vUv;
+varying vec4 vState;
+void main(){
+  vUv=uv;
+  vState=aHotspotState;
+  gl_Position=projectionMatrix*modelViewMatrix*instanceMatrix*vec4(position,1.0);
+}`;
+
+export const HOTSPOT_INSTANCED_FS = `uniform float uTime,uReduced;
+varying vec2 vUv;
+varying vec4 vState;
+void main(){
+  float uHover=vState.x,uOpacity=vState.y,uPhase=vState.z,uHighlight=vState.w;
+  ${HOTSPOT_SDF_BODY}
 }`;

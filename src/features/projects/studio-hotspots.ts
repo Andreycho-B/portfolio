@@ -1,34 +1,26 @@
 import {
   type Camera,
-  Group,
+  InstancedBufferAttribute,
+  InstancedMesh,
+  type Intersection,
   MathUtils,
-  Mesh,
-  type Object3D,
+  Matrix4,
   PlaneGeometry,
   type Scene,
   ShaderMaterial,
   Vector3,
 } from "three";
 import {
-  HOTSPOT_FS,
+  HOTSPOT_INSTANCED_FS,
+  HOTSPOT_INSTANCED_VS,
   HOTSPOT_SPECS,
-  HOTSPOT_VS,
-  type HotspotSpec,
   type StudioHotspotId,
 } from "./studio-hotspots-shader";
 import type { StudioFocusTarget } from "./studio-prop-focus";
 
-interface HotspotItem {
-  readonly spec: HotspotSpec;
-  readonly mesh: Mesh;
-  readonly mat: ShaderMaterial;
-  readonly worldPos: Vector3;
-  hover: number;
-}
-
 export interface StudioHotspotsHandle {
-  readonly meshes: readonly Mesh[];
-  readonly resolveTarget: (object: Object3D) => StudioHotspotId | null;
+  readonly mesh: InstancedMesh;
+  readonly resolveHit: (hit: Intersection) => StudioHotspotId | null;
   readonly setHoveredTarget: (target: StudioHotspotId | null) => void;
   readonly update: (
     dtSeconds: number,
@@ -39,17 +31,28 @@ export interface StudioHotspotsHandle {
     chairCueReady: boolean,
     isRetroChannel: boolean,
   ) => boolean;
-  readonly isActive: () => boolean;
   readonly dispose: () => void;
 }
 
+const ZERO_MAT = new Matrix4().makeScale(0, 0, 0);
+const dampTo = (cur: number, target: number, rate: number, dt: number): number => {
+  const next = cur + (target - cur) * (1 - Math.exp(-rate * dt));
+  return Math.abs(target - next) < 0.004 ? target : next;
+};
+
 export const createStudioHotspots = (targetScene: Scene): StudioHotspotsHandle => {
-  const group = new Group();
-  group.name = "studioInteractiveHotspots";
+  const count = HOTSPOT_SPECS.length;
   const geometry = new PlaneGeometry(1, 1);
-  const items: HotspotItem[] = [];
-  const lookup = new Map<Object3D, StudioHotspotId>();
-  const camDir = new Vector3();
+  const stateData = new Float32Array(count * 4);
+  const worldPositions = HOTSPOT_SPECS.map((s) => new Vector3(s.pos[0], s.pos[1], s.pos[2]));
+  const [hovers, visibleFlags] = [new Float32Array(count), new Uint8Array(count)];
+  for (let i = 0; i < count; i += 1) {
+    const spec = HOTSPOT_SPECS[i];
+    if (!spec) continue;
+    [stateData[i * 4 + 2], stateData[i * 4 + 3]] = [spec.phase, spec.highlight ? 1 : 0];
+  }
+  const stateAttr = new InstancedBufferAttribute(stateData, 4);
+  geometry.setAttribute("aHotspotState", stateAttr);
 
   const motionQuery =
     typeof window !== "undefined" ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
@@ -66,45 +69,31 @@ export const createStudioHotspots = (targetScene: Scene): StudioHotspotsHandle =
     propsUnlocked: false,
     anyVisible: true,
   };
-  for (const spec of HOTSPOT_SPECS) {
-    const uniforms = {
-      uTime: { value: 0 },
-      uHover: { value: 0 },
-      uOpacity: { value: 1 },
-      uPhase: { value: spec.phase },
-      uReduced: { value: prefersReduced ? 1 : 0 },
-      uHighlight: { value: spec.highlight ? 1 : 0 },
-    };
-    const mat = new ShaderMaterial({
-      uniforms,
-      vertexShader: HOTSPOT_VS,
-      fragmentShader: HOTSPOT_FS,
-      transparent: true,
-      depthWrite: false,
-      depthTest: true,
-      toneMapped: false,
-    });
-    const mesh = new Mesh(geometry, mat);
-    mesh.name = `hotspot_${spec.target}`;
-    mesh.position.set(spec.pos[0], spec.pos[1], spec.pos[2]);
-    mesh.renderOrder = 10;
-    group.add(mesh);
-    lookup.set(mesh, spec.target);
-    items.push({ spec, mesh, mat, worldPos: new Vector3(...spec.pos), hover: 0 });
-  }
-  targetScene.add(group);
+  const material = new ShaderMaterial({
+    uniforms: { uTime: { value: 0 }, uReduced: { value: prefersReduced ? 1 : 0 } },
+    vertexShader: HOTSPOT_INSTANCED_VS,
+    fragmentShader: HOTSPOT_INSTANCED_FS,
+    transparent: true,
+    depthWrite: false,
+    depthTest: true,
+    toneMapped: false,
+  });
+  const mesh = new InstancedMesh(geometry, material, count);
+  [mesh.name, mesh.renderOrder, mesh.frustumCulled] = ["studioInteractiveHotspots", 10, false];
+  for (let i = 0; i < count; i += 1) mesh.setMatrixAt(i, ZERO_MAT);
+  mesh.instanceMatrix.needsUpdate = true;
+  targetScene.add(mesh);
+
   const onMotionChange = (): void => {
     prefersReduced = motionQuery?.matches ?? false;
-    for (const item of items) {
-      if (item.mat.uniforms.uReduced) item.mat.uniforms.uReduced.value = prefersReduced ? 1 : 0;
-    }
+    if (material.uniforms.uReduced) material.uniforms.uReduced.value = prefersReduced ? 1 : 0;
   };
   motionQuery?.addEventListener("change", onMotionChange);
-  const isDocVisible = (): boolean =>
-    typeof document === "undefined" || document.visibilityState !== "hidden";
+  const [camDir, pos, scaleVec] = [new Vector3(), new Vector3(), new Vector3()];
+  const mat4 = new Matrix4();
 
   const update = (
-    dtSeconds: number,
+    dtRaw: number,
     camera: Camera,
     zoomProgress: number,
     powerProgress: number,
@@ -112,88 +101,98 @@ export const createStudioHotspots = (targetScene: Scene): StudioHotspotsHandle =
     chairCueReady: boolean,
     isRetroChannel: boolean,
   ): boolean => {
-    const dt = Math.min(Math.max(dtSeconds, 0), 0.05);
+    const dt = Math.min(Math.max(dtRaw, 0), 0.05);
     if (!prefersReduced) st.elapsed += dt;
     if (st.chairLead && (activeFocus !== null || powerProgress > 0.15)) st.chairLead = false;
     if (activeFocus === "chair") st.wasSeated = true;
     if (activeFocus === "tv") st.tvExplored = true;
     const stoodUp = st.wasSeated && activeFocus === null;
-    if (chairCueReady || powerProgress > 0.15 || activeFocus === "tv" || stoodUp)
-      st.powerCueUnlocked = true;
-    if (activeFocus === "tv" || powerProgress > 0.5 || stoodUp) st.propsUnlocked = true;
+    st.powerCueUnlocked ||=
+      chairCueReady || powerProgress > 0.15 || activeFocus === "tv" || stoodUp;
+    st.propsUnlocked ||= activeFocus === "tv" || powerProgress > 0.5 || stoodUp;
+
     const zoomVis = 1 - MathUtils.smoothstep(zoomProgress, 0.02, 0.28);
-    const [cueTarget, propsTarget] = [
-      activeFocus === "chair" && (chairCueReady || powerProgress > 0.15) ? 1 : 0,
-      st.propsUnlocked ? 1 : 0,
-    ];
-    if (prefersReduced) [st.seatedCue, st.propsReveal] = [cueTarget, propsTarget];
-    else {
-      const cueRate = cueTarget > st.seatedCue ? 3.2 : 10;
-      st.seatedCue += (cueTarget - st.seatedCue) * (1 - Math.exp(-cueRate * dt));
-      if (Math.abs(cueTarget - st.seatedCue) < 0.004) st.seatedCue = cueTarget;
-      st.propsReveal += (propsTarget - st.propsReveal) * (1 - Math.exp(-4.5 * dt));
-      if (Math.abs(propsTarget - st.propsReveal) < 0.004) st.propsReveal = propsTarget;
-    }
-    const cueAnimating =
-      Math.abs(cueTarget - st.seatedCue) > 0.004 || Math.abs(propsTarget - st.propsReveal) > 0.004;
+    const cueTarget = activeFocus === "chair" && (chairCueReady || powerProgress > 0.15) ? 1 : 0;
+    const propsTarget = st.propsUnlocked ? 1 : 0;
+    const cueRate = cueTarget > st.seatedCue ? 3.2 : 10;
+    st.seatedCue = prefersReduced ? cueTarget : dampTo(st.seatedCue, cueTarget, cueRate, dt);
+    st.propsReveal = prefersReduced ? propsTarget : dampTo(st.propsReveal, propsTarget, 4.5, dt);
+    const cueAnim = st.seatedCue !== cueTarget || st.propsReveal !== propsTarget;
+
     const onFade = MathUtils.smoothstep(powerProgress, 0.35, 0.85);
     const offFade = 1 - MathUtils.smoothstep(powerProgress, 0.12, 0.55);
     const frontFade = MathUtils.smoothstep(camera.position.z, 0.35, 1.35);
-    const hoverLerp = prefersReduced ? 1 : 1 - Math.exp(-12 * dt);
-    let animatingHover = false;
+    let [animHover, stateDirty, matrixDirty] = [false, false, false];
     st.anyVisible = false;
 
-    for (const item of items) {
-      const { target, frontOnly } = item.spec;
-      const targetHover = hoveredTarget === target ? 1 : 0;
-      item.hover += (targetHover - item.hover) * hoverLerp;
-      if (Math.abs(targetHover - item.hover) > 0.004) animatingHover = true;
-      else item.hover = targetHover;
+    for (let i = 0; i < count; i += 1) {
+      const [spec, worldPos] = [HOTSPOT_SPECS[i], worldPositions[i]];
+      if (!spec || !worldPos) continue;
+      const targetHover = hoveredTarget === spec.target ? 1 : 0;
+      hovers[i] = prefersReduced ? targetHover : dampTo(hovers[i] ?? 0, targetHover, 12, dt);
+      if (hovers[i] !== targetHover) animHover = true;
 
       let localVis = zoomVis;
-      if (target === "tv") {
-        const cleanScreen = isRetroChannel || (activeFocus === "chair" && st.tvExplored);
-        localVis = cleanScreen ? 0 : Math.max(zoomVis, st.seatedCue) * onFade;
-      } else if (target === "tv_power") {
+      if (spec.target === "tv") {
+        const hide = isRetroChannel || (activeFocus === "chair" && st.tvExplored);
+        localVis = hide ? 0 : Math.max(zoomVis, st.seatedCue) * onFade;
+      } else if (spec.target === "tv_power") {
         localVis = st.powerCueUnlocked ? Math.max(zoomVis, st.seatedCue) * offFade : 0;
-      } else if (target !== "chair") localVis *= st.propsReveal;
-      if (frontOnly) localVis *= frontFade;
+      } else if (spec.target !== "chair") localVis *= st.propsReveal;
+      if (spec.frontOnly) localVis *= frontFade;
 
       const isVisible = localVis > 0.004;
-      item.mesh.visible = isVisible;
-      if (!isVisible) continue;
-      st.anyVisible = true;
-
-      if (item.spec.rayPull) {
-        camDir.subVectors(camera.position, item.worldPos).normalize();
-        item.mesh.position.copy(item.worldPos).addScaledVector(camDir, item.spec.rayPull);
+      const idx = i * 4;
+      const nextOp = isVisible ? localVis : 0;
+      if (stateData[idx] !== hovers[i] || stateData[idx + 1] !== nextOp) {
+        [stateData[idx], stateData[idx + 1]] = [hovers[i] ?? 0, nextOp];
+        stateDirty = true;
       }
-      const dist = camera.position.distanceTo(item.mesh.position);
-      const [k, lo, hi] = item.spec.scale ?? [0.048, 0.2, 0.72];
-      const baseScale = MathUtils.clamp(dist * k, lo, hi);
-      item.mesh.scale.setScalar(baseScale * (st.chairLead && target === "chair" ? 1.18 : 1));
-      item.mesh.quaternion.copy(camera.quaternion);
-      const u = item.mat.uniforms;
-      if (u.uTime) u.uTime.value = st.elapsed;
-      if (u.uHover) u.uHover.value = item.hover;
-      if (u.uOpacity) u.uOpacity.value = localVis;
+      if (!isVisible) {
+        if (visibleFlags[i] !== 0) {
+          visibleFlags[i] = 0;
+          mesh.setMatrixAt(i, ZERO_MAT);
+          matrixDirty = true;
+        }
+        continue;
+      }
+      visibleFlags[i] = 1;
+      st.anyVisible = true;
+      pos.copy(worldPos);
+      if (spec.rayPull) {
+        camDir.subVectors(camera.position, worldPos).normalize();
+        pos.addScaledVector(camDir, spec.rayPull);
+      }
+      const [k, lo, hi] = spec.scale ?? [0.048, 0.2, 0.72];
+      const base = MathUtils.clamp(camera.position.distanceTo(pos) * k, lo, hi);
+      const s = base * (st.chairLead && spec.target === "chair" ? 1.18 : 1);
+      mat4.compose(pos, camera.quaternion, scaleVec.set(s, s, 1));
+      mesh.setMatrixAt(i, mat4);
+      matrixDirty = true;
     }
-    return animatingHover || cueAnimating || (st.anyVisible && !prefersReduced && isDocVisible());
+    mesh.visible = st.anyVisible;
+    if (matrixDirty) mesh.instanceMatrix.needsUpdate = true;
+    if (stateDirty) stateAttr.needsUpdate = true;
+    if (st.anyVisible && material.uniforms.uTime) material.uniforms.uTime.value = st.elapsed;
+    const docVis = typeof document === "undefined" || document.visibilityState !== "hidden";
+    return animHover || cueAnim || (st.anyVisible && !prefersReduced && docVis);
   };
 
   return {
-    meshes: items.map((item) => item.mesh),
-    resolveTarget: (object) => (object.visible ? (lookup.get(object) ?? null) : null),
+    mesh,
+    resolveHit: (hit) =>
+      hit.object === mesh && hit.instanceId !== undefined && visibleFlags[hit.instanceId] === 1
+        ? (HOTSPOT_SPECS[hit.instanceId]?.target ?? null)
+        : null,
     setHoveredTarget: (target) => {
       hoveredTarget = target;
     },
     update,
-    isActive: () => st.anyVisible && !prefersReduced && isDocVisible(),
     dispose: () => {
       motionQuery?.removeEventListener("change", onMotionChange);
-      targetScene.remove(group);
+      targetScene.remove(mesh);
       geometry.dispose();
-      for (const item of items) item.mat.dispose();
+      material.dispose();
     },
   };
 };
