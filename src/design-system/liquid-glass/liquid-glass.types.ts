@@ -1,10 +1,6 @@
 import { DEFAULTS, type GlassConfig } from "@ybouane/liquidglass";
 
-export type LiquidGlassSurfaceRole =
-  | "cursor-pill"
-  | "consent-cta"
-  | "detail-action"
-  | "not-found-cta";
+type LiquidGlassSurfaceRole = "cursor-pill" | "consent-cta" | "detail-action" | "not-found-cta";
 
 export type LiquidGlassTone = "light" | "dark";
 
@@ -13,7 +9,7 @@ export interface LiquidGlassButtonState {
   pressed: boolean;
 }
 
-export interface LiquidGlassFixedSize {
+interface LiquidGlassFixedSize {
   readonly width: number;
   readonly height: number;
 }
@@ -54,7 +50,6 @@ const ROLE_Z_RADIUS: Readonly<Record<LiquidGlassSurfaceRole, number>> = {
   "not-found-cta": 21,
 };
 
-// Pure prismatic crystal variant (user's playground reference) for dark/rich scenes.
 const DARK_SURFACE_GLASS: GlassConfig = {
   ...DEFAULTS,
   blurAmount: 0,
@@ -78,8 +73,6 @@ const DARK_SURFACE_GLASS: GlassConfig = {
   bevelMode: 0,
 };
 
-// Light-surface crystal variant: keeps zero-blur high refraction & chromatic prism
-// while carving legible cool-crystal bevel depth + specular rim + soft shadow on white/bright UI.
 const LIGHT_SURFACE_GLASS: GlassConfig = {
   ...DARK_SURFACE_GLASS,
   chromAberration: 0.26,

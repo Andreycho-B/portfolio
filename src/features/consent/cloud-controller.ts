@@ -1,5 +1,5 @@
 import { createSpring2D } from "../../design-system/components/spring-physics";
-import { notifyLiquidGlassLiveFrame } from "../../design-system/liquid-glass/liquid-glass-engine";
+import { notifyLiquidGlassLiveFrame } from "../../design-system/liquid-glass/liquid-glass-live-canvas";
 import type {
   CloudClearZoneTargets,
   CloudControllerHandle,
@@ -148,6 +148,21 @@ export const initCloudCanvas = (
     animationFrameId = requestAnimationFrame(loop);
   };
 
+  const onVisibility = () => {
+    if (isDestroyed || !isRevealed) return;
+    if (document.visibilityState === "hidden") {
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+      return;
+    }
+    if (animationFrameId === null) {
+      lastTime = performance.now();
+      animationFrameId = requestAnimationFrame(loop);
+    }
+  };
+  document.addEventListener("visibilitychange", onVisibility);
   document.addEventListener("welcome:backdrop-covered", reveal, { once: true });
 
   let isDestroyed = false;
@@ -166,6 +181,7 @@ export const initCloudCanvas = (
     window.removeEventListener("pointercancel", onPointerEnd);
     window.removeEventListener("pointerleave", onPointerEnd);
     window.removeEventListener("resize", resize);
+    document.removeEventListener("visibilitychange", onVisibility);
     document.removeEventListener("welcome:backdrop-covered", reveal);
     document.removeEventListener("morphic:phrase-start", updateZones);
     document.removeEventListener("astro:before-swap", destroy);

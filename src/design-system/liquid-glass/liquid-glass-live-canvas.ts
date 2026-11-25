@@ -11,6 +11,27 @@ interface LiveCanvasMirror {
 
 const canvasMirrors = new WeakMap<HTMLCanvasElement, LiveCanvasMirror>();
 let activeLiveCanvas: HTMLCanvasElement | null = null;
+type LiveFrameListener = (canvas: HTMLCanvasElement, resting: boolean) => void;
+let liveFrameListener: LiveFrameListener | null = null;
+
+export const bindLiquidGlassLiveListener = (listener: LiveFrameListener | null): void => {
+  liveFrameListener = listener;
+};
+
+const finePointerQuery =
+  typeof window !== "undefined" ? window.matchMedia("(hover: hover) and (pointer: fine)") : null;
+const reducedMotionQuery =
+  typeof window !== "undefined" ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+
+export const notifyLiquidGlassLiveFrame = (canvas: HTMLCanvasElement, resting = false): void => {
+  if (liveFrameListener) {
+    liveFrameListener(canvas, resting);
+    return;
+  }
+  if (resting && finePointerQuery?.matches && !reducedMotionQuery?.matches) {
+    updateLiveCanvasMirror(canvas, true);
+  }
+};
 
 const getOrCreateMirror = (source: HTMLCanvasElement): LiveCanvasMirror | null => {
   const existing = canvasMirrors.get(source);

@@ -20,7 +20,6 @@ export const initCursorTransforms = (
   ringEl: HTMLElement | null,
   dotEl: HTMLElement | null,
 ): CursorTransforms => {
-  // Anchor circle/pill by top-left so the zero-lag dot sits cleanly at its upper-left corner
   gsap.set(cursorEl, { xPercent: 0, yPercent: 0, force3D: true });
   const rawX = gsap.quickSetter(cursorEl, "x", "px");
   const rawY = gsap.quickSetter(cursorEl, "y", "px");
@@ -59,7 +58,6 @@ export const initCursorTransforms = (
     return true;
   };
 
-  // Zero-lag synchronous native translate (applied before CSS scale so clicking never shifts position)
   const setDot = (x: number, y: number): void => {
     if (!dotEl) return;
     dotEl.style.translate = `${x}px ${y}px`;

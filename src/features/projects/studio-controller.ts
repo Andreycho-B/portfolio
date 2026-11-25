@@ -1,6 +1,6 @@
 import { getAudioSystem } from "../../core/audio";
 import { getCursorController } from "../../design-system/components/cursor-controller";
-import { notifyLiquidGlassLiveFrame } from "../../design-system/liquid-glass/liquid-glass-engine";
+import { notifyLiquidGlassLiveFrame } from "../../design-system/liquid-glass/liquid-glass-live-canvas";
 import { observeCanvasResize } from "./drum.types";
 import { DrumAutoplayController } from "./drum-autoplay";
 import { DrumScrollPhysics } from "./drum-scroll-physics";
@@ -97,8 +97,8 @@ export class StudioController {
       onPointerMove: (nx, ny) => this.handlePointerHover(nx, ny),
     });
     this.syncViewport(deferStart);
-    const onResize = (): void => this.syncViewport();
-    this.cleanups = [observeCanvasResize(canvas, onResize), bindStudioInputs(deps)];
+    const resize = (): void => this.syncViewport();
+    this.cleanups = [observeCanvasResize(canvas, resize), bindStudioInputs(deps)];
     scene.setPowerState(power.powerProgress, power.buttonDepression);
     syncStudioDrumScene(scene, physics, audio, this.st.intro);
     if (!deferStart) this.requestFrame();
@@ -134,7 +134,7 @@ export class StudioController {
     this.scene.setTvPortalState(v.mode, v.cutout, v.wave);
     if (syncRender) {
       this.scene.render();
-      notifyLiquidGlassLiveFrame(this.canvas);
+      notifyLiquidGlassLiveFrame(this.canvas, true);
     }
     this.requestFrame();
   }
@@ -173,18 +173,18 @@ export class StudioController {
     this.requestFrame();
   }
   public requestFrame(): void {
-    if (this.lifecycle !== "running" || this.st.raf !== null) return;
+    if (this.lifecycle !== "running" || this.st.raf !== null || document.hidden) return;
     [this.st.lastTime, this.st.raf] = [performance.now(), requestAnimationFrame(this.tick)];
   }
   private readonly tick = (now: number): void => {
+    if (document.hidden) {
+      this.st.raf = null;
+      return;
+    }
     const { st, tickState, scene, physics, autoplay, power, audio, tvPortal, entryHint } = this;
-    const syncHover = (): void => this.syncHover();
-    const alive = stepStudioFrame(
-      { st, tickState, scene, physics, autoplay, power, audio, tvPortal, entryHint, syncHover },
-      now,
-      this.a11y,
-    );
-    notifyLiquidGlassLiveFrame(this.canvas);
+    const d = { st, tickState, scene, physics, autoplay, power, audio, tvPortal, entryHint };
+    const alive = stepStudioFrame({ ...d, syncHover: () => this.syncHover() }, now, this.a11y);
+    notifyLiquidGlassLiveFrame(this.canvas, !alive);
     this.st.raf = alive ? requestAnimationFrame(this.tick) : null;
   };
   public destroy(): void {

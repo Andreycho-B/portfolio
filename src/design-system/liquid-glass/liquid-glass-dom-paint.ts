@@ -61,7 +61,7 @@ const paintBoxStyle = (
   }
 };
 
-export interface DomRegionPaintOptions {
+interface DomRegionPaintOptions {
   readonly doc: Document;
   readonly win: Window;
   readonly ctx: CanvasRenderingContext2D;

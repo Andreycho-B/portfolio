@@ -15,7 +15,6 @@ interface Spring2D {
   step: (dt: number) => boolean;
 }
 
-// Snappy yet elastic underdamped spring (omega = 53.2 rad/s, zeta = 0.78) chasing the 0-lag dot
 const DEFAULT_SPRING_CONFIG: SpringConfig = {
   stiffness: 680,
   damping: 20,

@@ -1,5 +1,4 @@
 import type { LiquidGlassSurfaceHandle } from "../liquid-glass/liquid-glass.types";
-import { attachLiquidGlassSurface } from "../liquid-glass/liquid-glass-surface";
 import type { CursorController } from "./cursor.types";
 
 interface CursorEventHandlers {
@@ -20,6 +19,8 @@ export const bindCursorEvents = (handlers: CursorEventHandlers): (() => void) =>
   window.addEventListener("pointermove", handlePointerMove as EventListener, { passive: true });
   window.addEventListener("pointerdown", handlePointerDown);
   window.addEventListener("pointerup", handlePointerUp);
+  window.addEventListener("pointercancel", handlePointerUp);
+  window.addEventListener("blur", handlePointerUp);
   document.documentElement.addEventListener("mouseleave", handleMouseLeave);
   document.documentElement.addEventListener("mouseenter", handleMouseEnter);
 
@@ -27,6 +28,8 @@ export const bindCursorEvents = (handlers: CursorEventHandlers): (() => void) =>
     window.removeEventListener("pointermove", handlePointerMove as EventListener);
     window.removeEventListener("pointerdown", handlePointerDown);
     window.removeEventListener("pointerup", handlePointerUp);
+    window.removeEventListener("pointercancel", handlePointerUp);
+    window.removeEventListener("blur", handlePointerUp);
     document.documentElement.removeEventListener("mouseleave", handleMouseLeave);
     document.documentElement.removeEventListener("mouseenter", handleMouseEnter);
   };
@@ -62,7 +65,7 @@ export const bindCursorExpandTriggers = (
   };
 };
 
-export interface CursorLiquidGlassBinding {
+interface CursorLiquidGlassBinding {
   readonly sync: (expanded: boolean, muted: boolean, inverted: boolean, pressed: boolean) => void;
   readonly markMoved: () => void;
   readonly destroy: () => void;
@@ -73,29 +76,57 @@ export const bindCursorLiquidGlass = (cursorEl: HTMLElement): CursorLiquidGlassB
   if (!pillEl) {
     return { sync: () => {}, markMoved: () => {}, destroy: () => {} };
   }
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    pillEl.dataset.liquidGlass = "fallback";
+    pillEl.dataset.liquidGlassRole = "cursor-pill";
+    return {
+      sync: () => {},
+      markMoved: () => {},
+      destroy: () => {
+        delete pillEl.dataset.liquidGlass;
+        delete pillEl.dataset.liquidGlassRole;
+      },
+    };
+  }
   let isExpanded = false;
   let isMuted = false;
-  const surface: LiquidGlassSurfaceHandle = attachLiquidGlassSurface({
-    element: pillEl,
-    role: "cursor-pill",
-    tone: "light",
-    initialEnabled: false,
-    trackScroll: true,
-    trackLiveCanvas: true,
-    getFixedSize: () => {
-      if (isMuted) return { width: 44, height: 44 };
-      if (isExpanded) return { width: 140, height: 42 };
-      return null;
-    },
-    getExcludeRoot: () => cursorEl,
-  });
+  let isInverted = false;
+  let isPressed = false;
+  let isDestroyed = false;
+  let surface: LiquidGlassSurfaceHandle | null = null;
+  void import("../liquid-glass/liquid-glass-surface")
+    .then(({ attachLiquidGlassSurface }) => {
+      if (isDestroyed) return;
+      const active = isExpanded || isMuted;
+      surface = attachLiquidGlassSurface({
+        element: pillEl,
+        role: "cursor-pill",
+        tone: isInverted ? "dark" : "light",
+        initialEnabled: active,
+        trackScroll: true,
+        trackLiveCanvas: true,
+        getFixedSize: () => {
+          if (isMuted) return { width: 44, height: 44 };
+          if (isExpanded) return { width: 140, height: 42 };
+          return null;
+        },
+        getExcludeRoot: () => cursorEl,
+      });
+      surface.setPressed(isPressed);
+      if (active) surface.markDirty();
+    })
+    .catch((err: unknown) => {
+      console.warn("[CursorLiquidGlass] Fallback activated:", err);
+      pillEl.dataset.liquidGlass = "fallback";
+      pillEl.dataset.liquidGlassRole = "cursor-pill";
+    });
   const onTransitionEnd = (e: TransitionEvent) => {
     if (
       e.propertyName === "width" ||
       e.propertyName === "height" ||
       e.propertyName === "translate"
     ) {
-      surface.markDirty();
+      surface?.markDirty();
     }
   };
   pillEl.addEventListener("transitionend", onTransitionEnd);
@@ -103,6 +134,9 @@ export const bindCursorLiquidGlass = (cursorEl: HTMLElement): CursorLiquidGlassB
     sync: (expanded, muted, inverted, pressed) => {
       isExpanded = expanded;
       isMuted = muted;
+      isInverted = inverted;
+      isPressed = pressed;
+      if (!surface) return;
       const active = expanded || muted;
       surface.setTone(inverted ? "dark" : "light");
       surface.setPressed(pressed);
@@ -110,11 +144,13 @@ export const bindCursorLiquidGlass = (cursorEl: HTMLElement): CursorLiquidGlassB
       if (active) surface.markDirty();
     },
     markMoved: () => {
-      if (isExpanded || isMuted) surface.markDirty();
+      if (isExpanded || isMuted) surface?.markDirty();
     },
     destroy: () => {
+      isDestroyed = true;
       pillEl.removeEventListener("transitionend", onTransitionEnd);
-      surface.destroy();
+      surface?.destroy();
+      surface = null;
     },
   };
 };

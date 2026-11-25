@@ -15,7 +15,6 @@
   z-index: -1;
 }
 
-/* Interactive cursor pill: glass only when expanded or muted */
 .cursor-pill[data-liquid-glass="active"] {
   overflow: visible;
 }

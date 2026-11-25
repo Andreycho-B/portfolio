@@ -64,7 +64,13 @@ const { defaultLabel = "" } = Astro.props;
   import { getCursorController } from "./cursor-controller";
 
   const initGlobalCursor = () => {
-    getCursorController().enable();
+    const cursor = getCursorController();
+    const consentEl = document.querySelector<HTMLElement>("[data-consent-screen]");
+    const waitingConsent =
+      consentEl !== null &&
+      consentEl.style.display !== "none" &&
+      !document.documentElement.classList.contains("skip-consent");
+    if (!waitingConsent) cursor.enable();
   };
 
   document.addEventListener("astro:page-load", initGlobalCursor);

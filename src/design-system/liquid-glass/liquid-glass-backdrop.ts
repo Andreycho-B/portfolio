@@ -76,6 +76,30 @@ const paintLiveTvPortalRegion = (
   ctx.restore();
 };
 
+let cachedConsentEl: HTMLElement | null = null;
+let cachedProjectsEl: HTMLElement | null = null;
+let cachedStudioCanvas: HTMLCanvasElement | null = null;
+
+const getConsentEl = (): HTMLElement | null => {
+  if (cachedConsentEl?.isConnected) return cachedConsentEl;
+  cachedConsentEl = document.querySelector<HTMLElement>("[data-consent-screen]");
+  return cachedConsentEl;
+};
+
+const getProjectsNodes = (): {
+  readonly projectsEl: HTMLElement | null;
+  readonly studioCanvas: HTMLCanvasElement | null;
+} => {
+  if (!cachedProjectsEl?.isConnected) {
+    cachedProjectsEl = document.querySelector<HTMLElement>("[data-projects-section]");
+    cachedStudioCanvas = null;
+  }
+  if (cachedProjectsEl && !cachedStudioCanvas?.isConnected) {
+    cachedStudioCanvas = cachedProjectsEl.querySelector<HTMLCanvasElement>("[data-drum-canvas]");
+  }
+  return { projectsEl: cachedProjectsEl, studioCanvas: cachedStudioCanvas };
+};
+
 export const paintLiquidGlassBackdrop = (
   targetCanvas: HTMLCanvasElement,
   targetCtx: CanvasRenderingContext2D,
@@ -92,14 +116,17 @@ export const paintLiquidGlassBackdrop = (
   }
 
   targetCtx.setTransform(1, 0, 0, 1, 0, 0);
-  const bodyBg = window.getComputedStyle(document.body).backgroundColor;
-  targetCtx.fillStyle = hasVisibleColor(bodyBg) ? bodyBg : "#ffffff";
+  targetCtx.fillStyle = "#ffffff";
   targetCtx.fillRect(0, 0, pxW, pxH);
 
   targetCtx.setTransform(dpr, 0, 0, dpr, -sampleRect.left * dpr, -sampleRect.top * dpr);
 
-  const consentEl = document.querySelector<HTMLElement>("[data-consent-screen]");
-  if (consentEl && window.getComputedStyle(consentEl).display !== "none") {
+  const consentEl = getConsentEl();
+  const consentVisible =
+    consentEl !== null &&
+    consentEl.style.display !== "none" &&
+    !document.documentElement.classList.contains("skip-consent");
+  if (consentVisible && consentEl) {
     if (consentEl.dataset.backdropActive === "true") {
       paintConsentSkyFallback(targetCtx, window.innerWidth, window.innerHeight);
     }
@@ -122,9 +149,8 @@ export const paintLiquidGlassBackdrop = (
     return;
   }
 
-  const projectsEl = document.querySelector<HTMLElement>("[data-projects-section]");
+  const { projectsEl, studioCanvas } = getProjectsNodes();
   if (projectsEl && !projectsEl.hidden) {
-    const studioCanvas = projectsEl.querySelector<HTMLCanvasElement>("[data-drum-canvas]");
     if (studioCanvas) {
       drawLiveCanvasRegion(targetCtx, studioCanvas, sampleRect);
     }
@@ -132,6 +158,11 @@ export const paintLiquidGlassBackdrop = (
     return;
   }
 
+  const bodyBg = window.getComputedStyle(document.body).backgroundColor;
+  if (hasVisibleColor(bodyBg) && bodyBg !== "rgb(255, 255, 255)") {
+    targetCtx.fillStyle = bodyBg;
+    targetCtx.fillRect(sampleRect.left, sampleRect.top, sampleRect.width, sampleRect.height);
+  }
   paintDomRegion({
     doc: document,
     win: window,
