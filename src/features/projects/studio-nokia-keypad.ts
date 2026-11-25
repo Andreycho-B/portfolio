@@ -42,7 +42,6 @@ export interface NokiaKeySpec {
 export const NOKIA_FRONT_Y = 0.0758;
 export const NOKIA_PRESS_DEPTH = 0.0038;
 
-// Authentic low-profile Nokia 3310 key proportions (real ~1.1-1.3mm protrusion at 113mm = 0.72u scale).
 export const NOKIA_KEY_SPECS: readonly NokiaKeySpec[] = [
   {
     id: "call",

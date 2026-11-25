@@ -1,11 +1,9 @@
-// Authentic Nokia 3310 (PCD8544 84x48) monochrome dot-matrix bitmap glyphs & canvas painter.
-
 export type PixelBuffer = Uint8Array;
 
 export const LCD_W = 84;
 export const LCD_H = 48;
-export const LCD_CELL_PX = 6;
-export const LCD_PAD_PX = 10;
+const LCD_CELL_PX = 6;
+const LCD_PAD_PX = 10;
 export const LCD_CANVAS_W = LCD_W * LCD_CELL_PX + LCD_PAD_PX * 2;
 export const LCD_CANVAS_H = LCD_H * LCD_CELL_PX + LCD_PAD_PX * 2;
 
@@ -167,19 +165,23 @@ const getLcdBaseCanvas = (): HTMLCanvasElement => {
 
 export const paintNokiaLcdCanvas = (ctx: CanvasRenderingContext2D, buf: PixelBuffer): void => {
   ctx.drawImage(getLcdBaseCanvas(), 0, 0);
+  const cellDraw = LCD_CELL_PX - 1;
 
   for (const [fill, offset] of [
     ["rgba(22, 34, 12, 0.25)", 1.6],
     ["#18230e", 0],
   ] as const) {
     ctx.fillStyle = fill;
+    ctx.beginPath();
     for (let y = 0; y < LCD_H; y += 1) {
       const py = LCD_PAD_PX + y * LCD_CELL_PX + offset;
+      const rowOffset = y * LCD_W;
       for (let x = 0; x < LCD_W; x += 1) {
-        if (buf[y * LCD_W + x] === 1) {
-          ctx.fillRect(LCD_PAD_PX + x * LCD_CELL_PX + offset, py, LCD_CELL_PX - 1, LCD_CELL_PX - 1);
+        if (buf[rowOffset + x] === 1) {
+          ctx.rect(LCD_PAD_PX + x * LCD_CELL_PX + offset, py, cellDraw, cellDraw);
         }
       }
     }
+    ctx.fill();
   }
 };

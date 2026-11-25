@@ -15,7 +15,7 @@ export interface SnakeGridCell {
   readonly y: number;
 }
 
-export interface SnakeFrameSnapshot {
+interface SnakeFrameSnapshot {
   readonly snake: readonly SnakeGridCell[];
   readonly food: SnakeGridCell;
   readonly score: number;
@@ -29,7 +29,6 @@ const FIELD_Y = 10;
 const TILE = 4;
 const FOOD_DIAMOND: readonly string[] = [".#.", "#.#", ".#."];
 
-// Authentic chunky Nokia 3310 "SNAKE II" pixel-art banner (51x6)
 const SNAKE_LOGO: readonly string[] = [
   ".#####..##...#...####...##..##..######.....###..###",
   "##......###..#..##..##..##.##...##..........#....#.",
@@ -39,7 +38,6 @@ const SNAKE_LOGO: readonly string[] = [
   "#####...##...#..##..##..##..##..######.....###..###",
 ];
 
-// Iconic segmented Nokia Snake II silhouette facing a diamond morsel (45x11)
 const START_SNAKE: readonly string[] = [
   "............###############..................",
   "............#.#.###.#.###.#..................",
@@ -93,8 +91,11 @@ const renderStartScreen = (buf: PixelBuffer, tickCount: number): PixelBuffer => 
   return buf;
 };
 
+const snakeFrameBuf = new Uint8Array(LCD_W * LCD_H);
+
 export const renderNokiaSnakeFrame = (state: SnakeFrameSnapshot): PixelBuffer => {
-  const buf = new Uint8Array(LCD_W * LCD_H);
+  const buf = snakeFrameBuf;
+  buf.fill(0);
   if (state.phase === "start") return renderStartScreen(buf, state.tickCount);
 
   const scoreStr = String(state.score).padStart(4, "0");
@@ -103,7 +104,6 @@ export const renderNokiaSnakeFrame = (state: SnakeFrameSnapshot): PixelBuffer =>
   drawLcdText(buf, rightTag, LCD_W - 2 - measureLcdText(rightTag, "mini"), 1, "mini");
   fillLcdRect(buf, 0, 7, LCD_W, 1);
 
-  // Classic 1px Nokia Snake II arena frame
   fillLcdRect(buf, 1, 9, LCD_W - 2, 1);
   fillLcdRect(buf, 1, LCD_H - 2, LCD_W - 2, 1);
   fillLcdRect(buf, 1, 9, 1, LCD_H - 10);

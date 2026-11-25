@@ -40,13 +40,15 @@ const splitPhoneLines = (rawPhone: string): readonly [string, string] => {
   return [rawPhone.slice(0, mid).trim(), rawPhone.slice(mid).trim()];
 };
 
+const contactFrameBuf = new Uint8Array(LCD_W * LCD_H);
+
 export const composeNokiaContactFrame = (
   timeLabel: string,
   statusNotice: string | null,
 ): PixelBuffer => {
-  const buf = new Uint8Array(LCD_W * LCD_H);
+  const buf = contactFrameBuf;
+  buf.fill(0);
 
-  // Left antenna + 4 signal bars, right battery + 4 charge bars (classic Nokia 3310 layout)
   drawLcdBitmap(buf, ANTENNA_ICON, 2, 4);
   fillLcdRect(buf, 2, 11, 4, 6);
   fillLcdRect(buf, 2, 19, 3, 6);
@@ -59,7 +61,6 @@ export const composeNokiaContactFrame = (
   fillLcdRect(buf, 80, 28, 2, 6);
   fillLcdRect(buf, 80, 36, 2, 6);
 
-  // Carrier header + live Colombia clock + dotted rule
   drawLcdText(buf, "ANDREY", 10, 4, "mini");
   drawLcdText(buf, timeLabel, 75 - measureLcdText(timeLabel, "mini"), 4, "mini");
   for (let x = 10; x <= 74; x += 2) setLcdPixel(buf, x, 11);
@@ -85,7 +86,6 @@ export const composeNokiaContactFrame = (
     );
   }
 
-  // Softkey divider + centered "Llamar" + subtle right arrow hint above Snake rocker
   fillLcdRect(buf, 27, 36, 30, 1);
   const softkey = "Llamar";
   drawLcdText(

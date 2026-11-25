@@ -9,7 +9,6 @@ interface KeyLegendSpec {
   readonly cluster?: boolean;
 }
 
-// aspectX compensates each key's physical width/depth ratio so printed legends never look stretched
 const KEY_LEGENDS: Readonly<Record<NokiaButtonId, KeyLegendSpec>> = {
   call: { cell: [0, 0], main: "", aspectX: 0.27, cluster: true },
   back: { cell: [1, 0], main: "C", aspectX: 0.53, cluster: true },
@@ -48,7 +47,6 @@ const drawArrowRockerGlyphs = (ctx: CanvasRenderingContext2D): void => {
   ctx.lineWidth = 10;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  // Classic Nokia 3310 left/right rocker chevrons with compensated proportions
   ctx.beginPath();
   ctx.moveTo(-125, -24);
   ctx.lineTo(-158, 0);
@@ -72,7 +70,6 @@ const paintKeycapCell = (
   const cx = x0 + cellPx * 0.5;
   const cy = y0 + cellPx * 0.5;
 
-  // Cool silver-pearl tone calibrated against warm golden-hour sunlight
   const grad = ctx.createRadialGradient(cx, cy - 12, 16, cx, cy, 152);
   if (spec.cluster) {
     grad.addColorStop(0, "#cfd6e0");
@@ -130,17 +127,16 @@ const paintKeycapCell = (
 
 export const createNokiaKeycapAtlas = (): CanvasTexture => {
   const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = 512;
+  canvas.width = canvas.height = 1024;
   const ctx = canvas.getContext("2d");
   if (ctx) {
-    ctx.scale(0.5, 0.5);
     const entries = Object.entries(KEY_LEGENDS) as readonly [NokiaButtonId, KeyLegendSpec][];
     for (const [id, spec] of entries) paintKeycapCell(ctx, id, spec);
   }
   const tex = new CanvasTexture(canvas);
   tex.colorSpace = SRGBColorSpace;
   tex.flipY = false;
-  tex.anisotropy = 4;
+  tex.anisotropy = 8;
   tex.needsUpdate = true;
   return tex;
 };

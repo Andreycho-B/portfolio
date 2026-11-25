@@ -145,7 +145,6 @@ export const createStudioNokiaHardware = (nokiaModel: Object3D): StudioNokiaHard
     keyGroup.matrixAutoUpdate = false;
     root.add(keyGroup);
 
-    // 12-triangle invisible BoxGeometry proxy for 100x faster CPU raycasting on pointermove
     const proxy = new Mesh(hitBoxGeo, hitMat);
     proxy.position.set(spec.x, baseY + 0.0045, spec.z);
     proxy.rotation.y = spec.rotY;

@@ -2,9 +2,9 @@ import type { PixelBuffer } from "./studio-nokia-font";
 import type { NokiaMoveDir } from "./studio-nokia-keypad";
 import { renderNokiaSnakeFrame, type SnakeGridCell } from "./studio-nokia-snake-render";
 
-export type SnakeDir = NokiaMoveDir;
+type SnakeDir = NokiaMoveDir;
 export type SnakePhase = "start" | "play" | "gameover";
-export type SnakeTickEvent = "none" | "step" | "eat" | "gameover";
+type SnakeTickEvent = "none" | "step" | "eat" | "gameover";
 
 const COLS = 20;
 const ROWS = 9;
@@ -28,7 +28,7 @@ const OPPOSITE: Readonly<Record<SnakeDir, SnakeDir>> = {
 const CW_ORDER: readonly SnakeDir[] = ["up", "right", "down", "left"];
 const wrap = (v: number, max: number): number => ((v % max) + max) % max;
 
-export interface NokiaSnakeEngine {
+interface NokiaSnakeEngine {
   readonly getPhase: () => SnakePhase;
   readonly showStart: () => void;
   readonly startGame: (initialDir?: SnakeDir) => void;

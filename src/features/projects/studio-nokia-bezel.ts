@@ -74,8 +74,6 @@ export const buildNokiaKeycapGeo = (spec: NokiaKeySpec): ExtrudeGeometry => {
     curveSegments: 10,
   });
   geo.rotateX(-Math.PI * 0.5);
-
-  // Smooth ergonomic pillow crown (rounded cushion feel, zero boxy skyscraper sides)
   geo.computeBoundingBox();
   const box = geo.boundingBox;
   const pos = geo.getAttribute("position");
@@ -142,7 +140,6 @@ const addRoundedRectPath = (
   target.quadraticCurveTo(x, y, x + rr, y);
 };
 
-// Flush low-profile sculpted 3D silver Nokia 3310 U-arch bezel & Navi cluster bridge
 export const buildNokiaSilverBezelGeo = (): ExtrudeGeometry => {
   const outer = new Shape();
   addRoundedRectPath(outer, -0.134, -0.092, 0.268, 0.432, 0.076);
@@ -168,7 +165,6 @@ const toCleanNonIndexed = (geo: BufferGeometry): BufferGeometry => {
   return out;
 };
 
-// Merges all 24 static dark trim parts (5 earpiece slots + 4 screen rims + 15 keywells) into 1 draw call
 export const buildNokiaDarkTrimGeo = (): BufferGeometry | null => {
   const parts: BufferGeometry[] = [];
   for (let i = 0; i < 5; i += 1) {

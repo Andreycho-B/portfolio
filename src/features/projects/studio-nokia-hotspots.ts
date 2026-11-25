@@ -26,7 +26,7 @@ export interface StudioSceneNokiaApi {
 }
 
 export interface StudioNokiaPhoneHandle {
-  readonly attachModel: (nokiaRoot: Object3D, parentGroup: Object3D) => void;
+  readonly attachModel: (nokiaRoot: Object3D, parentGroup: Object3D) => Promise<void>;
   readonly getMode: () => NokiaScreenMode;
   readonly setFocused: (focused: boolean) => void;
   readonly setHoveredButton: (id: NokiaButtonId | null) => void;
@@ -64,7 +64,7 @@ interface NokiaHotspotItem {
   hover: number;
 }
 
-export interface StudioNokiaHotspotsHandle {
+interface StudioNokiaHotspotsHandle {
   readonly root: Group;
   readonly meshes: readonly Mesh[];
   readonly resolveButtonId: (object: Object3D) => NokiaButtonId | null;
@@ -103,7 +103,7 @@ export const createStudioNokiaHotspots = (): StudioNokiaHotspotsHandle => {
         uOpacity: { value: 0 },
         uPhase: { value: spec.phase },
         uReduced: { value: prefersReduced ? 1 : 0 },
-        uWarm: { value: 0 },
+        uHighlight: { value: 0 },
       },
       vertexShader: HOTSPOT_VS,
       fragmentShader: HOTSPOT_FS,

@@ -1,4 +1,5 @@
 import type { StudioInputDeps } from "./studio.types";
+import { classifyStudioHoverZone } from "./studio-screen-hit";
 
 const MIN_PINCH_SPAN_PX = 8;
 const PINCH_ZOOM_GAIN = 1.18;
@@ -11,20 +12,61 @@ const WHEEL_ZOOM_GAIN = 0.0014;
 const TRACKPAD_PINCH_GAIN = 0.0085;
 const MAX_WHEEL_ZOOM_STEP = 0.32;
 
+export const STUDIO_IGNORE_SURFACE_SEL =
+  "[data-studio-tv-portal], [data-studio-sound-toggle], [data-studio-back-btn]";
+
+export const normStudioXY = (x: number, y: number): readonly [number, number] => [
+  (x / Math.max(1, innerWidth)) * 2 - 1,
+  1 - (y / Math.max(1, innerHeight)) * 2,
+];
+
+export const handleStudioShowcaseDblClick = (e: MouseEvent, deps: StudioInputDeps): void => {
+  if (deps.getFocusTarget() !== null) return;
+  if (e.target instanceof Element && e.target.closest(STUDIO_IGNORE_SURFACE_SEL)) return;
+  const [nx, ny] = normStudioXY(e.clientX, e.clientY);
+  const z = classifyStudioHoverZone(deps.scene, nx, ny, deps.power.isPoweredOn, null);
+  if (z === "power" || z === "tv_button" || z === "prop_zoom" || z === "chair_sit") return;
+  deps.scene.cycleShowcaseAngle();
+  deps.cursor.pulse();
+  deps.requestFrame();
+};
+
+export const createStudioEmailFeedback = (
+  deps: StudioInputDeps,
+): { readonly notifyCopied: () => void; readonly dispose: () => void } => {
+  let resetTimer: number | null = null;
+  return {
+    notifyCopied: () => {
+      deps.scene.setEmailCopied(true);
+      if (resetTimer !== null) window.clearTimeout(resetTimer);
+      resetTimer = window.setTimeout(() => {
+        resetTimer = null;
+        deps.scene.setEmailCopied(false);
+        deps.requestFrame();
+      }, 2000);
+      deps.requestFrame();
+    },
+    dispose: () => {
+      if (resetTimer !== null) window.clearTimeout(resetTimer);
+      resetTimer = null;
+    },
+  };
+};
+
 interface TouchCoords {
   x: number;
   y: number;
 }
 
-export interface StudioPinchZoomTracker {
+interface StudioPinchZoomTracker {
   readonly onPointerDown: (event: PointerEvent) => boolean;
   readonly onPointerMove: (event: PointerEvent) => number | null;
   readonly onPointerUp: (event: PointerEvent) => boolean;
   readonly reset: () => void;
 }
 
-const clampStep = (value: number, limit: number): number =>
-  Math.max(-limit, Math.min(limit, value));
+const clampStep = (amount: number, limit: number): number =>
+  Math.max(-limit, Math.min(limit, amount));
 
 const normalizeWheelPx = (event: WheelEvent): number => {
   if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) return event.deltaY * WHEEL_LINE_PX;

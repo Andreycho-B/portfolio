@@ -1,4 +1,6 @@
-export type NokiaToneKind = "key" | "call" | "snake_start" | "eat" | "back" | "gameover";
+import { getAudioSystem } from "../../core/audio";
+
+type NokiaToneKind = "key" | "call" | "snake_start" | "eat" | "back" | "gameover";
 
 interface ToneStep {
   readonly freq: number;
@@ -33,45 +35,41 @@ const TONE_SEQUENCES: Readonly<Record<NokiaToneKind, readonly ToneStep[]>> = {
   ],
 };
 
-let sharedCtx: AudioContext | null = null;
-
-const getAudioCtx = (): AudioContext | null => {
-  if (typeof window === "undefined") return null;
-  if (!sharedCtx) {
-    const Ctor =
-      window.AudioContext ??
-      (window as Window & { readonly webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!Ctor) return null;
-    sharedCtx = new Ctor();
-  }
-  if (sharedCtx.state === "suspended") {
-    void sharedCtx
-      .resume()
-      .catch((err: unknown) => console.warn("[StudioNokiaAudio] AudioContext resume failed:", err));
-  }
-  return sharedCtx;
-};
-
 export const playNokiaPiezoTone = (kind: NokiaToneKind, soundEnabled: boolean): void => {
   if (!soundEnabled || (typeof document !== "undefined" && document.hidden)) return;
-  const ctx = getAudioCtx();
-  if (!ctx) return;
-  const now = ctx.currentTime + 0.005;
-  for (const step of TONE_SEQUENCES[kind]) {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "square";
-    osc.frequency.setValueAtTime(step.freq, now + step.delaySec);
-    gain.gain.setValueAtTime(0.0001, now + step.delaySec);
-    gain.gain.linearRampToValueAtTime(0.038, now + step.delaySec + 0.006);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + step.delaySec + step.durSec);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(now + step.delaySec);
-    osc.stop(now + step.delaySec + step.durSec + 0.01);
-    osc.onended = () => {
-      osc.disconnect();
-      gain.disconnect();
-    };
-  }
+  getAudioSystem().runSynthesis((ctx, destination) => {
+    const now = ctx.currentTime + 0.005;
+    for (const step of TONE_SEQUENCES[kind]) {
+      const start = now + step.delaySec;
+      const end = start + step.durSec;
+      const osc = ctx.createOscillator();
+      const highpass = ctx.createBiquadFilter();
+      const lowpass = ctx.createBiquadFilter();
+      const gain = ctx.createGain();
+      osc.type = "square";
+      osc.frequency.setValueAtTime(step.freq, start);
+      highpass.type = "highpass";
+      highpass.frequency.setValueAtTime(340, start);
+      highpass.Q.setValueAtTime(Math.SQRT1_2, start);
+      lowpass.type = "lowpass";
+      lowpass.frequency.setValueAtTime(2600, start);
+      lowpass.Q.setValueAtTime(0.85, start);
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.044, start + 0.005);
+      gain.gain.exponentialRampToValueAtTime(0.0005, end - 0.004);
+      gain.gain.linearRampToValueAtTime(0, end);
+      osc.connect(highpass);
+      highpass.connect(lowpass);
+      lowpass.connect(gain);
+      gain.connect(destination);
+      osc.start(start);
+      osc.stop(end + 0.006);
+      osc.onended = () => {
+        osc.disconnect();
+        highpass.disconnect();
+        lowpass.disconnect();
+        gain.disconnect();
+      };
+    }
+  });
 };

@@ -1,4 +1,4 @@
-import type { Camera, Object3D } from "three";
+import type { Camera, Mesh, Object3D } from "three";
 import { playNokiaPiezoTone } from "./studio-nokia-audio";
 import {
   bindNokiaScreenSurface,
@@ -7,11 +7,7 @@ import {
   formatLocalHM,
 } from "./studio-nokia-contact";
 import { paintNokiaLcdCanvas } from "./studio-nokia-font";
-import {
-  createStudioNokiaHardware,
-  type NokiaButtonId,
-  type StudioNokiaHardwareHandle,
-} from "./studio-nokia-hardware";
+import type { StudioNokiaHardwareHandle } from "./studio-nokia-hardware";
 import { createStudioNokiaHint } from "./studio-nokia-hint";
 import {
   createStudioNokiaHotspots,
@@ -20,13 +16,13 @@ import {
   type StudioNokiaPhoneHandle,
 } from "./studio-nokia-hotspots";
 import {
+  type NokiaButtonId,
   type NokiaMoveDir,
   resolveSnakeInputDir,
   SNAKE_DIR_TO_BUTTON,
 } from "./studio-nokia-keypad";
 import { createNokiaSnakeEngine } from "./studio-nokia-snake";
 
-export type { NokiaButtonId } from "./studio-nokia-hardware";
 export type {
   NokiaActionResult,
   NokiaScreenMode,
@@ -34,13 +30,16 @@ export type {
   StudioNokiaPhoneHandle,
   StudioSceneNokiaApi,
 } from "./studio-nokia-hotspots";
+export type { NokiaButtonId } from "./studio-nokia-keypad";
 
 export const createStudioNokiaScreen = (onUpdate?: () => void): StudioNokiaPhoneHandle => {
+  const hardwareModPromise = import("./studio-nokia-hardware");
   const { ctx, texture } = createNokiaLcdSurface();
   const snake = createNokiaSnakeEngine();
   const hotspots = createStudioNokiaHotspots();
   const hint = createStudioNokiaHint(onUpdate);
   let hardware: StudioNokiaHardwareHandle | null = null;
+  let buttonMeshes: readonly Mesh[] = [];
   const st = {
     mode: "contact" as NokiaScreenMode,
     focused: false,
@@ -79,9 +78,11 @@ export const createStudioNokiaScreen = (onUpdate?: () => void): StudioNokiaPhone
       60_000 - (Date.now() % 60_000) + 50,
     );
   };
-  const attachModel = (nokiaRoot: Object3D, parentGroup: Object3D): void => {
+  const attachModel = async (nokiaRoot: Object3D, parentGroup: Object3D): Promise<void> => {
+    const hwMod = await hardwareModPromise;
     if (st.disposed) return;
-    hardware = createStudioNokiaHardware(nokiaRoot);
+    hardware = hwMod.createStudioNokiaHardware(nokiaRoot);
+    buttonMeshes = [...hotspots.meshes, ...hardware.buttonMeshes];
     parentGroup.add(hardware.root, hotspots.root, hint.mesh);
     paintNow(false);
     bindNokiaScreenSurface(nokiaRoot, texture);
@@ -184,7 +185,7 @@ export const createStudioNokiaScreen = (onUpdate?: () => void): StudioNokiaPhone
       if (focused && st.mode === "snake") paintNow(true);
     },
     setHoveredButton: hotspots.setHovered,
-    getButtonMeshes: () => (hardware ? [...hotspots.meshes, ...hardware.buttonMeshes] : []),
+    getButtonMeshes: () => buttonMeshes,
     resolveButtonId: (o) => hotspots.resolveButtonId(o) ?? hardware?.resolveButtonId(o) ?? null,
     pressButton,
     steerSnake,

@@ -12,7 +12,7 @@ import {
 } from "three";
 import type { NokiaMoveDir } from "./studio-nokia-keypad";
 
-export interface StudioNokiaHintHandle {
+interface StudioNokiaHintHandle {
   readonly mesh: Mesh;
   readonly flashDirection: (dir: NokiaMoveDir) => void;
   readonly update: (
